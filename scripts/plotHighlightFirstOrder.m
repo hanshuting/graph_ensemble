@@ -1,15 +1,15 @@
 function [] = plotHighlightFirstOrder(adjmat,coords,num_stim)
 % highlight nodes and connecting edges specified by indx with specified color
 
-load('C:\Shuting\fwMatch\results\mycc.mat');
+load('C:\Shuting\graph_ensemble\results\mycc.mat');
 ccstr = {mycc.red,mycc.blue,mycc.orange,mycc.purple};
 % ccstr = {'r','b','m','c'};
 num_node = size(adjmat,1);
 
 % add neuron
 num_add = num_node-size(coords,1);
-coords(end+1,:) = [0 max(coords(:,2))];
 coords(end+1,:) = [0 0];
+coords(end+1,:) = [0 max(coords(:,2))];
 coords(end+1,:) = [max(coords(:,1)) 0];
 coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
 coords = coords(1:num_node,:);
@@ -30,13 +30,15 @@ for n = 1:num_stim
     hold on
     
     % plot edge
-    E = find(adjmat(num_node-num_stim+n,:));
-    if ~isempty(E)
-        linkNode = coords(E,:);
-        crNode = repmat(coords(num_node-num_stim+n,:),length(E),1);
-        for kk = 1:length(E)
-            plot([crNode(kk,1),linkNode(kk,1)]',[crNode(kk,2),linkNode(kk,2)]',...
-                'color',graycc);
+    for ii = 1:num_node
+        E = find(adjmat(ii,:));
+        if ~isempty(E)
+            linkNode = coords(adjmat(ii,:)~=0,:);
+            crNode = repmat(coords(ii,:),length(E),1);
+            for j = 1:length(E)
+                plot([crNode(j,1),linkNode(j,1)]',[crNode(j,2),linkNode(j,2)]',...
+                    'color',graycc);
+            end
         end
     end
 

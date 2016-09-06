@@ -26,13 +26,11 @@ for ii = 1:length(mc_ln)
     cr_mc = mc_ln{ii};
     for jj = 1:length(cr_mc)
         E = setdiff(cr_mc,jj);
-        if ~isempty(E)
-            linkNode = coords(adjmat(cr_mc(jj),:)~=0,:);
-            crNode = repmat(coords(cr_mc(jj),:),length(E),1);
-            for j = 1:length(E)
-                plot([crNode(j,1),linkNode(j,1)]',[crNode(j,2),linkNode(j,2)]',...
-                    'color',cc);
-            end
+        linkNode = coords(E,:);
+        crNode = repmat(coords(cr_mc(jj),:),length(E),1);
+        for j = 1:length(E)
+            plot([crNode(j,1),linkNode(j,1)]',[crNode(j,2),linkNode(j,2)]',...
+                'color',cc);
         end
     end
 end
