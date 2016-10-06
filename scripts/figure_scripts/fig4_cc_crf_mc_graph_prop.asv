@@ -176,6 +176,74 @@ end
 save([save_path 'graph_prop_mc_' savestr '_' ge_type '.mat'],'expt_name','ee','mc_sz','mc_sz_cum',...
     'mc_num','dens','ndeg','ndeg_cum','lcc','lcc_cum','-v7.3');
 
+figure; set(gcf,'color','w','position',[2454,301,560,465])
+
+% density
+boxwd = 0.2;
+subplot(2,3,1);hold on;
+dens_pre = cell2mat(dens(:,1)');
+h = boxplot(dens_pre,'positions',0.5,'width',boxwd,'colors',mycc.black);
+setBoxStyle(h,linew);
+dens_post = cell2mat(dens(:,2)');
+h = boxplot(dens_post,'positions',1,'width',boxwd,'colors',mycc.blue);
+set(h(7,:),'visible','off')
+setBoxStyle(h,linew);
+xlim([0 1.5])
+ylim([min([dens_pre,dens_post])-0.02 max([dens_pre,dens_post])]+0.02)
+gcapos = get(gca,'position');
+title('density')
+set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
+set(gca,'position',gcapos);
+
+% node degree
+subplot(2,3,2)
+plot_opto_spont_cum_hist(ndeg_all_cum,mycc,ndeg_bin_range,linew);
+gcapos = get(gca,'position');
+title('node degree');ylabel('p');
+set(gca,'position',gcapos);
+legend off; box on
+
+% lcc
+subplot(2,3,3)
+plot_opto_spont_cum_hist(lcc_all_cum,mycc,lcc_bin_range,linew);
+gcapos = get(gca,'position');
+title('lcc');ylabel('p');
+set(gca,'position',gcapos);
+legend off; box on
+
+% centrality
+subplot(2,3,4)
+plot_opto_spont_cum_hist(cent_all_cum,mycc,cent_bin_range,linew);
+gcapos = get(gca,'position');
+title('centrality');ylabel('p');
+set(gca,'position',gcapos);
+legend off; box on
+
+% maximal clique number
+boxwd = 0.2;
+subplot(2,3,5);hold on;
+h = boxplot(mc_num(:,1),'positions',0.5,'width',boxwd,'colors',mycc.black);
+setBoxStyle(h,linew);
+h = boxplot(mc_num(:,2),'positions',1,'width',boxwd,'colors',mycc.blue);
+set(h(7,:),'visible','off')
+setBoxStyle(h,linew);
+xlim([0 1.5])
+ylim([min(mc_num(:))-50 max(mc_num(:))+50])
+gcapos = get(gca,'position');
+title('NMC')
+set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
+set(gca,'position',gcapos);
+
+% maximal clique size
+subplot(2,3,6)
+plot_opto_spont_cum_hist(mc_sz_cum,mycc,mc_sz_bin_range,linew);
+gcapos = get(gca,'position');
+title('sMC');ylabel('p');
+set(gca,'position',gcapos);
+box on
+
+saveas(gcf,[fig_path 'opto_spont_graph_prop_all.pdf']);
+
 %%
 figure;
 set(gcf,'color','w','position',[1987 295 518 725],'PaperPositionMode','auto');

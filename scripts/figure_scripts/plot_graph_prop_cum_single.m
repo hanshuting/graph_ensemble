@@ -1,6 +1,5 @@
-function [] = plot_graph_prop_cum_single(data,mycc,xvec)
+function [] = plot_graph_prop_cum_single(data,mycc,xvec,linew)
 % for figure3
-linew = 1;
 
 num_bins = max(cellfun('length',reshape(struct2cell(data),[],1)));
 data_cc = cellfun(@(x) padarray(x,num_bins-length(x),NaN,'post'),...

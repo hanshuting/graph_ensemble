@@ -6,7 +6,7 @@ ee = param.ee;
 num_shuff = param.num_shuff;
 data_path = param.data_path;
 shuff_path_base = param.shuff_path_base;
-cc_type = param.cc_type;
+ccpath = param.ccpath;
 
 % make xcorr graph
 for n = 1:length(expt_name)
@@ -22,7 +22,6 @@ for n = 1:length(expt_name)
         % load real and random models
         shuff_path = [shuff_path_base 'shuffled_' ...
             expt_name{n} '_' expt_ee{e} '_loopy\'];
-        save_path = ['C:\Shuting\fwMatch\results\' expt_name{n} '\cc_' cc_type '\'];
         
         % load data
         load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee{e} '.mat']);
@@ -54,7 +53,7 @@ for n = 1:length(expt_name)
         cc_weight = cc.*cc_graph;
         
         % save results
-        save([save_path expt_name{n} '_' expt_ee{e} '_cc_graph.mat'],...
+        save([ccpath expt_name{n} '_' expt_ee{e} '_cc_graph.mat'],...
             'cc_graph','cc_weight','-v7.3');
         
     end

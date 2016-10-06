@@ -4,10 +4,8 @@ function [] = fig5_ensemble_identification_add_neuron_CRFSVD(param)
 expt_name = param.expt_name;
 ee = param.ee;
 num_shuff = param.num_shuff;
-k = param.k;
 p = param.p;
-cc_type = param.cc_type;
-comm_type = param.comm_type;
+ge_type = param.ge_type;
 data_path = param.data_path;
 fig_path = param.fig_path.core;
 save_path = param.result_path.stats_path;
@@ -34,11 +32,12 @@ for n = 1:length(expt_name)
     
     expt_ee = ee{n}{1};
 
-    model_path = [result_path_base expt_name{n} '\models\']; 
+    model_path = [result_path_base '\' expt_name{n} '\models\']; 
     
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
     svd_data = load([data_path 'ensembles\' expt_name{n} '_core_svd.mat']);
-    best_model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model.mat']);
+    best_model = load([model_path expt_name{n} '_' expt_ee ...
+        '_loopy_best_model_' ge_type '.mat']);
     num_stim = length(unique(vis_stim))-1;
     
     %% find ensembles
@@ -75,15 +74,15 @@ for n = 1:length(expt_name)
         
         subplot(1,num_stim,ii);
         plotCoreOverlay(Coord_active,core_crf{ii},core_svd{ii},mycc.orange,...
-            mycc.blue,rr)
+            mycc.green,rr)
         
     end
     
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' expt_ee '_mc_svd_core.pdf'])
     
     %% save result
-    save([result_path_base expt_name{n} '\core\' expt_ee '_mc_svd_core.mat'],...
-        'core_svd','core_crf','-v7.3');
+    save([result_path_base '\' expt_name{n} '\core\' expt_ee '_mc_svd_core_' ...
+        ge_type '.mat'],'core_svd','core_crf','-v7.3');
     
 end
 
@@ -118,6 +117,7 @@ ylabel('Nshared%')
 set(gca,'xcolor','w')
 box off
 
-print(gcf,'-dpdf','-painters',[fig_path expt_ee '_mc_svd_core_nums.pdf'])
+print(gcf,'-dpdf','-painters',[fig_path expt_ee '_mc_svd_core_nums_' ...
+    ge_type '.pdf'])
 
 end

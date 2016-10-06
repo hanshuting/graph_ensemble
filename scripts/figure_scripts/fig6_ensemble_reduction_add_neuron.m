@@ -5,6 +5,7 @@ expt_name = param.expt_name;
 ee = param.ee;
 data_path = param.data_path;
 fig_path = param.fig_path.stats;
+ge_type = param.ge_type;
 result_path_base = param.result_path_base;
 ccode_path = param.ccode_path;
 rwbmap = param.rwbmap;
@@ -35,9 +36,10 @@ for n = 1:length(expt_name)
     
     expt_ee = ee{n}{1};
 
-    model_path = [result_path_base expt_name{n} '\models\']; 
+    model_path = [result_path_base '\' expt_name{n} '\models\']; 
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
-    best_model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model.mat']);
+    best_model = load([model_path expt_name{n} '_' expt_ee ...
+        '_loopy_best_model_' ge_type '.mat']);
     num_stim = length(unique(vis_stim))-1;
     num_node = size(best_model.graph,1)-num_stim;
     
@@ -45,7 +47,8 @@ for n = 1:length(expt_name)
     data = Spikes(:,Pks_Frame)';
     vis_stim_high = vis_stim(Pks_Frame);
     
-    load([result_path_base expt_name{n} '\core\' expt_ee '_mc_core.mat']);
+    load([result_path_base '\' expt_name{n} '\core\' expt_ee '_mc_svd_core_'...
+        ge_type '.mat']);
     
     %% predict with random ensembles
     for s = 1:num_stim
@@ -170,7 +173,8 @@ box off
 xlabel('total%')
 set(gca,'position',gcapos);
 
-print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee '_mc_svd_rand_pred_stats.pdf'])
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee ...
+    '_mc_svd_rand_pred_stats_' ge_type '.pdf'])
 
 end
 

@@ -1,4 +1,9 @@
 function [] = plot_pred_raster(pred,stim_vec,cmap)
+% [] = plot_pred_raster(pred,stim_vec,cmap)
+% INPUT:
+%     pred: num_trial-by-num_frame binary prediction vector
+%     stim_vec: num_frame-by-1 stimulation vector
+%     cmap: colormap matrix
 
 num_frame = length(stim_vec);
 num_model = size(pred,1);

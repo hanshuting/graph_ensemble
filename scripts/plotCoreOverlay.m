@@ -24,7 +24,7 @@ scatter(coords(setdiff(indx2,sind),1),coords(setdiff(indx2,sind),2),nodesz,...
     'markeredgecolor','k','markerfacecolor',cc2,'linewidth',0.5,'markerfacealpha',rr);
 % shared contour
 scatter(coords(sind,1),coords(sind,2),nodesz,'markeredgecolor',cc2,...
-    'markerfacecolor','w','linewidth',1.5,'markerfacealpha',0);
+    'markerfacecolor','w','linewidth',2.5,'markerfacealpha',0);
 
 axis equal tight off
 

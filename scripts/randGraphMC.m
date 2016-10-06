@@ -5,8 +5,7 @@ ee = param.ee;
 num_rand = param.num_rand;
 data_path = param.data_path;
 result_path_base = param.result_path_base;
-cc_type = param.cc_type;
-ge_meth = param.ge_meth;
+ge_type = param.ge_type;
 
 %% cc model
 for n = 1:length(expt_name)
@@ -17,11 +16,16 @@ for n = 1:length(expt_name)
     for e = 1:length(expt_ee)
         
         fprintf('processing %s_%s...\n',expt_name{n},expt_ee{e});
-        model_path = [result_path_base expt_name{n} '\models\'];
-        cc_path = [result_path_base expt_name{n} '\cc_' cc_type '\']; 
-        save_path = [result_path_base expt_name{n} '\rand_graph_' ge_meth '\'];
+        model_path = [result_path_base '\' expt_name{n} '\models\'];
+        cc_path = [result_path_base '\' expt_name{n} '\cc\'];
+        save_path = [result_path_base '\' expt_name{n} '\rand_graph_' ge_type '\'];
         
-        crf_graph = load([model_path expt_name{n} '_' expt_ee{e} '_loopy_best_model.mat']);
+        if exist(save_path,'dir')~=7
+            mkdir(save_path);
+        end
+        
+        crf_graph = load([model_path expt_name{n} '_' expt_ee{e} ...
+            '_loopy_best_model_' ge_type '.mat']);
         crf_graph = crf_graph.graph;
         load([cc_path expt_name{n} '_' expt_ee{e} '_cc_graph.mat']);
         
@@ -49,7 +53,7 @@ for n = 1:length(expt_name)
         
         %% CRF
         % in case I want to switch to 'on' edges only
-        if strcmp(param.ge_meth,'on')
+        if strcmp(param.ge_type,'on')
             num_node = size(crf_graph,1);
             num_edge = sum(sum(logical(tril(crf_graph))));
             edge_list = zeros(num_edge,2);
@@ -62,7 +66,9 @@ for n = 1:length(expt_name)
                 G_crf(node_2,node_1) = G_crf(4,ii);%-G(3,i)-G(2,i);
             end
             G_crf = G_crf>0;
-        elseif strcmp(param.ge_meth,'full')
+        elseif strcmp(param.ge_type,'full')
+            G_crf = crf_graph;
+        elseif strcmp(param.ge_type,'thresh')
             G_crf = crf_graph;
         else
             error('Undefined graph edge option ''%s''\n',param.ge_meth);

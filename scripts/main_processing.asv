@@ -105,9 +105,8 @@ an_param.expt_name = {'m21_d2_vis','m37_d2'};
 an_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neuron'}};
 
 threshCRFgraphs(an_param);
-calcGraphMC(an_param);
 
-fig_add_neuron_model_prop(an_param);
+
 
 %% opto spont data
 % optogenetic experiments
@@ -117,6 +116,7 @@ opto_param.epot_bin_range = -1:0.05:1;
 opto_param.expt_name = {'m23_d1_spont','m23_d1_opto'};
 opto_param.ee = {{'high_pre','high_post'},{'high_pre','high_post'}};
 threshCRFgraphs(opto_param);
+calcGraphMC(param);
 
 fig7_opto_spont(opto_param);
 

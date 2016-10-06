@@ -15,6 +15,12 @@ for n = 1:size(mc,2)
     mc_nz{n} = find(mc(:,n));
 end
 
+% threshold by size
+mc_sz = cellfun('length',mc_nz);
+keepIndx = mc_sz>=3;
+mc = mc(:,keepIndx);
+mc_nz = mc_nz(mc_sz>=3);
+
 % find core cells
 % core = cell(num_stim+2,1);
 % mc_in_core = cell(num_stim+2,1);

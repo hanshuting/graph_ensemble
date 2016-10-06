@@ -4,7 +4,7 @@ expt_name = param.expt_name;
 ee = param.ee;
 data_path = param.data_path;
 result_path_base = param.result_path_base;
-cc_type = param.cc_type;
+ge_type = param.ge_type;
 
 % make xcorr graph
 for n = 1:length(expt_name)
@@ -17,12 +17,13 @@ for n = 1:length(expt_name)
         fprintf('processing %s_%s...\n',expt_name{n},expt_ee{e});
         
         % set path
-        model_path = [result_path_base expt_name{n} '\models\'];
-        cc_path = [result_path_base expt_name{n} '\cc_' cc_type '\'];
-        save_path = [result_path_base expt_name{n} '\mc\'];
+        model_path = [result_path_base '\' expt_name{n} '\models\'];
+        cc_path = [result_path_base '\' expt_name{n} '\cc\'];
+        save_path = [result_path_base '\' expt_name{n} '\mc\'];
         
         % load graphs
-        crf_graph = load([model_path expt_name{n} '_' expt_ee{e} '_loopy_best_model.mat']);
+        crf_graph = load([model_path expt_name{n} '_' expt_ee{e} ...
+            '_loopy_best_model_' ge_type '.mat']);
         load([cc_path expt_name{n} '_' expt_ee{e} '_cc_graph.mat']);
         crf_graph = crf_graph.graph;
         
@@ -40,7 +41,8 @@ for n = 1:length(expt_name)
         end
         
         % save results
-        save([save_path expt_name{n} '_' expt_ee{e} '_mc_crf.mat'],'mc_crf','-v7.3');
+        save([save_path expt_name{n} '_' expt_ee{e} '_mc_crf_' ge_type '.mat'],...
+            'mc_crf','-v7.3');
         save([save_path expt_name{n} '_' expt_ee{e} '_mc_cc.mat'],'mc_cc','-v7.3');
         
     end

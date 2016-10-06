@@ -1,4 +1,4 @@
-function [] = crf_LL_pred_add_neuron(param)
+function [] = fig2_crf_LL_pred_add_neuron(param)
 
 % parameters
 expt_name = param.expt_name;
@@ -6,8 +6,7 @@ ee = param.ee;
 num_shuff = param.num_shuff;
 k = param.k;
 p = param.p;
-cc_type = param.cc_type;
-comm_type = param.comm_type;
+ge_type = param.ge_type;
 data_path = param.data_path;
 fig_path = param.fig_path.core;
 save_path = param.result_path.stats_path;
@@ -34,11 +33,12 @@ for n = 1:num_expt
     
     expt_ee = ee{n}{1};
 
-    model_path = [result_path_base expt_name{n} '\models\']; 
+    model_path = [result_path_base '\' expt_name{n} '\models\']; 
     
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
     load([data_path expt_name{n} '\Pks_Frames.mat']);
-    best_model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model.mat']);
+    best_model = load([model_path expt_name{n} '_' expt_ee ...
+        '_loopy_best_model_' ge_type '.mat']);
     num_stim = length(unique(vis_stim))-1;
     num_node = size(best_model.graph,1)-num_stim;
     num_frame = length(Pks_Frame);
@@ -82,10 +82,15 @@ for n = 1:num_expt
         pred_mat(ii,:) = pred==ii;
     end
     
+    % plot highlighted first order connections
+    plotHighlightFirstOrder(best_model.graph,Coord_active,num_stim);
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
+        expt_ee '_' ge_type '_first_order.pdf'])
+    
     % plot prediction
     plot_pred_raster(pred_mat,vis_stim_high,cmap);
     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
-        expt_ee '_all_pred_raster.pdf'])
+        expt_ee '_' ge_type '_all_pred_raster.pdf'])
     
     % plot LL
     figure; set(gcf,'color','w','position',[2021 700 807 222])
@@ -98,7 +103,7 @@ for n = 1:num_expt
     plot((numrep+1)/2-LLs,'k','linewidth',linew)
     xlim([1 num_frame]); ylim([0.5 0.5+numrep])
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-        expt_ee '_all_LL.pdf'])
+        expt_ee '_' ge_type '_all_LL.pdf'])
     
 end
 
@@ -156,7 +161,8 @@ set(gca,'xcolor','w')
 ylabel('Recall')
 box off
 
-print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee '_all_pred_stats.pdf'])
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee '_' ge_type ...
+    '_all_pred_stats.pdf'])
 
 
 end
