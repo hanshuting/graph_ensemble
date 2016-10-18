@@ -178,11 +178,11 @@ save([save_path 'graph_prop_mc_' savestr '_' ge_type '.mat'],'expt_name','ee','m
 
 %%
 figure;
-set(gcf,'color','w','position',[1987 295 518 725],'PaperPositionMode','auto');
+set(gcf,'color','w','position',[1987 551 523 469],'PaperPositionMode','auto');
 
 % density
 boxwd = 0.2;
-subplot(3,2,1);hold on;
+subplot(2,2,1);hold on;
 dens_cc = cell2mat(getNestedField(dens,'cc'));
 h = boxplot(dens_cc,'positions',0.5,'width',boxwd,'colors',mycc.green);
 setBoxStyle(h,linew);
@@ -193,64 +193,86 @@ setBoxStyle(h,linew);
 xlim([0 1.5])
 ylim([min([dens_cc;dens_crf])-0.02 max([dens_cc;dens_crf])]+0.02)
 gcapos = get(gca,'position');
-title('density')
+ylabel('density (%)')
 set(gca,'xtick',[0.5 1],'xticklabel',{'CC','CRF'},'linewidth',linew)
-set(gca,'position',gcapos);
+set(gca,'position',gcapos); box off
 
 % local clustering coefficient
-subplot(3,2,2);
+subplot(2,2,3);
 plot_graph_prop_cum_single(lcc_cum,mycc,lcc_bin_range,linew);
 gcapos = get(gca,'position');
-title('clustering coeff');ylabel('p');
+xlabel('clustering coeff');ylabel('log(p)');
 set(gca,'position',gcapos);
-legend off; box on
+legend off; box off
 
 % node degree
-subplot(3,2,3);
+subplot(2,2,2);
 plot_graph_prop_cum_single(ndeg_cum,mycc,ndeg_bin_range,linew);
 gcapos = get(gca,'position');
-title('node degree');ylabel('p');
+xlabel('node degree');ylabel('log(p)');
 set(gca,'position',gcapos);
-legend off; box on
+legend off; box off
 
 % centrality
-subplot(3,2,4)
+subplot(2,2,4)
 plot_graph_prop_cum_single(cent_cum,mycc,cent_bin_range,linew);
 gcapos = get(gca,'position');
-title('centrality');ylabel('p');
+xlabel('centrality');ylabel('log(p)');
 set(gca,'position',gcapos);
-legend off; box on
+box off
 
-% mc number
+saveas(gcf,[fig_path 'graph_prop_' savestr '_' ge_type '.pdf']);
+
+% -------- CRF with rand --------- %
+figure;set(gcf,'color','w','position',[2008 525 577 219])
 boxwd = 0.2;
-subplot(3,2,5);hold on;
-h = boxplot(cell2mat(getNestedField(mc_num,'cc_rand')),'positions',0.5,'width',...
-    boxwd,'colors',mycc.green_light);
+subplot(1,2,1);hold on;
+h = boxplot(cell2mat(getNestedField(mc_num,'crf_rand')),'positions',0.5,'width',...
+    boxwd,'colors',mycc.black);
 setBoxStyle(h,linew);
-h = boxplot(cell2mat(getNestedField(mc_num,'cc')),'positions',1,'width',...
-    boxwd,'colors',mycc.green);
+h = boxplot(cell2mat(getNestedField(mc_num,'crf')),'positions',1,'width',...
+    boxwd,'colors',mycc.black);
 setBoxStyle(h,linew);
-h = boxplot(cell2mat(getNestedField(mc_num,'crf_rand')),'positions',1.5,'width',...
-    boxwd,'colors',mycc.orange_light);
-setBoxStyle(h,linew);
-h = boxplot(cell2mat(getNestedField(mc_num,'crf')),'positions',2,'width',...
-    boxwd,'colors',mycc.orange);
-setBoxStyle(h,linew);
-xlim([0 2.5])
+xlim([0 1.5])
 gcapos = get(gca,'position');
-title('NMC')
-set(gca,'xtick',0.5:0.5:2,'xticklabel',{'CCrand','CC','CRFrand','CRF'},'linewidth',linew)
-set(gca,'position',gcapos);
+ylabel('# maximal cliques')
+set(gca,'xtick',[0.5,1],'xticklabel',{'shuffled','real'},'linewidth',linew)
+set(gca,'position',gcapos);box off
 
 % mc size
-subplot(3,2,6)
+subplot(1,2,2)
 plot_graph_prop_cum_single(mc_sz_cum,mycc,mc_sz_bin_range,linew);
 gcapos = get(gca,'position');
-title('sMC'); ylabel('p')
+xlabel('maximal cliques (size)'); ylabel('log(p)')
 set(gca,'position',gcapos);
-box on
+box off
 
-% save figure
-saveas(gcf,[fig_path 'graph_prop_mc_' savestr '_' ge_type '.pdf']);
+saveas(gcf,[fig_path 'mc_prop_crf_' savestr '_' ge_type '.pdf']);
+
+% -------- CRF with CC --------- %
+figure;set(gcf,'color','w','position',[2008 525 577 219])
+boxwd = 0.2;
+subplot(1,2,1);hold on;
+h = boxplot(cell2mat(getNestedField(mc_num,'cc_rand')),'positions',0.5,'width',...
+    boxwd,'colors',mycc.black);
+setBoxStyle(h,linew);
+h = boxplot(cell2mat(getNestedField(mc_num,'cc')),'positions',1,'width',...
+    boxwd,'colors',mycc.black);
+setBoxStyle(h,linew);
+xlim([0 1.5])
+gcapos = get(gca,'position');
+ylabel('# maximal cliques')
+set(gca,'xtick',[0.5,1],'xticklabel',{'CCrand','CC'},'linewidth',linew)
+set(gca,'position',gcapos);
+box off
+
+% mc size
+subplot(1,2,2)
+plot_graph_prop_cum_single(mc_sz_cum,mycc,mc_sz_bin_range,linew);
+gcapos = get(gca,'position');
+xlabel('maximal cliques (size)'); ylabel('log(p)')
+set(gca,'position',gcapos);
+box off
+saveas(gcf,[fig_path 'mc_prop_cc_' savestr '_' ge_type '.pdf']);
 
 end

@@ -1,4 +1,4 @@
-function [core,mc_in_core] = find_core_max_clique(graph,num_stim)
+function [core,mc_in_core] = find_core_max_clique(graph,num_stim,mc_minsz)
 
 % find nodes that are connected with stim nodes
 num_node = size(graph,1);
@@ -19,7 +19,7 @@ end
 mc_sz = cellfun('length',mc_nz);
 keepIndx = mc_sz>=3;
 mc = mc(:,keepIndx);
-mc_nz = mc_nz(mc_sz>=3);
+mc_nz = mc_nz(mc_sz>=mc_minsz);
 
 % find core cells
 % core = cell(num_stim+2,1);
@@ -30,7 +30,8 @@ mc_in_core = cell(num_stim,1);
 indx = false(num_stim,size(mc,2));
 for n = 1:num_stim
 
-    indx(n,:) = logical(mc(stim_indx(n),:)~=0&mc(stim_indx(setdiff(1:num_stim,n)),:)==0);
+%     indx(n,:) = logical(mc(stim_indx(n),:)~=0&mc(stim_indx(setdiff(1:num_stim,n)),:)==0);
+    indx(n,:) = logical(mc(stim_indx(n),:)~=0); % SH 10/17
     
     cmc = mc_nz(indx(n,:));
     node_set = unique(cell2mat(cmc));

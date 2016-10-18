@@ -3,18 +3,13 @@ function [] = fig5_plot_crf_pred_cos_CRFSVDOSI(param)
 % parse parameters
 expt_name = param.expt_name;
 ee = param.ee;
-num_shuff = param.num_shuff;
-k = param.k;
-p = param.p;
-cc_type = param.cc_type;
-comm_type = param.comm_type;
+ge_type = param.ge_type;
 data_path = param.data_path;
 fig_path = param.fig_path.stats;
-save_path = param.result_path.stats_path;
 result_path_base = param.result_path_base;
-savestr = param.savestr;
 ccode_path = param.ccode_path;
 rwbmap = param.rwbmap;
+linew = param.linew;
 
 load(ccode_path);
 load(rwbmap);

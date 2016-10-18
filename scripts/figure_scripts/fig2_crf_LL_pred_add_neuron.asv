@@ -111,8 +111,8 @@ for n = 1:num_expt
 %     sigind = abs(LLs)<=quantile(abs(LLs),qnoise);
 %     thr(n) = 3*std(abs(LLs(sigind)))+mean(abs(LLs(sigind)));
     [~,pred] = max(LL_frame,[],2);
-    pred(pred==1 & LLs<thr(n,1)) = 0;
-    pred(pred==2 & LLs>thr(n,2)) = 0;
+    pred(pred==1 & LLs<thr(n,2)) = 0;
+    pred(pred==2 & LLs>thr(n,1)) = 0;
     
     % collect LL per stim
     pred_mLL{n,1} = LLs(vis_stim_high==1);
@@ -214,7 +214,7 @@ ww = 0.2;
 
 % mean sim value
 subplot(1,4,1); hold on
-patch([0.5 2 2 0.5 0.5],[thr(1,1) thr(1,1) thr(1,2) thr(1,2) thr(1,1)],...
+patch([0.5 2 2 0.5 0.5],[thr(n,1) thr(n,1) thr(n,2) thr(n,2) thr(n,1)],...
     mycc.gray_light,'facealpha',0.5,'edgecolor','none')
 plot([0.5 2],[0 0],'k--','linewidth',linew)
 h = boxplot(pred_mLL{1,1},'positions',1,'width',ww,'colors',mycc.red);

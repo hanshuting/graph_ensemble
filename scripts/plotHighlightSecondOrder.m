@@ -1,15 +1,15 @@
 function [] = plotHighlightSecondOrder(adjmat,coords,num_stim)
 % highlight nodes and connecting edges specified by indx with specified color
 
-load('C:\Shuting\fwMatch\results\mycc.mat');
+load('C:\Shuting\graph_ensemble\results\mycc.mat');
 ccstr = {mycc.red,mycc.blue,mycc.orange,mycc.purple};
 % ccstr = {'r','b','m','c'};
 num_node = size(adjmat,1);
 
 % add neuron
 num_add = num_node-size(coords,1);
-coords(end+1,:) = [0 max(coords(:,2))];
 coords(end+1,:) = [0 0];
+coords(end+1,:) = [0 max(coords(:,2))];
 coords(end+1,:) = [max(coords(:,1)) 0];
 coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
 coords = coords(1:num_node,:);
@@ -18,7 +18,6 @@ coords = coords(1:num_node,:);
 coords = [coords(:,1),-coords(:,2)];
 
 nodesz = 50;
-r = 0.5; % line transparency
 graycc = 0.7*[1 1 1];
 num_node = size(adjmat,1);
 
@@ -44,7 +43,7 @@ for n = 1:num_stim
 
     % highlight
     nodeSet = [];
-    firstNode = find(adjmat(n,:)~=0);
+    firstNode = find(adjmat(num_node-num_stim+n,:)~=0);
     nodeSet = unique([nodeSet,firstNode]);
     for jj = 1:length(firstNode)
         secondNode = find(adjmat(firstNode(jj),:)~=0);

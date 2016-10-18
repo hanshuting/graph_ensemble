@@ -19,17 +19,25 @@ param.k_seq = 2:6;
 param.k = 3;
 param.p = 0.05;
 
+param.mc_minsz = 3;
+
 param.data_path = 'C:\Shuting\graph_ensemble\data\';
 param.shuff_path_base = [param.data_path 'shuffled\'];
 param.result_path_base = 'C:\Shuting\graph_ensemble\results';
 param.result_path.stats_path = [param.result_path_base '\stats\'];
 param.fig_path.graph_prop = [param.result_path_base '\fig\graph_prop\'];
 param.fig_path.core = [param.result_path_base '\fig\core\'];
+param.fig_path.ens = [param.result_path_base '\fig\ens\'];
 param.fig_path.pred = [param.result_path_base '\fig\pred\'];
 param.fig_path.stats = [param.result_path_base '\fig\stats\'];
 param.fig_path.opto_spont = [param.result_path_base '\fig\opto_spont\'];
+param.fig_path.opto_stim = [param.result_path_base '\fig\opto_stim\'];
+param.fig_path.pa = [param.result_path_base '\fig\pa\'];
 param.ccode_path = [param.result_path_base '\mycc.mat']; % color code
 param.rwbmap = [param.result_path_base '\rwbmap.mat']; % red white blue map
+param.graymap = [param.result_path_base '\graymap.mat']; % gray map
+param.bluemap = [param.result_path_base '\bluemap.mat']; % blue map
+param.redmap = [param.result_path_base '\redmap.mat']; % red map
 
 param.OSI_thresh = 0.4;
 
@@ -45,6 +53,7 @@ param.ndeg_bin_range = 0:0.01:0.25;
 param.lcc_bin_range = 0:0.02:1;
 param.cent_bin_range = 0:0.02:1;
 param.mc_sz_bin_range = 0:1:15;
+param.epsum_bin_range = -1:0.1:0.2;
 
 % plotting parameters
 param.linew = 0.5;
@@ -114,9 +123,40 @@ fig_add_neuron_model_prop(an_param);
 opto_param = param;
 opto_param.npot_bin_range = -1:0.05:1;
 opto_param.epot_bin_range = -1:0.05:1;
-opto_param.expt_name = {'m23_d1_spont','m23_d1_opto'};
-opto_param.ee = {{'high_pre','high_post'},{'high_pre','high_post'}};
+opto_param.expt_name = {'m23_d1_opto'};
+opto_param.ee = {{'high_pre_add_neuron','high_post_add_neuron'}};
+
 threshCRFgraphs(opto_param);
 
 fig7_opto_spont(opto_param);
+
+%% opto stim data
+opto_stim_param = param;
+opto_stim_param.npot_bin_range = -1:0.05:1;
+opto_stim_param.epot_bin_range = -1:0.05:1;
+opto_stim_param.expt_name = {'m52_d1_opto'};
+opto_stim_param.ee = {{'high_all'}};
+opto_stim_param.ndeg_quant = 0.2;
+
+threshCRFgraphs(opto_stim_param);
+
+fig7_opto_stim(opto_stim_param);
+
+%% supplementary figures
+% PA dataset
+pa_param = param;
+pa_param.expt_name = {'pa_511510718_TF1'};
+pa_param.ee = {{'vis_high_add_neuron'}};
+figS1_pa_pred(pa_param);
+
+figS2_cc_pred(param);
+figS3_OSI_pred(param);
+figS5_graph_core(param);
+
+cmp_param = param;
+cmp_param.expt_name = {'m21_d2_vis','m37_d2'};
+cmp_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neuron'}};
+figS2_compare_add_neuron(cmp_param);
+
+
 

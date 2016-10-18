@@ -19,7 +19,7 @@ cent_bin_range = param.cent_bin_range;
 mc_sz_bin_range = param.mc_sz_bin_range;
 
 load(ccode_path);
-graymap = load(param.graymap); % variable: cmap
+rmap = load(param.redmap); % variable: cmap
 bmap = load(param.bluemap); % variable: cmap
 
 %% initialize
@@ -78,24 +78,55 @@ for n = 1:length(expt_name)
     pre_model.ep_on = getOnEdgePot(pre_model.graph,pre_model.G)';
     post_model.ep_on = getOnEdgePot(post_model.graph,post_model.G)';
     
-    % extend coordinates for add neuron model
-    coords = Coord_active;
-    coords(end+1,:) = [0 max(coords(:,2))];
-    coords(end+1,:) = [0 0];
-    
     % plot pre and post models
     figure; set(gcf,'color','w','position',[2154 340 941 597])
     cc_range = [min(pre_model.ep_on(:)) max(pre_model.ep_on(:))];
     ep_range = [-1 0.2];
     subplot(1,2,1)
-    plotGraphModelHighlightEP(pre_model.graph,coords,pre_model.ep_on,...
-        cc_range,ep_range,graymap.cmap,[]);
+    plotGraphModelHighlightEP(pre_model.graph,Coord_active,pre_model.ep_on,...
+        cc_range,ep_range,rmap.cmap,[]);
     subplot(1,2,2)
-    plotGraphModelHighlightEP(post_model.graph,coords,post_model.ep_on,...
+    plotGraphModelHighlightEP(post_model.graph,Coord_active,post_model.ep_on,...
         cc_range,ep_range,bmap.cmap,[]);
     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_ON_unnormalized_' ...
         ge_type '_pre_post_models.pdf']);
-
+    
+%     cc_range = [-0.13 0.01];
+%     figure; set(gcf,'color','w','position',[2154,119,1006,818])
+%     subplot(2,2,1);
+%     plotGraphModel2(pre_model.graph(Stim_cells,Stim_cells),Coord_active...
+%         (Stim_cells,:),pre_model.ep_on(Stim_cells,Stim_cells),cc_range,rmap.cmap);
+%     subplot(2,2,2);
+%     plotGraphModel2(post_model.graph(Stim_cells,Stim_cells),Coord_active...
+%         (Stim_cells,:),post_model.ep_on(Stim_cells,Stim_cells),cc_range,bmap.cmap);
+%     subplot(2,2,3);
+%     plotGraphModel2(pre_model.graph(nostim_cells,nostim_cells),Coord_active...
+%         (nostim_cells,:),pre_model.ep_on(nostim_cells,nostim_cells),cc_range,rmap.cmap);
+%     subplot(2,2,4);
+%     plotGraphModel2(post_model.graph(nostim_cells,nostim_cells),Coord_active...
+%         (nostim_cells,:),post_model.ep_on(nostim_cells,nostim_cells),cc_range,bmap.cmap);
+%     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_ON_' ...
+%         ge_type '_pre_post_models.pdf']);
+    
+%     % collect node and edge potentials
+%     npot_out{n,1} = pre_model.node_pot(nostim_cells);
+%     npot_out{n,2} = post_model.node_pot(nostim_cells);
+%     npot_in{n,1} = pre_model.node_pot(Stim_cells);
+%     npot_in{n,2} = post_model.node_pot(Stim_cells);
+%     npot_out_cum{n,1} = calc_cum_dist(npot_out{n,1},npot_bin_range);
+%     npot_out_cum{n,2} = calc_cum_dist(npot_out{n,2},npot_bin_range);
+%     npot_in_cum{n,1} = calc_cum_dist(npot_in{n,1},npot_bin_range);
+%     npot_in_cum{n,2} = calc_cum_dist(npot_in{n,2},npot_bin_range);
+%     
+%     epot_out{n,1} = reshape(pre_model.ep_on(nostim_cells,nostim_cells),[],1);
+%     epot_out{n,2} = reshape(post_model.ep_on(nostim_cells,nostim_cells),[],1);
+%     epot_in{n,1} = reshape(pre_model.ep_on(Stim_cells,Stim_cells),[],1);
+%     epot_in{n,2} = reshape(post_model.ep_on(Stim_cells,Stim_cells),[],1);
+%     epot_out_cum{n,1} = calc_cum_dist(epot_out{n,1},epot_bin_range);
+%     epot_out_cum{n,2} = calc_cum_dist(epot_out{n,2},epot_bin_range);
+%     epot_in_cum{n,1} = calc_cum_dist(epot_in{n,1},epot_bin_range);
+%     epot_in_cum{n,2} = calc_cum_dist(epot_in{n,2},epot_bin_range);
+    
     % edge potential sum
     ep_sum{n,1} = sum(pre_model.ep_on,2);
     ep_sum{n,2} = sum(post_model.ep_on,2);
