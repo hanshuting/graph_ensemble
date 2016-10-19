@@ -25,55 +25,60 @@ for n = 1:length(expt_name)
     expt_ee = param.ee{n}{1};
     model_path = [result_path_base '\' expt_name{n} '\models\']; 
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
-    load([data_path expt_name{n} '\Stim_cells.mat']);
-    num_node = size(Spikes,1);
-    nostim_cells = setdiff(1:num_node,Stim_cells);
     
     model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model_' ge_type '.mat']);
     model.graph = full(model.graph);
     
+    % extend coordinates
+    coords = Coord_active;
+    coords(end+1,:) = [0 max(coords(:,2))];
+    coords(end+1,:) = [0 0];
+    coords(end+1,:) = [max(coords(:,1)) 0];
+    coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
+    coords(end+1,:) = [max(coords(:,1))/2 0];
+    coords(end+1,:) = [max(coords(:,1))/2 max(coords(:,2))];
+    
     % convert to on edges
     model.ep_on = getOnEdgePot(model.graph,model.G)';
 
-    % node degree
-    epsum{n,1} = sum(model.ep_on(Stim_cells,Stim_cells),2);
-    epsum{n,2} = sum(model.ep_on(nostim_cells,nostim_cells),2);
-    epsum_cum{n,1} = calc_cum_dist(epsum{n,1},epsum_bin_range);
-    epsum_cum{n,2} = calc_cum_dist(epsum{n,2},epsum_bin_range);
-    core_epsum_stim = find(epsum{n,1}>quantile(epsum{n,1},1-epsum_quant));
+    % edge potential sum
+    epsum{n} = sum(model.ep_on,2);
+    epsum{n}(sum(model.graph,2)==0) = NaN;
     
-    % plot pre and post models
-    figure; set(gcf,'color','w','position',[2154 340 941 597])
-    cc_range = [min(model.ep_on(:)) max(model.ep_on(:))];
-    ep_range = [-1 0.2];
-    subplot(1,2,1)
-    plotGraphModelHighlightEP(model.graph(Stim_cells,Stim_cells),...
-        Coord_active(Stim_cells,:),model.ep_on(Stim_cells,Stim_cells),...
+    % plot model
+    figure; set(gcf,'color','w','position',[2154 560 479 377])
+    cc_range = [];
+    ep_range = [-1.5 0.1];
+    plotGraphModelHighlightEP(model.graph,coords,model.ep_on,...
         cc_range,ep_range,gmap.cmap,[]);
-    subplot(1,2,2)
-    plotGraphModelHighlightEP(model.graph(nostim_cells,nostim_cells),...
-        Coord_active(nostim_cells,:),model.ep_on(nostim_cells,nostim_cells),...
-        cc_range,ep_range,rmap.cmap,[]);
-    print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_ON_' ...
-        ge_type '_stim_graph.pdf']);
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_ON_' ...
+        ge_type '_epsum_graph.pdf']);
     
-    save([result_path_base '\' expt_name{n} '\core\' expt_name{n} '_' ...
-        expt_ee '_' ge_type '_stim_epsum_core.mat'],'core_epsum_stim');
+    % plot epsum raster
+    wd = 0.01;
+    figure; set(gcf,'color','w','position',[2034 331 596 327])
+    hold on
+    num_node = length(epsum{n});
+    edge_map = jet(64);
+    for ii = 1:num_node
+        cep = epsum{n}(ii);
+        if ~isnan(cep)
+            cindx = ceil((cep-ep_range(1))/(ep_range(2)-ep_range(1))*64);
+        if cindx<=0 || isnan(cindx)
+            cindx = 1;
+        elseif cindx >= 64
+            cindx = 64;
+        end
+            patch(epsum{n}(ii)+[-wd wd wd -wd -wd],ii+[-0.5 -0.5 0.5 0.5 -0.5],...
+                edge_map(cindx,:),'edgecolor',mycc.gray);
+        end
+    end
+    xlim([min(epsum{n})-2*wd max(epsum{n})+2*wd])
+    box on
+    xlabel('sum(edge pot)'); ylabel('cell index')
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_ON_' ...
+        ge_type '_epsum_raster.pdf']);
     
 end
 
-%% plot stats
-stepsz = 0.5;
-binsz = 0.1;
-ww = 0.2;
-
-figure; set(gcf,'color','w','position',[2006 450 371 295])
-plot_opto_stim_cum_hist(epsum_cum,mycc,epsum_bin_range,linew);
-gcapos = get(gca,'position');
-xlabel('sum(edge pot)');ylabel('log(p)');
-set(gca,'position',gcapos);
-legend off; box off
-
-saveas(gcf,[fig_path 'on_unnormalized_' ge_type '_opto_stim_epsum.pdf']);
-    
 end

@@ -136,7 +136,7 @@ opto_stim_param = param;
 opto_stim_param.npot_bin_range = -1:0.05:1;
 opto_stim_param.epot_bin_range = -1:0.05:1;
 opto_stim_param.expt_name = {'m52_d1_opto'};
-opto_stim_param.ee = {{'high_all_add_neuron'}};
+opto_stim_param.ee = {{'high_all'}};
 opto_stim_param.ndeg_quant = 0.2;
 
 threshCRFgraphs(opto_stim_param);
@@ -148,8 +148,7 @@ fig7_opto_stim(opto_stim_param);
 pa_param = param;
 pa_param.expt_name = {'pa_511510718_TF1'};
 pa_param.ee = {{'vis_high_add_neuron'}};
-pa_param.test = {{'pa_511510718_TF2_vis_high','pa_511510718_TF4_vis_high'}};
-pa_param.qnoise = 0.5;
+pa_param.
 figS1_pa_whole_model(pa_param);
 figS1_pa_pred(pa_param);
 

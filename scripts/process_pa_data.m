@@ -4,6 +4,7 @@ dpath = 'C:\Shuting\graph_ensemble\data\pa_raw\';
 ecid = {'ecid_511507650','ecid_511509529','ecid_511510650','ecid_511510718',...
     'ecid_511510855','ecid_511510670'};
 
+%% extract fluorescence
 qnoise = 0.05;
 num_id = length(ecid);
 for n = 1:num_id
@@ -43,4 +44,18 @@ for n = 1:num_id
     % save result
     save([dpath ecid{n} '_spikes.mat'],'Spikes','vis_stim','tf','-v7.3');
     
+end
+
+%% extract coordinates
+num_id = length(ecid);
+for n = 1:num_id
+    fprintf('processing file %u, ecid %s\n',n,ecid{n});
+    load([dpath ecid{n} '_roi_mask.mat']); % variable: roi_all
+    num_cell = size(roi_all,1);
+    coords = zeros(num_cell,2);
+    for ii = 1:num_cell
+        rs = regionprops(logical(squeeze(roi_all(ii,:,:))),'centroid');
+        coords(ii,:) = rs.Centroid;
+    end
+    save([dpath ecid{n} '_coords.mat'],'coords');
 end
