@@ -1,10 +1,10 @@
-function [] = fig6_ensemble_reduction_add_neuron(param)
+function [] = fig6_CC_reduction_add_neuron(param)
 
 % parse parameters
 expt_name = param.expt_name;
 ee = param.ee;
 data_path = param.data_path;
-fig_path = param.fig_path.stats;
+fig_path = param.fig_path.cc;
 ge_type = param.ge_type;
 result_path_base = param.result_path_base;
 ccode_path = param.ccode_path;
@@ -38,6 +38,7 @@ for n = 1:length(expt_name)
     expt_ee = ee{n}{1};
 
     model_path = [result_path_base '\' expt_name{n} '\models\']; 
+    cc_path = [result_path_base '\' expt_name{n} '\cc\']; 
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
     best_model = load([model_path expt_name{n} '_' expt_ee ...
         '_loopy_best_model_' ge_type '.mat']);
@@ -47,14 +48,18 @@ for n = 1:length(expt_name)
     load([data_path expt_name{n} '\Pks_Frames.mat']);
     data = Spikes(:,Pks_Frame)';
     vis_stim_high = vis_stim(Pks_Frame);
+    
+    load([cc_path  expt_name{n} '_' expt_ee '_cc_graph.mat']);    
+    data_high = Spikes(:,Pks_Frame)';
+    num_stim = length(unique(vis_stim))-1;
 
-    load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat']);
+    core_cc = find_core_max_clique(cc_graph,num_stim,mc_minsz);
     
     %% predict with random ensembles
     for s = 1:num_stim
         
         expt_count = expt_count+1;
-        ensemble = core_crf{s};
+        ensemble = core_cc{s};
         num_core = length(ensemble);
         noncore = setdiff(1:num_node,ensemble);
         core_plus_seq = round(num_core*sample_seq);
@@ -174,7 +179,7 @@ xlabel('total%')
 set(gca,'position',gcapos);
 
 print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee ...
-    '_crf_core_rand_pred_stats_' ge_type '.pdf'])
+    '_mc_cc_rand_pred_stats_' ge_type '.pdf'])
 
 end
 

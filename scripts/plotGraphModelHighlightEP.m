@@ -68,7 +68,7 @@ caxis([cc_range(1) cc_range(2)]);
 set(ax1,'position',gcapos);
 
 % sum up edge potentials
-eps = sum(weightmat,2);%./node_deg;
+eps = nansum(weightmat,2);%./node_deg;
 if isempty(ep_range)
     ep_range = [min((eps(:))) max((eps(:)))];
 end

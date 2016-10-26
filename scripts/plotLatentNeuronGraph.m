@@ -58,18 +58,24 @@ for i = 1:num_node
     
     if isempty(E)
         cc = 0.7*[1 1 1];
+        mk = 'o';
     elseif any(E==num_node-num_add+1)
         cc = 'r';
+        mk = 's';
     elseif any(E==num_node-num_add+2)
         cc = 'b';
+        mk = 's';
     elseif any(E==num_node-num_add+3)
         cc = 'm';
+        mk = 's';
     elseif any(E==num_node-num_add+4)
         cc = 'c';
+        mk = 's';
     else
         cc = 0.7*[1 1 1];
+        mk = 'o';
     end
-    scatter(coords(i,1),coords(i,2),nodesz,'markerfacecolor',cc,...
+    scatter(coords(i,1),coords(i,2),nodesz,mk,'markerfacecolor',cc,...
         'markeredgecolor','k','linewidth',1);
     
 end

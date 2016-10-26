@@ -1,0 +1,21 @@
+function [pred,thr] = pred_from_LL(LLs,qnoise)
+% make binary predictions from LL estimation with 0/1
+% INPUT:
+%     LLs: vector of LL_on-LL_off
+%     qnoise: quantile considered as noise
+% OUTPUT:
+%     pred: binary vector of prediction
+
+th1 = quantile(LLs(:),qnoise);
+th2 = quantile(LLs(:),1-qnoise);
+LLs_th = LLs;
+LLs_th(LLs<=th1 | LLs>=th2) = NaN;
+thr(1) = 3*nanstd(LLs_th(:))+nanmean(LLs_th(:));
+thr(2) = -3*nanstd(LLs_th(:))+nanmean(LLs_th(:));
+%     sigind = abs(LLs)<=quantile(abs(LLs),qnoise);
+%     thr(n) = 3*std(abs(LLs(sigind)))+mean(abs(LLs(sigind)));
+[~,pred] = max(LL_frame,[],2);
+pred(pred==1 & LLs<thr(n,1)) = NaN;
+pred(pred==2 & LLs>thr(n,2)) = NaN;
+
+end

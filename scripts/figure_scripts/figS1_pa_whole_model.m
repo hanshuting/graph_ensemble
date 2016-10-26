@@ -2,6 +2,7 @@ function [] = figS1_pa_whole_model(param)
 
 % parameters
 expt_name = param.expt_name;
+test_ee = param.test;
 ee = param.ee;
 p = param.p;
 ge_type = param.ge_type;

@@ -49,12 +49,13 @@ for n = 1:num_expt
     num_stim = length(unique(vis_stim))-1;
     num_node = size(best_model.graph,1)-num_stim;
     num_frame = length(Pks_Frame);
+    num_frame_full = size(Spikes,2);
     vis_stim_high = vis_stim(Pks_Frame);
     data_high = Spikes(:,Pks_Frame);
     
     % plot model with secondary connections
     plotHighlightSecondOrder(best_model.graph,Coord_active,num_stim);
-    saveas(gcf,[fig_path expt_name{n} 'second_order_ensemble.pdf'])
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} 'second_order_ensemble.pdf'])
     
     % find ensembles
     ens = cell(num_stim,1);
@@ -120,6 +121,7 @@ for n = 1:num_expt
     
     % prediction statistics
     pred_mat = zeros(num_stim,num_frame);
+    pred_mat_full = zeros(num_stim,num_frame_full);
     for ii = 1:num_stim
         true_label = vis_stim_high==ii;
         TP = sum(pred==ii & true_label==1);
@@ -131,10 +133,12 @@ for n = 1:num_expt
         rec = TP/(TP+FN);
         pred_stats(ii,n,:) = [acc,prc,rec];
         pred_mat(ii,:) = pred==ii;
+        pred_mat_full(ii,Pks_Frame) = pred==ii;
     end
     
     % plot prediction
-    plot_pred_raster(pred_mat,vis_stim_high,cmap);
+    plot_pred_raster(pred_mat_full,vis_stim,cmap);
+%     plot_pred_raster(pred_mat,vis_stim_high,cmap);
     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
         expt_ee '_' ge_type '_all_pred_raster.pdf'])
     

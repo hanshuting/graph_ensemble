@@ -6,7 +6,7 @@ ee = param.ee;
 num_shuff = param.num_shuff;
 data_path = param.data_path;
 shuff_path_base = param.shuff_path_base;
-ccpath = param.ccpath;
+p = param.p;
 
 % make xcorr graph
 for n = 1:length(expt_name)
@@ -43,7 +43,7 @@ for n = 1:length(expt_name)
                     continue;
                 end
                 ccdist = fitdist(squeeze(shuff_cc(i,j,:)),'normal');
-                cc_thresh(i,j) = icdf(ccdist,0.95);
+                cc_thresh(i,j) = icdf(ccdist,1-p);
             end
         end
 
@@ -53,6 +53,7 @@ for n = 1:length(expt_name)
         cc_weight = cc.*cc_graph;
         
         % save results
+        ccpath = [param.result_path_base '\' expt_name{n} '\cc\'];
         save([ccpath expt_name{n} '_' expt_ee{e} '_cc_graph.mat'],...
             'cc_graph','cc_weight','-v7.3');
         

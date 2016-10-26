@@ -1,4 +1,4 @@
-function [] = fig7_opto_spont(param)
+function [] = fig8_opto_spont(param)
 
 % parameters
 expt_name = param.expt_name;

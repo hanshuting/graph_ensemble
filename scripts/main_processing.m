@@ -5,10 +5,10 @@ rng(1000);
 %% set parameters
 param = struct();
 param.expt_name = {'m21_d2_vis','m37_d2'};
-param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'}};
+param.ee = {{'all_high'},{'all_high'}};
 param.num_stim = [2,1];
 param.ge_type = 'full'; % 'full', 'on', 'thresh'
-param.savestr = 'add_neuron';
+param.savestr = ''; % 'add neuron'
 
 % param.epth = 0.3; % quantile threshold of edge potential
 param.epth = 0.05;
@@ -33,6 +33,7 @@ param.fig_path.stats = [param.result_path_base '\fig\stats\'];
 param.fig_path.opto_spont = [param.result_path_base '\fig\opto_spont\'];
 param.fig_path.opto_stim = [param.result_path_base '\fig\opto_stim\'];
 param.fig_path.pa = [param.result_path_base '\fig\pa\'];
+param.fig_path.cc = [param.result_path_base '\fig\cc\'];
 param.ccode_path = [param.result_path_base '\mycc.mat']; % color code
 param.rwbmap = [param.result_path_base '\rwbmap.mat']; % red white blue map
 param.graymap = [param.result_path_base '\graymap.mat']; % gray map
@@ -40,7 +41,7 @@ param.bluemap = [param.result_path_base '\bluemap.mat']; % blue map
 param.redmap = [param.result_path_base '\redmap.mat']; % red map
 param.four_stim_cmap = [param.result_path_base '\four_stim_cmap.mat']; % four colors
 
-param.OSI_thresh = 0.6;
+param.OSI_thresh = 0.7;
 
 % parameters for reduced models
 param.maxf = 1000; % max frames for reduced models
@@ -124,12 +125,12 @@ fig_add_neuron_model_prop(an_param);
 opto_param = param;
 opto_param.npot_bin_range = -1:0.05:1;
 opto_param.epot_bin_range = -1:0.05:1;
-opto_param.expt_name = {'m23_d1_opto'};
+opto_param.expt_name = {'m23_d1_opto_corrected'};
 opto_param.ee = {{'high_pre_add_neuron','high_post_add_neuron'}};
 
 threshCRFgraphs(opto_param);
 
-fig7_opto_spont(opto_param);
+fig8_opto_spont(opto_param);
 
 %% opto stim data
 opto_stim_param = param;
@@ -148,9 +149,12 @@ fig7_opto_stim(opto_stim_param);
 pa_param = param;
 pa_param.expt_name = {'pa_511510718_TF1'};
 pa_param.ee = {{'vis_high_add_neuron'}};
-pa_param.test = {{'pa_511510718_TF2_vis_high','pa_511510718_TF4_vis_high'}};
+pa_param.test = {{'pa_511510718_TF1_vis_high','pa_511510718_TF2_vis_high',...
+    'pa_511510718_TF4_vis_high','pa_511510718_TF8_vis_high','pa_511510718_TF15_vis_high'}};
+pa_param.tf_seq = [1,2,4,8,15];
 pa_param.qnoise = 0.5;
 figS1_pa_whole_model(pa_param);
+figS1_pa_whole_model_TF(pa_param);
 figS1_pa_pred(pa_param);
 
 figS2_cc_pred(param);

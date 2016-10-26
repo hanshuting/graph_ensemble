@@ -49,12 +49,13 @@ for n = 1:num_expt
     num_stim = length(unique(vis_stim))-1;
     num_node = size(best_model.graph,1)-num_stim;
     num_frame = length(Pks_Frame);
+    num_frame_full = size(Spikes,2);
     vis_stim_high = vis_stim(Pks_Frame);
     data_high = Spikes(:,Pks_Frame);
     
     % plot model with secondary connections
     plotHighlightSecondOrder(best_model.graph,Coord_active,num_stim);
-    saveas(gcf,[fig_path expt_name{n} 'second_order_ensemble.pdf'])
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} 'second_order_ensemble.pdf'])
     
     % find ensembles
     ens = cell(num_stim,1);
@@ -111,8 +112,8 @@ for n = 1:num_expt
 %     sigind = abs(LLs)<=quantile(abs(LLs),qnoise);
 %     thr(n) = 3*std(abs(LLs(sigind)))+mean(abs(LLs(sigind)));
     [~,pred] = max(LL_frame,[],2);
-    pred(pred==1 & LLs<thr(n,2)) = 0;
-    pred(pred==2 & LLs>thr(n,1)) = 0;
+    pred(pred==1 & LLs<thr(n,1)) = 0;
+    pred(pred==2 & LLs>thr(n,2)) = 0;
     
     % collect LL per stim
     pred_mLL{n,1} = LLs(vis_stim_high==1);
@@ -120,6 +121,7 @@ for n = 1:num_expt
     
     % prediction statistics
     pred_mat = zeros(num_stim,num_frame);
+    pred_mat_full = zeros(num_stim,num_frame_full);
     for ii = 1:num_stim
         true_label = vis_stim_high==ii;
         TP = sum(pred==ii & true_label==1);
@@ -131,10 +133,12 @@ for n = 1:num_expt
         rec = TP/(TP+FN);
         pred_stats(ii,n,:) = [acc,prc,rec];
         pred_mat(ii,:) = pred==ii;
+        pred_mat_full(ii,Pks_Frame) = pred==ii;
     end
     
     % plot prediction
-    plot_pred_raster(pred_mat,vis_stim_high,cmap);
+    plot_pred_raster(pred_mat_full,vis_stim,cmap);
+%     plot_pred_raster(pred_mat,vis_stim_high,cmap);
     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
         expt_ee '_' ge_type '_all_pred_raster.pdf'])
     
@@ -214,7 +218,7 @@ ww = 0.2;
 
 % mean sim value
 subplot(1,4,1); hold on
-patch([0.5 2 2 0.5 0.5],[thr(n,1) thr(n,1) thr(n,2) thr(n,2) thr(n,1)],...
+patch([0.5 2 2 0.5 0.5],[thr(1,1) thr(1,1) thr(1,2) thr(1,2) thr(1,1)],...
     mycc.gray_light,'facealpha',0.5,'edgecolor','none')
 plot([0.5 2],[0 0],'k--','linewidth',linew)
 h = boxplot(pred_mLL{1,1},'positions',1,'width',ww,'colors',mycc.red);
