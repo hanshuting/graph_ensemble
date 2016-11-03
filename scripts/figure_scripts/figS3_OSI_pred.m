@@ -37,8 +37,8 @@ sample_seq = -0.9:sample_step:0;
 sample_seq(indx) = 0;
 
 % initialize
-stats_pl_all = [];
-msim_pl_all = [];
+stats_pl_all_svd = [];
+msim_pl_all_svd = [];
 
 expt_count = 0;
 
@@ -60,27 +60,15 @@ for n = 1:length(expt_name)
     num_node = size(best_model.graph,1)-num_stim;
     
     %% find ensembles
-    % this code now only works with two stimuli
-    % SVD
-    core_svd = cell(num_stim,1);
-    for ii = 1:num_stim
-        for jj = 1:length(svd_data.svd_state)
-            if strcmp(num2str(ii),svd_data.svd_state{jj})
-                core_svd{ii} = svd_data.core_svd{jj};
-                break;
-            end
-        end
-    end
-    
+    % load results: 'core_crf','core_svd'
+    load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat']);
+        
     % high OSI
     core_osi = cell(num_stim,1);
     [OSI,OSIstim] = calcOSI(Spikes,vis_stim);
     for ii = 1:num_stim
         core_osi{ii} = find((OSI>OSI_thresh)&(OSIstim==ii));
     end
-    
-    % CRF max clique
-    core_crf = find_core_max_clique(best_model.graph,num_stim,mc_minsz);
     
     %% plot ensemble
     rr = 1;
@@ -93,21 +81,57 @@ for n = 1:length(expt_name)
         true_label = double(vis_stim_high==ss)';
         
         crf_osi = intersect(core_crf{ss},core_osi{ss});
+        crf_svd = intersect(core_crf{ss},core_svd{ss});
         num_cell(expt_count) = size(Spikes,1);
         num_crf(expt_count) = length(core_crf{ss});
         num_osi(expt_count) = length(core_osi{ss});
+        num_svd(expt_count) = length(core_svd{ss});
         num_crf_osi(expt_count) = length(crf_osi);
+        num_crf_svd(expt_count) = length(crf_svd);
         
         % prediction
-        [pred{expt_count},cos_sim{expt_count},cos_thresh(expt_count),...
-            cos_sim_avg(expt_count,:),acc,prc,rec] = core_cos_sim(core_osi{ss},data_high,true_label);
-        pred_stats(expt_count,:) = [acc,prc,rec];
+        % crf
+        [pred.crf{expt_count},cos_sim.crf{expt_count},cos_thresh.crf(expt_count),...
+            cos_sim_avg.crf(expt_count,:),acc,prc,rec] = core_cos_sim(core_crf{ss},data_high,true_label);
+        pred_stats.crf(expt_count,:) = [acc,prc,rec];
+        % svd
+        [pred.svd{expt_count},cos_sim.svd{expt_count},cos_thresh.svd(expt_count),...
+            cos_sim_avg.svd(expt_count,:),acc,prc,rec] = core_cos_sim(core_svd{ss},data_high,true_label);
+        pred_stats.svd(expt_count,:) = [acc,prc,rec];
+        % osi
+        [pred.osi{expt_count},cos_sim.osi{expt_count},cos_thresh.osi(expt_count),...
+            cos_sim_avg.osi(expt_count,:),acc,prc,rec] = core_cos_sim(core_osi{ss},data_high,true_label);
+        pred_stats.osi(expt_count,:) = [acc,prc,rec];
         
-        subplot(1,num_stim,ss);
+        subplot(2,num_stim,ss);
+        plotCoreOverlay(Coord_active,core_crf{ss},core_svd{ss},mycc.orange,...
+            mycc.green,rr)
+        subplot(2,num_stim,2*ss-1);
         plotCoreOverlay(Coord_active,core_crf{ss},core_osi{ss},mycc.orange,...
             mycc.gray,rr)
         
-        % randomly take out cores
+        % randomly take out cores - svd
+        num_core = length(core_svd{ss});
+        noncore = setdiff(1:num_node,core_svd{ss});
+        core_plus_seq = round(num_core*sample_seq);
+        for ii = 1:length(sample_seq)
+            for jj = 1:num_rand
+                if core_plus_seq(ii) < 0
+                    rand_core = core_osi{ss}(randperm(num_core,num_core+core_plus_seq(ii)));
+                else
+                    rand_core = noncore(randperm(length(noncore),core_plus_seq(ii)));
+                    rand_core = [core_osi{ss};rand_core'];
+                end
+                
+                % predict
+                [~,~,~,sim_avg,acc,prc,rec] = core_cos_sim(rand_core,data_high,true_label);
+                msim_pl_all_svd(expt_count,ii,jj,:) = sim_avg;
+                stats_pl_all_svd(expt_count,ii,jj,:) = [acc,prc,rec];
+                
+            end
+        end
+        
+        % randomly take out cores - osi
         num_core = length(core_osi{ss});
         noncore = setdiff(1:num_node,core_osi{ss});
         core_plus_seq = round(num_core*sample_seq);
@@ -122,8 +146,8 @@ for n = 1:length(expt_name)
                 
                 % predict
                 [~,~,~,sim_avg,acc,prc,rec] = core_cos_sim(rand_core,data_high,true_label);
-                msim_pl_all(expt_count,ii,jj,:) = sim_avg;
-                stats_pl_all(expt_count,ii,jj,:) = [acc,prc,rec];
+                msim_pl_all_osi(expt_count,ii,jj,:) = sim_avg;
+                stats_pl_all_osi(expt_count,ii,jj,:) = [acc,prc,rec];
                 
             end
         end
@@ -231,7 +255,7 @@ set(gcf,'paperpositionmode','auto')
 % plus/minus similarity
 subplot(2,2,1);
 gcapos = get(gca,'position');
-plot_box_seq_pair(msim_pl_all,sample_seq,binsz,wr,sample_step,linew,mycc)
+plot_box_seq_pair(msim_pl_all_svd,sample_seq,binsz,wr,sample_step,linew,mycc)
 set(gca,'xtick',sample_seq,'xticklabel',num2str(100*(1+sample_seq')));
 ylim([0 0.5])
 ylabel('Similarity');box off
@@ -240,7 +264,7 @@ set(gca,'position',gcapos);
 % plus/minus statistics
 subplot(2,2,2);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_pl_all(:,:,:,1),sample_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_pl_all_svd(:,:,:,1),sample_seq,wr,sample_step,linew,mycc)
 ylim([0 1])
 set(gca,'xtick',sample_seq,'xticklabel',num2str(100*(1+sample_seq')));
 ylabel('Accuracy');box off
@@ -248,7 +272,7 @@ set(gca,'position',gcapos);
 
 subplot(2,2,3);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_pl_all(:,:,:,2),sample_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_pl_all_svd(:,:,:,2),sample_seq,wr,sample_step,linew,mycc)
 ylim([0 1])
 set(gca,'xtick',sample_seq,'xticklabel',num2str(100*(1+sample_seq')));
 ylabel('Precision');box off
@@ -257,7 +281,7 @@ xlabel('core neurons (%)')
 
 subplot(2,2,4);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_pl_all(:,:,:,3),sample_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_pl_all_svd(:,:,:,3),sample_seq,wr,sample_step,linew,mycc)
 ylim([0 1])
 set(gca,'xtick',sample_seq,'xticklabel',num2str(100*(1+sample_seq')));
 ylabel('Recall');box off

@@ -12,7 +12,6 @@ npot_bin_range = param.npot_bin_range;
 epot_bin_range = param.epot_bin_range;
 epsum_bin_range = param.epsum_bin_range;
 linew = param.linew;
-p = param.p;
 
 ndeg_bin_range = param.ndeg_bin_range;
 lcc_bin_range = param.lcc_bin_range;
@@ -157,40 +156,33 @@ box off
 % edge pot sum
 subplot(2,3,2)
 % plot_opto_spont_cum_hist(ep_sum_cum,mycc,epsum_bin_range,linew);
-plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue,p);
-gcapos = get(gca,'position');
-% xlabel('rank');ylabel('log(p)');
-ylabel('rank');
-set(gca,'position',gcapos);
-legend off; box off
+plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue);
+
 
 % node degree
 subplot(2,3,3)
 % plot_opto_spont_cum_hist(ndeg_cum,mycc,ndeg_bin_range,linew);
-plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue,p);
+plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue);
 gcapos = get(gca,'position');
-% xlabel('node degree');ylabel('log(p)');
-ylabel('node degree')
+xlabel('node degree');ylabel('log(p)');
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
 subplot(2,3,4)
 % plot_opto_spont_cum_hist(lcc_cum,mycc,lcc_bin_range,linew);
-plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
+plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue);
 gcapos = get(gca,'position');
-% xlabel('clustering coeff');ylabel('log(p)');
-ylabel('clustering coeff')
+xlabel('clustering coeff');ylabel('log(p)');
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
 subplot(2,3,5)
 % plot_opto_spont_cum_hist(cent_cum,mycc,cent_bin_range,linew);
-plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue,p);
+plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue);
 gcapos = get(gca,'position');
-% xlabel('centrality');ylabel('log(p)');
-ylabel('centrality')
+xlabel('centrality');ylabel('log(p)');
 set(gca,'position',gcapos);
 legend off; box off
 

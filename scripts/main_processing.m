@@ -118,7 +118,8 @@ an_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neur
 threshCRFgraphs(an_param);
 calcGraphMC(an_param);
 
-fig_add_neuron_model_prop(an_param);
+figS2_compare_add_neuron(an_param);
+% fig_add_neuron_model_prop(an_param);
 
 %% opto spont data
 % optogenetic experiments

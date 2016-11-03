@@ -10,6 +10,7 @@ result_path_base = param.result_path_base;
 ccode_path = param.ccode_path;
 epsum_bin_range = param.epsum_bin_range;
 linew = param.linew;
+p = param.p;
 
 ndeg_bin_range = param.ndeg_bin_range;
 lcc_bin_range = param.lcc_bin_range;
@@ -69,7 +70,7 @@ for n = 1:length(expt_name)
 
     % edge potential sum
     ep_sum{n,1} = sum(base_model.ep_on,2);
-    ep_sum{n,2} = sum(an_model.ep_on,2);
+    ep_sum{n,2} = sum(an_model.ep_on(1:num_node,1:num_node),2);
     ep_sum_cum{n,1} = calc_cum_dist(ep_sum{n,1},epsum_bin_range);
     ep_sum_cum{n,2} = calc_cum_dist(ep_sum{n,2},epsum_bin_range);
     
@@ -79,19 +80,19 @@ for n = 1:length(expt_name)
     
     % node degree
     ndeg{n,1} = sum(base_model.graph,2)/2/num_node;
-    ndeg{n,2} = sum(an_model.graph,2)/2/num_node;
+    ndeg{n,2} = sum(an_model.graph(1:num_node,1:num_node),2)/2/num_node;
     ndeg_cum{n,1} = calc_cum_dist(ndeg{n,1},ndeg_bin_range);
     ndeg_cum{n,2} = calc_cum_dist(ndeg{n,2},ndeg_bin_range);
     
     % lcc
     lcc{n,1} = local_cluster_coeff(base_model.graph);
-    lcc{n,2} = local_cluster_coeff(an_model.graph);
+    lcc{n,2} = local_cluster_coeff(an_model.graph(1:num_node,1:num_node));
     lcc_cum{n,1} = calc_cum_dist(lcc{n,1},lcc_bin_range);
     lcc_cum{n,2} = calc_cum_dist(lcc{n,2},lcc_bin_range);
     
     % centrality
     cent{n,1} = eigenvec_centrality(base_model.graph);
-    cent{n,2} = eigenvec_centrality(an_model.graph);
+    cent{n,2} = eigenvec_centrality(an_model.graph(1:num_node,1:num_node));
     cent_cum{n,1} = calc_cum_dist(cent{n,1},cent_bin_range);
     cent_cum{n,2} = calc_cum_dist(cent{n,2},cent_bin_range);
 
@@ -104,14 +105,6 @@ binsz = 0.1;
 ww = 0.2;
 
 figure; set(gcf,'color','w','position',[2006 320 691 425])
-
-% edge pot sum
-subplot(2,3,2)
-plot_opto_spont_cum_hist(ep_sum_cum,mycc,epsum_bin_range,linew);
-gcapos = get(gca,'position');
-xlabel('sum(edge pot)');ylabel('log(p)');
-set(gca,'position',gcapos);
-legend off; box off
 
 % density
 boxwd = 0.2;
@@ -127,31 +120,47 @@ xlim([0 3*stepsz]);
 ylim([min([dens_pre,dens_post])-0.02 max([dens_pre,dens_post])]+0.02)
 gcapos = get(gca,'position');
 ylabel('density (%)')
-set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
+set(gca,'xtick',[0.5 1],'xticklabel',{'base','hidden'},'linewidth',linew)
 set(gca,'position',gcapos);
 box off
 
+% edge pot sum
+subplot(2,3,2)
+% plot_opto_spont_cum_hist(ep_sum_cum,mycc,epsum_bin_range,linew);
+plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+% xlabel('sum(edge pot)');ylabel('log(p)');
+ylabel('rank')
+set(gca,'position',gcapos);
+legend off; box off
+
 % node degree
 subplot(2,3,3)
-plot_opto_spont_cum_hist(ndeg_cum,mycc,ndeg_bin_range,linew);
+% plot_opto_spont_cum_hist(ndeg_cum,mycc,ndeg_bin_range,linew);
+plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-xlabel('node degree');ylabel('log(p)');
+% xlabel('node degree');ylabel('log(p)');
+ylabel('node degree')
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
 subplot(2,3,4)
-plot_opto_spont_cum_hist(lcc_cum,mycc,lcc_bin_range,linew);
+% plot_opto_spont_cum_hist(lcc_cum,mycc,lcc_bin_range,linew);
+plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-xlabel('clustering coeff');ylabel('log(p)');
+% xlabel('clustering coeff');ylabel('log(p)');
+ylabel('clustering coeff')
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
 subplot(2,3,5)
-plot_opto_spont_cum_hist(cent_cum,mycc,cent_bin_range,linew);
+% plot_opto_spont_cum_hist(cent_cum,mycc,cent_bin_range,linew);
+plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-xlabel('centrality');ylabel('log(p)');
+% xlabel('centrality');ylabel('log(p)');
+ylabel('centrality')
 set(gca,'position',gcapos);
 legend off; box off
 

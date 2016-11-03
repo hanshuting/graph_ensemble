@@ -30,9 +30,25 @@ for n = 1:length(ecid)
     % expt data
     Spikes = Spikes_all(:,tf==1);
     vis_stim = vis_stim_all(tf==1);
+    pkframe = find(high_vec(tf==1));
+    Pks_Frame = pkframe;
+    save([spath sname '_TF1.mat'],'Spikes','vis_stim','pkframe');
+    save([spath 'Pks_Frame.mat'],'Pks_Frame');
+
+    % add neuron data
     data = Spikes_all(:,tf==1&high_vec)';
+    vis_stim = vis_stim_all(tf==1&high_vec)';
+    for ii = 1:4
+        data(:,end+1) = vis_stim==ii;
+    end
     save([spath sname '_TF1_vis_high_add_neuron.mat'],'data');
 
+    % test data with other TFs
+    for ii = tf_seq
+        data = Spikes_all(:,tf==ii&high_vec)';
+        vis_stim = vis_stim_all(tf==ii&high_vec)';
+        save([spath sname '_TF' num2str(ii) '_vis_high.mat'],'data','vis_stim');
+    end
 
     %% extract TF=1 for the first experiment
     spath = [spathbase 'pa_' ecid{n} '_1_TF1\'];
@@ -46,9 +62,28 @@ for n = 1:length(ecid)
     Spikes = Spikes(:,tf(1:expt1)==1);
     vis_stim = vis_stim_all(1:expt1);
     vis_stim = vis_stim(tf(1:expt1)==1);
+    pkframe = high_vec(1:expt1);
+    Pks_Frame = pkframe;
+    pkframe = find(pkframe(tf(1:expt1)==1));
+    save([spath sname '_1_TF1.mat'],'Spikes','vis_stim','pkframe');
+    save([spath 'Pks_Frame.mat'],'Pks_Frame');
+
+    % add neuron data
     data = Spikes_all(:,1:expt1);
     data = data(:,tf(1:expt1)==1&high_vec(1:expt1))';
-    save([spath sname '_1_TF1_vis_high.mat'],'data');
+    vis_stim = vis_stim_all(1:expt1);
+    vis_stim = vis_stim(tf(1:expt1)==1&high_vec(1:expt1))';
+    for ii = 1:4
+        data(:,end+1) = vis_stim==ii;
+    end
+    save([spath sname '_1_TF1_vis_high_add_neuron.mat'],'data');
+
+    % test data with other two expts
+    data = Spikes_all(:,expt2:end);
+    data = data(:,tf(expt2:end)==1&high_vec(expt2:end))';
+    vis_stim = vis_stim_all(expt2:end);
+    vis_stim = vis_stim(tf(expt2:end)==1&high_vec(expt2:end))';
+    save([spath sname '_23_TF1_vis_high.mat'],'data','vis_stim');
 
 end
 
