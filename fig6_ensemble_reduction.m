@@ -1,4 +1,4 @@
-function [] = fig6_ensemble_reduction_add_neuron(param)
+function [] = fig6_ensemble_reduction(param)
 
 % parse parameters
 expt_name = param.expt_name;

@@ -34,14 +34,28 @@ thr = zeros(num_expt,num_tf,1);
 %%
 for n = 1:num_expt
     
-    expt_ee = ee{n}{1};
+    expt_ee = ee{n};
     model_path = [result_path_base '\' expt_name{n} '\models\']; 
+    load([data_path expt_name{n} '\coords.mat']);
+    best_model = load([model_path expt_name{n} '_' expt_ee ...
+        '_loopy_best_model_' ge_type '.mat']);
+    
+    % plot model
+    if n==1
+        coords = Coord_active;
+        coords(end+1,:) = [0 max(coords(:,2))];
+        coords(end+1,:) = [0 0];
+        coords(end+1,:) = [max(coords(:,1)) 0];
+        coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
+        figure; set(gcf,'color','w','position',[2084 472 402 319])
+        plotGraphModel(best_model.graph,coords,best_model.edge_pot,[],gray(64))
+        print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
+            expt_ee '_' ge_type '_model.pdf'])
+    end
     
     for m = 1:num_tf
         
         load([data_path expt_name{n} '\' test_ee{n}{m} '.mat']);
-        best_model = load([model_path expt_name{n} '_' expt_ee ...
-            '_loopy_best_model_' ge_type '.mat']);
         num_stim = length(setdiff(unique(vis_stim),0));
         data = data';
         vis_stim = vis_stim';
@@ -97,11 +111,13 @@ for n = 1:num_expt
         end
 
         % plot prediction
-        plot_pred_raster(pred_mat,vis_stim',cmap);
-        title(['TF = ' num2str(tf_seq(m))]);
-%         print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
-%             expt_ee '_' ge_type '_pred_TF' num2str(tf_seq(m)) '.pdf'])
-    
+        if n==1
+            plot_pred_raster(pred_mat,vis_stim',cmap);
+            title(['TF = ' num2str(tf_seq(m))]);
+            print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
+                expt_ee '_' ge_type '_pred_TF' num2str(tf_seq(m)) '.pdf'])
+        end
+        
     end
     
 end

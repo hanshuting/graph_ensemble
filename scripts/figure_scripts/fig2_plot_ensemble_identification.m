@@ -1,4 +1,4 @@
-function [] = fig_find_mc_core_all(param)
+function [] = fig2_plot_ensemble_identification(param)
 
 % parameters
 expt_name = param.expt_name;
