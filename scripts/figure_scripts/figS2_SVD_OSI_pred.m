@@ -61,7 +61,7 @@ for n = 1:length(expt_name)
     load([data_path expt_name{n} '\Pks_Frames.mat']);
     data_high = Spikes(:,Pks_Frame)';
     vis_stim_high = vis_stim(Pks_Frame);
-    num_stim = length(unique(vis_stim))-1;
+    num_stim = length(setdiff(vis_stim,0));
     num_node = size(best_model.graph,1)-num_stim;
     
     %% find ensembles

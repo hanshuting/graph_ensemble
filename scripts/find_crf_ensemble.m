@@ -26,8 +26,7 @@ for n = 1:num_expt
     load([data_path expt_name{n} '\Pks_Frames.mat']);
     best_model = load([model_path expt_name{n} '_' expt_ee ...
         '_loopy_best_model_' ge_type '.mat']);
-    svd_data = load([data_path 'ensembles\' expt_name{n} '_core_svd.mat']);
-    num_stim = length(unique(vis_stim))-1;
+    num_stim = length(setdiff(unique(vis_stim),0));
     num_node = size(best_model.graph,1);
     num_frame = length(Pks_Frame);
     vis_stim_high = vis_stim(Pks_Frame);
@@ -35,14 +34,17 @@ for n = 1:num_expt
     
     % SVD
     core_svd = cell(num_stim,1);
-    for ii = 1:num_stim
-        for jj = 1:length(svd_data.svd_state)
-            if strcmp(num2str(ii),svd_data.svd_state{jj})
-                core_svd{ii} = svd_data.core_svd{jj};
-                break;
+    if exist([data_path 'ensembles\' expt_name{n} '_core_svd.mat'])
+        svd_data = load([data_path 'ensembles\' expt_name{n} '_core_svd.mat']);
+        for ii = 1:num_stim
+            for jj = 1:length(svd_data.svd_state)
+                if strcmp(num2str(ii),svd_data.svd_state{jj})
+                    core_svd{ii} = svd_data.core_svd{jj};
+                    break;
+                end
             end
         end
-    end    
+    end
 
     LL_frame = zeros(num_node,num_frame,2);
     for ii = 1:num_node
@@ -71,10 +73,10 @@ for n = 1:num_expt
     [max_perc,node_idt] = max(LL_pred_count,[],2);
     
     % find percentage threshold
-    perc_vec = 0:0.05:0.5;
+    perc_vec = 0.2:0.05:0.4;
     acc_vec = zeros(length(perc_vec),num_stim);
     for ii = 1:num_stim
-        true_label = double(vis_stim_high==ii)';
+        true_label = double(vis_stim_high==ii);
         for jj = 1:length(perc_vec)
             core = find(node_idt.*(max_perc>perc_vec(jj))==ii);
             [~,~,~,~,acc] = core_cos_sim(core,data_high',true_label);
@@ -89,6 +91,43 @@ for n = 1:num_expt
         core_crf{ii} = find(node_idt.*(max_perc>perc_thresh)==ii);
     end
     
+    %% plot counts
+    figure; plot(perc_vec,acc_vec);
+    
+    dsz = 20;
+    stepsz = 0.5;
+    cc_dot = {mycc.red,mycc.red_light; mycc.blue,mycc.blue_light;...
+        mycc.green,mycc.green_light; mycc.purple,mycc.purple_light};
+    figure; set(gcf,'color','w','position',[2271 387 250 277])
+    hold on
+    noncore = setdiff(1:num_node,cell2mat(core_crf(1:num_stim)))';
+    for ii = 1:num_stim-1 % plot non core gray line
+        plot(stepsz*[ii;ii+1]*ones(size(noncore))',LL_pred_count(noncore,ii:ii+1)',...
+            'color',mycc.gray_light);
+    end
+    for ii = 1:num_stim % plot core colored ling
+        for jj = 1:num_stim-1
+            plot(stepsz*[jj;jj+1]*ones(size(core_crf{ii}))',LL_pred_count(core_crf{ii},jj:jj+1)',...
+                'color',cc_dot{ii,2});
+        end
+    end
+    for ii = 1:num_stim % plot non core gray dots
+        scatter(ii*stepsz*ones(size(noncore)),LL_pred_count(noncore,ii),...
+            dsz,mycc.gray,'filled')
+    end
+    for ii = 1:num_stim % plot core colored dots
+        scatter(ii*stepsz*ones(size(core_crf{ii})),LL_pred_count(core_crf{ii},ii),...
+            dsz,cc_dot{ii,1},'filled')
+    end
+    plot([0.3,num_stim*stepsz+0.2],perc_thresh*ones(1,2),'k--');
+    xlim([0.3 num_stim*stepsz+0.2])
+    set(gca,'xtick',stepsz*(1:num_stim),'xticklabel',1:num_stim)
+    ylabel('prediction (%)')
+    
+    %% save results
+    if exist([result_path_base '\' expt_name{n} '\core\'])~=7
+        mkdir([result_path_base '\' expt_name{n} '\core\']);
+    end
     save([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat'],...
         'core_crf','core_svd');
     

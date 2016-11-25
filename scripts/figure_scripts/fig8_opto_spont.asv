@@ -12,6 +12,7 @@ npot_bin_range = param.npot_bin_range;
 epot_bin_range = param.epot_bin_range;
 epsum_bin_range = param.epsum_bin_range;
 linew = param.linew;
+p = param.p;
 
 ndeg_bin_range = param.ndeg_bin_range;
 lcc_bin_range = param.lcc_bin_range;
@@ -25,23 +26,29 @@ bmap = load(param.bluemap); % variable: cmap
 %% initialize
 ndeg = cell(length(expt_name),2);
 ndeg_in = cell(length(expt_name),2);
+ndeg_out = cell(length(expt_name),2);
 ndeg_cum = cell(length(expt_name),2);
 ndeg_in_cum = cell(length(expt_name),2);
 
 dens = cell(length(expt_name),2);
 dens_in = cell(length(expt_name),2);
+dens_out = cell(length(expt_name),2);
 
 lcc = cell(length(expt_name),2);
 lcc_in = cell(length(expt_name),2);
+lcc_out = cell(length(expt_name),2);
 lcc_cum = cell(length(expt_name),2);
 lcc_in_cum = cell(length(expt_name),2);
 
 cent = cell(length(expt_name),2);
 cent_in = cell(length(expt_name),2);
+cent_out = cell(length(expt_name),2);
 cent_cum = cell(length(expt_name),2);
 cent_in_cum = cell(length(expt_name),2);
 
 ep_sum = cell(length(expt_name),1);
+ep_sum_in = cell(length(expt_name),1);
+ep_sum_out = cell(length(expt_name),1);
 ep_sum_cum = cell(length(expt_name),1);
 
 npot_out = cell(length(expt_name),2);
@@ -99,28 +106,52 @@ for n = 1:length(expt_name)
     % edge potential sum
     ep_sum{n,1} = sum(pre_model.ep_on,2);
     ep_sum{n,2} = sum(post_model.ep_on,2);
+    ep_sum_in{n,1} = ep_sum{n,1}(Stim_cells);
+    ep_sum_in{n,2} = ep_sum{n,2}(Stim_cells);
+    ep_sum_out{n,1} = ep_sum{n,1}(nostim_cells);
+    ep_sum_out{n,2} = ep_sum{n,2}(nostim_cells);
 %     ep_sum_cum{n,1} = calc_cum_dist(ep_sum{n,1},epsum_bin_range);
 %     ep_sum_cum{n,2} = calc_cum_dist(ep_sum{n,2},epsum_bin_range);
     
     % density
     dens{n,1} = sum(sum(pre_model.graph))/num_node/(num_node-1);
     dens{n,2} = sum(sum(post_model.graph))/num_node/(num_node-1);
+    dens_in{n,1} = sum(sum(pre_model.graph(Stim_cells,Stim_cells)))/...
+        num_stim_cell/(num_stim_cell-1);
+    dens_in{n,2} = sum(sum(post_model.graph(Stim_cells,Stim_cells)))/...
+        num_stim_cell/(num_stim_cell-1);
+    dens_out{n,1} = sum(sum(pre_model.graph(nostim_cells,nostim_cells)))/...
+        num_nostim_cell/(num_nostim_cell-1);
+    dens_out{n,2} = sum(sum(post_model.graph(nostim_cells,nostim_cells)))/...
+        num_nostim_cell/(num_nostim_cell-1);
     
     % node degree
     ndeg{n,1} = sum(pre_model.graph,2)/2/num_node;
     ndeg{n,2} = sum(post_model.graph,2)/2/num_node;
+    ndeg_in{n,1} = ndeg{n,1}(Stim_cells);
+    ndeg_in{n,2} = ndeg{n,2}(Stim_cells);
+    ndeg_out{n,1} = ndeg{n,1}(nostim_cells);
+    ndeg_out{n,2} = ndeg{n,2}(nostim_cells);
 %     ndeg_cum{n,1} = calc_cum_dist(ndeg{n,1},ndeg_bin_range);
 %     ndeg_cum{n,2} = calc_cum_dist(ndeg{n,2},ndeg_bin_range);
     
     % lcc
     lcc{n,1} = local_cluster_coeff(pre_model.graph);
     lcc{n,2} = local_cluster_coeff(post_model.graph);
+    lcc_in{n,1} = lcc{n,1}(Stim_cells);
+    lcc_in{n,2} = lcc{n,2}(Stim_cells);
+    lcc_out{n,1} = lcc{n,1}(nostim_cells);
+    lcc_out{n,2} = lcc{n,2}(nostim_cells);
 %     lcc_cum{n,1} = calc_cum_dist(lcc{n,1},lcc_bin_range);
 %     lcc_cum{n,2} = calc_cum_dist(lcc{n,2},lcc_bin_range);
     
     % centrality
     cent{n,1} = eigenvec_centrality(pre_model.graph);
     cent{n,2} = eigenvec_centrality(post_model.graph);
+    cent_in{n,1} = cent{n,1}(Stim_cells);
+    cent_in{n,2} = cent{n,2}(Stim_cells);
+    cent_out{n,1} = cent{n,1}(nostim_cells);
+    cent_out{n,2} = cent{n,2}(nostim_cells);
 %     cent_cum{n,1} = calc_cum_dist(cent{n,1},cent_bin_range);
 %     cent_cum{n,2} = calc_cum_dist(cent{n,2},cent_bin_range);
 
@@ -128,7 +159,7 @@ end
 
 save([save_path 'opto_spont_prop.mat'],'-v7.3');
 
-%% graph properties - nostim network
+%% graph properties - whole network
 stepsz = 0.5;
 binsz = 0.1;
 ww = 0.2;
@@ -156,37 +187,157 @@ box off
 % edge pot sum
 subplot(2,3,2)
 % plot_opto_spont_cum_hist(ep_sum_cum,mycc,epsum_bin_range,linew);
-plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue);
-
+plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+% xlabel('rank');ylabel('log(p)');
+ylabel('rank');
+set(gca,'position',gcapos);
+legend off; box off
 
 % node degree
 subplot(2,3,3)
 % plot_opto_spont_cum_hist(ndeg_cum,mycc,ndeg_bin_range,linew);
-plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue);
+plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-xlabel('node degree');ylabel('log(p)');
+% xlabel('node degree');ylabel('log(p)');
+ylabel('node degree')
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
 subplot(2,3,4)
 % plot_opto_spont_cum_hist(lcc_cum,mycc,lcc_bin_range,linew);
-plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue);
+plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-xlabel('clustering coeff');ylabel('log(p)');
+% xlabel('clustering coeff');ylabel('log(p)');
+ylabel('clustering coeff')
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
 subplot(2,3,5)
 % plot_opto_spont_cum_hist(cent_cum,mycc,cent_bin_range,linew);
-plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue);
+plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-xlabel('centrality');ylabel('log(p)');
+% xlabel('centrality');ylabel('log(p)');
+ylabel('centrality')
 set(gca,'position',gcapos);
 legend off; box off
 
+suptitle('all')
 saveas(gcf,[fig_path 'opto_spont_graph_prop_on_unnormalized_on.pdf']);
+
+%% stim network
+figure; set(gcf,'color','w','position',[2006 320 691 425])
+
+% density
+boxwd = 0.2;
+subplot(2,3,1);hold on;
+dens_pre = cell2mat(dens_in(:,1)')*100;
+h = boxplot(dens_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
+setBoxStyle(h,linew);
+dens_post = cell2mat(dens_in(:,2)')*100;
+h = boxplot(dens_post,'positions',2*stepsz,'width',boxwd,'colors',mycc.blue);
+set(h(7,:),'visible','off')
+setBoxStyle(h,linew);
+xlim([0 3*stepsz]);
+ylim([min([dens_pre,dens_post])-0.02 max([dens_pre,dens_post])]+0.02)
+gcapos = get(gca,'position');
+ylabel('density (%)')
+set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
+set(gca,'position',gcapos);
+box off
+
+% edge pot sum
+subplot(2,3,2)
+plot_pair_graph(cell2mat(ep_sum_in(:,1)),cell2mat(ep_sum_in(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('rank');
+set(gca,'position',gcapos);
+legend off; box off
+
+% node degree
+subplot(2,3,3)
+plot_pair_graph(cell2mat(ndeg_in(:,1)),cell2mat(ndeg_in(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('node degree')
+set(gca,'position',gcapos);
+legend off; box off
+
+% lcc
+subplot(2,3,4)
+plot_pair_graph(cell2mat(lcc_in(:,1)),cell2mat(lcc_in(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('clustering coeff')
+set(gca,'position',gcapos);
+legend off; box off
+
+% centrality
+subplot(2,3,5)
+plot_pair_graph(cell2mat(cent_in(:,1)),cell2mat(cent_in(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('centrality')
+set(gca,'position',gcapos);
+legend off; box off
+
+suptitle('stim')
+saveas(gcf,[fig_path 'opto_spont_graph_prop_stim_network_unnormalized_on.pdf']);
+
+%% nostim network
+figure; set(gcf,'color','w','position',[2006 320 691 425])
+
+% density
+boxwd = 0.2;
+subplot(2,3,1);hold on;
+dens_pre = cell2mat(dens_out(:,1)')*100;
+h = boxplot(dens_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
+setBoxStyle(h,linew);
+dens_post = cell2mat(dens_out(:,2)')*100;
+h = boxplot(dens_post,'positions',2*stepsz,'width',boxwd,'colors',mycc.blue);
+set(h(7,:),'visible','off')
+setBoxStyle(h,linew);
+xlim([0 3*stepsz]);
+ylim([min([dens_pre,dens_post])-0.02 max([dens_pre,dens_post])]+0.02)
+gcapos = get(gca,'position');
+ylabel('density (%)')
+set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
+set(gca,'position',gcapos);
+box off
+
+% edge pot sum
+subplot(2,3,2)
+plot_pair_graph(cell2mat(ep_sum_out(:,1)),cell2mat(ep_sum_out(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('rank');
+set(gca,'position',gcapos);
+legend off; box off
+
+% node degree
+subplot(2,3,3)
+plot_pair_graph(cell2mat(ndeg_out(:,1)),cell2mat(ndeg_out(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('node degree')
+set(gca,'position',gcapos);
+legend off; box off
+
+% lcc
+subplot(2,3,4)
+plot_pair_graph(cell2mat(lcc_out(:,1)),cell2mat(lcc_out(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('clustering coeff')
+set(gca,'position',gcapos);
+legend off; box off
+
+% centrality
+subplot(2,3,5)
+plot_pair_graph(cell2mat(cent_out(:,1)),cell2mat(cent_out(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('centrality')
+set(gca,'position',gcapos);
+legend off; box off
+
+suptitle('no stim')
+saveas(gcf,[fig_path 'opto_spont_graph_prop_nostim_network_unnormalized_on.pdf']);
 
 
 end

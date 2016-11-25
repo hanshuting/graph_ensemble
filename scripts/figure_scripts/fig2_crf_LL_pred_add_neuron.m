@@ -46,7 +46,7 @@ for n = 1:num_expt
     load([data_path expt_name{n} '\Pks_Frames.mat']);
     best_model = load([model_path expt_name{n} '_' expt_ee ...
         '_loopy_best_model_' ge_type '.mat']);
-    num_stim = length(unique(vis_stim))-1;
+    num_stim = length(setdiff(vis_stim,0));
     num_node = size(best_model.graph,1)-num_stim;
     num_frame = length(Pks_Frame);
     num_frame_full = size(Spikes,2);
@@ -55,7 +55,7 @@ for n = 1:num_expt
     
     % plot model with secondary connections
     plotHighlightSecondOrder(best_model.graph,Coord_active,num_stim);
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} 'second_order_ensemble.pdf'])
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_second_order_ensemble.pdf'])
     
     % find ensembles
     ens = cell(num_stim,1);
@@ -123,7 +123,8 @@ for n = 1:num_expt
     pred_mat = zeros(num_stim,num_frame);
     pred_mat_full = zeros(num_stim,num_frame_full);
     for ii = 1:num_stim
-        true_label = vis_stim_high==ii;
+        pred = reshape(pred,[],1);
+        true_label = reshape(vis_stim_high==ii,[],1);
         TP = sum(pred==ii & true_label==1);
         TN = sum(pred~=ii & true_label==0);
         FP = sum(pred==ii & true_label==0);
@@ -229,6 +230,8 @@ xlim([0.5 2]); ylim([-1.5 1.5])
 set(gca,'xcolor','w');
 ylabel('LL')
 box off
+pval = ranksum(pred_mLL{1,1},pred_mLL{1,2});
+title(num2str(pval));
 
 % accuracy
 subplot(1,4,2); hold on
@@ -240,6 +243,8 @@ xlim([0.5 2]); ylim([0 1])
 set(gca,'xcolor','w');
 ylabel('Accuracy')
 box off
+pval = ranksum(pred_stats(1,:,1),pred_stats(2,:,1));
+title(num2str(pval));
 
 % precision
 subplot(1,4,3); hold on
@@ -251,6 +256,8 @@ xlim([0.5 2]); ylim([0 1])
 set(gca,'xcolor','w');
 ylabel('Precision')
 box off
+pval = ranksum(pred_stats(1,:,3),pred_stats(2,:,3));
+title(num2str(pval));
 
 % recall
 subplot(1,4,4); hold on
@@ -262,6 +269,8 @@ xlim([0.5 2]); ylim([0 1])
 set(gca,'xcolor','w')
 ylabel('Recall')
 box off
+pval = ranksum(pred_stats(1,:,3),pred_stats(2,:,3));
+title(num2str(pval));
 
 print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee '_' ge_type ...
     '_all_pred_stats.pdf'])

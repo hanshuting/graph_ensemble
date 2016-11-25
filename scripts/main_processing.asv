@@ -4,9 +4,18 @@ rng(1000);
 
 %% set parameters
 param = struct();
+
 param.expt_name = {'m21_d2_vis','m37_d2'};
 param.ee = {{'all_high'},{'all_high'}};
-param.num_stim = [2,1];
+% param.expt_name = {'pa_511510855_1_TF1','pa_511510650_1_TF1','pa_511507650_1_TF1',...
+%     'pa_511509529_1_TF1','pa_511510670_1_TF1'};
+% param.ee = {{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'}};
+param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
+    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
+param.ee = {{'all_high'},{'all_high'},{'vis_high'},{'vis_high'},{'vis_high'},...
+    {'vis_high'},{'vis_high'}};
+
+% param.num_stim = [2,1];
 param.ge_type = 'full'; % 'full', 'on', 'thresh'
 param.savestr = ''; % 'add neuron'
 
@@ -101,35 +110,23 @@ randGraphMC(param);
 % randGraphCommStats(param)
 
 %% figures
-fig2_crf_LL_pred_add_neuron(param);
-
-fig4_cc_crf_mc_graph_prop(param);
+an_param = param;
+an_param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
+    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
+an_param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high'},{'vis_high'},...
+    {'vis_high'},{'vis_high'}};
+fig2_crf_LL_pred_add_neuron(an_param);
 
 fig5_ensemble_identification_add_neuron_CRFSVD(param);
-fig5_plot_crf_pred_cos_CRFSVD(param);
 
 fig6_ensemble_reduction_add_neuron(param);
 
-%% compare add neuron with no add neuron models
-an_param = param;
-an_param.expt_name = {'m21_d2_vis','m37_d2'};
-an_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neuron'}};
-
-threshCRFgraphs(an_param);
-calcGraphMC(an_param);
-
-figS2_compare_add_neuron(an_param);
-% fig_add_neuron_model_prop(an_param);
-
 %% opto spont data
-% optogenetic experiments
 opto_param = param;
 opto_param.npot_bin_range = -1:0.05:1;
 opto_param.epot_bin_range = -1:0.05:1;
 opto_param.expt_name = {'m23_d1_opto_corrected'};
 opto_param.ee = {{'high_pre_add_neuron','high_post_add_neuron'}};
-
-threshCRFgraphs(opto_param);
 
 fig8_opto_spont(opto_param);
 
@@ -141,27 +138,28 @@ opto_stim_param.expt_name = {'m52_d1_opto'};
 opto_stim_param.ee = {{'high_all_add_neuron'}};
 opto_stim_param.ndeg_quant = 0.2;
 
-threshCRFgraphs(opto_stim_param);
-
 fig7_opto_stim(opto_stim_param);
 
 %% supplementary figures
 % PA dataset
 pa_param = param;
-pa_param.expt_name = {'pa_511510718_TF1'};
-pa_param.ee = {{'vis_high_add_neuron'}};
-pa_param.test = {{'pa_511510718_TF1_vis_high','pa_511510718_TF2_vis_high',...
-    'pa_511510718_TF4_vis_high','pa_511510718_TF8_vis_high','pa_511510718_TF15_vis_high'}};
+pa_param.expt_name = {'pa_511510855_1_TF1','pa_511507650_1_TF1',...
+    'pa_511510650_1_TF1'};
+pa_param.ee = {'vis_high_add_neuron','vis_high_add_neuron',...
+    'vis_high_add_neuron'};
 pa_param.tf_seq = [1,2,4,8,15];
+for n = 1:length(pa_param.expt_name)
+    for m = 1:length(pa_param.tf_seq)
+        pa_param.test{n}{m} = [pa_param.expt_name{n}(1:end-5) '23_TF' num2str(pa_param.tf_seq(m))...
+             '_vis_high'];
+    end
+end
 pa_param.qnoise = 0.5;
-figS1_pa_whole_model(pa_param);
 figS1_pa_whole_model_TF(pa_param);
-figS1_pa_pred(pa_param);
 
-% 
-figS2_cc_pred(param);
-figS3_OSI_pred(param);
-figS5_graph_core(param);
+
+% compare CRF, SVD, OSI
+figS2_SVD_OSI_pred(param);
 
 % compare base model and hidden node model
 cmp_param = param;
@@ -169,5 +167,15 @@ cmp_param.expt_name = {'m21_d2_vis','m37_d2'};
 cmp_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neuron'}};
 figS2_compare_add_neuron(cmp_param);
 
+% compare number of neurons
+nn_param = param;
+nn_param.expt_name = {'m21_d2_vis'};
+nn_param.ee = {{'all_high','all_high_first_half_rand','all_high_second_half_rand'}};
+% nn_param.ee = {{'all_high','all_high_first_half_seq','all_high_second_half_seq'}};
+fig_cmp_neuron_num(nn_param);
 
-
+nn_param = param;
+nn_param.expt_name = {'m21_d2_vis'};
+nn_param.ee = {{'all_high'}};
+nn_param.rand_perc = 0.2:0.2:1;
+gnReduceData(nn_param);

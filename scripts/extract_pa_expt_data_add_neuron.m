@@ -35,7 +35,7 @@ for n = 1:length(ecid)
     Coord_active = coords;
     save([spath sname '_TF1.mat'],'Spikes','vis_stim','pkframe','Coord_active');
     save([spath 'coords.mat'],'Coord_active');
-    %     save([spath 'Pks_Frame.mat'],'Pks_Frame');
+    save([spath 'Pks_Frames.mat'],'Pks_Frame');
 
     % add neuron data
     data = Spikes_all(:,tf==1&high_vec)';
@@ -65,10 +65,10 @@ for n = 1:length(ecid)
     vis_stim = vis_stim_all(1:expt1);
     vis_stim = vis_stim(tf(1:expt1)==1);
     pkframe = high_vec(1:expt1);
-    Pks_Frame = pkframe;
     pkframe = find(pkframe(tf(1:expt1)==1));
+    Pks_Frame = pkframe;
     save([spath sname '_1_TF1.mat'],'Spikes','vis_stim','pkframe','Coord_active');
-    save([spath 'Pks_Frame.mat'],'Pks_Frame');
+    save([spath 'Pks_Frames.mat'],'Pks_Frame');
     save([spath 'coords.mat'],'Coord_active');
 
     % add neuron data

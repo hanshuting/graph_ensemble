@@ -4,9 +4,18 @@ rng(1000);
 
 %% set parameters
 param = struct();
+
 param.expt_name = {'m21_d2_vis','m37_d2'};
 param.ee = {{'all_high'},{'all_high'}};
-param.num_stim = [2,1];
+% param.expt_name = {'pa_511510855_1_TF1','pa_511510650_1_TF1','pa_511507650_1_TF1',...
+%     'pa_511509529_1_TF1','pa_511510670_1_TF1'};
+% param.ee = {{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'}};
+param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
+    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
+param.ee = {{'all_high'},{'all_high'},{'vis_high'},{'vis_high'},{'vis_high'},...
+    {'vis_high'},{'vis_high'}};
+
+% param.num_stim = [2,1];
 param.ge_type = 'full'; % 'full', 'on', 'thresh'
 param.savestr = ''; % 'add neuron'
 
@@ -101,9 +110,15 @@ randGraphMC(param);
 % randGraphCommStats(param)
 
 %% figures
-fig2_crf_LL_pred_add_neuron(param);
+an_param = param;
+an_param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
+    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
+an_param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'},{'vis_high_add_neuron'},...
+    {'vis_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
+    {'vis_high_add_neuron'}};
+fig2_crf_LL_pred_add_neuron(an_param);
 
-fig2_ensemble_identification(param);
+fig5_ensemble_identification_add_neuron_CRFSVD(param);
 
 fig6_ensemble_reduction_add_neuron(param);
 
@@ -153,4 +168,15 @@ cmp_param.expt_name = {'m21_d2_vis','m37_d2'};
 cmp_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neuron'}};
 figS2_compare_add_neuron(cmp_param);
 
-
+% compare number of neurons
+% nn_param = param;
+% nn_param.expt_name = {'m21_d2_vis'};
+% nn_param.ee = {{'all_high','all_high_first_half_rand','all_high_second_half_rand'}};
+% % nn_param.ee = {{'all_high','all_high_first_half_seq','all_high_second_half_seq'}};
+% fig_cmp_neuron_num(nn_param);
+nn_param = param;
+nn_param.expt_name = {'m21_d2_vis'};
+nn_param.ee = {{'all_high'}};
+nn_param.rand_perc = 0.2:0.2:0.8;
+gnReduceData(nn_param);
+fig_cmp_neuron_num(nn_param);
