@@ -1,0 +1,80 @@
+
+
+SECTION: Summary:
+
+"However, CRF's application to infer the functional connectivity of biological neural networks..." -> 
+"However, the application of CRFs to infer the functional connectivity of biological neural networks..."
+
+
+SECTION: Introduction:
+
+"However, how the activation of specific groups of neurons relate to the function of cortical microcircuits has been difficult to elucidate because it requires the identification of single cells that can be targeted during close-loop optogenetic experiments, allowing the manipulation of learned behavioral tasks." ->
+"However, how the activation of specific groups of neurons relate to the function of cortical microcircuits has been difficult to elucidate. This is partly because it requires the identification of single cells that can be targeted during close-loop optogenetic experiments, potentially under interventional manipulation of learned behavioral tasks."
+
+
+
+SECTION: Results: Functional connectivity inference from calcium imaging population data using CRFs:
+
+"CRFs can accurately describe the conditional distribution with complex dependencies in observation variables." ->
+"CRFs can accurately describe the conditional distribution with arbitrary interdependencies between observed variables. Meanwhile, the graphical model structure itself is used to constrain the interdependencies between the labels in potentially elaborate ways."
+
+
+"To obtain the probability estimation to observe different network states based on observed population vectors" ->
+"To estimate the probability of different network states from observed population vectors."
+
+"These parameters reflect the likelihood of individual values on each node and edge." -> "These parameters are also known as potential functions and reflect the scores of individual values on each node and edge."
+
+"Using part of the observation data, we obtained the model parameters and performed cross-validation on withheld data." ->
+"Using part of the observation data, we estimate model parameters and perform cross-validation on held-out data."
+
+"Therefore, the normalized product of the corresponding nodes and edge potentials describes the likelihood of the neuronal population that has a specific activation pattern."
+-> "The final normalized product of the corresponding nodes and edge potentials describes the likelihood that the neuronal population exhibits a specific activation pattern."
+
+
+
+"To integrate the information of external stimulus with the observed data, we added a node for each presented stimulus, and set it to ‘1’ when the corresponding stimulus was on and ‘0’ when the stimulus was off"
+-> "To integrate information about the external stimulus along with the observed neuronal data, we added an additional node for each type of stimulus that was presented to the animal. This node was set to ‘1’ when the corresponding stimulus was on and ‘0’ when the stimulus was off"
+
+"The general properties of CRF models obtained with added nodes" ->
+"The general and mathematical properties of CRF models obtained with added nodes"
+
+
+SECTION: Identification of optimal cortical ensembles from CRFs:
+
+"The classifier nature of CRFs provides a convenient way of defining optimal cortical ensembles." ->
+"The classification objective of CRFs (which strictly generalize logistic regression) provides a convenient way of defining optimal cortical ensembles."
+
+
+SECTION: CRFs capture changes in cortical dynamics induced by circuit reconfiguration:
+
+"given set of neurons for several times, a maneuver that build new networks in the brain"->
+given set of neurons for several times, a maneuver that builds new networks in the brain"
+
+"has been added to the cortical microcircuit but preserving a balance with the overall network structure" -> 
+"has been added to the cortical microcircuit but preserving a balance with the overall network structure"
+
+
+SECTION: CRFs for identification of neuronal ensembles
+
+"The generative nature of these models renders their ability to integrate complex dependencies between variables." ->
+"The generative nature of these models restricts their ability to model arbitrary dependencies between observed variables."
+
+"Therefore, CRFs are ideal for modeling functional connectivity and for identifying optimal cortical ensembles." ->
+"Therefore, CRFs are promising for modeling functional connectivity and for identifying optimal cortical ensembles."
+
+
+"Thus CRFs can be applied to datasets with hundreds of interconnected neurons." ->
+"Thus, CRFs can be applied to datasets with thousands of interconnected neurons."
+
+"One reason could be that the current CRF learning algorithm executes separately the structure learning and parameter learning steps." ->
+"One reason could be that current CRF learning algorithms separately perform the structure learning and parameter learning steps."
+
+"Additionally, approximations in parameter inference also does not guarantee global optimal." ->
+"Additionally, approximations during the parameter learning step can sometimes compromise the global optimality guarantees."
+
+"can be extracted from multidimensional arrays performing singular value decomposition (SVD)" ->
+"can be extracted from multidimensional arrays by performing singular value decomposition (SVD)"
+
+"it lacks from a structured model that allows the systematic study of changes in functional connectivity" ->
+"it lacks a structure model that allows the systematic study of changes in functional connectivity" ->
+

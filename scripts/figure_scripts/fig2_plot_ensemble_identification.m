@@ -1,23 +1,18 @@
 function [] = fig2_plot_ensemble_identification(param)
+% identify ensembles by switching on and off each neuron
 
 % parameters
 expt_name = param.expt_name;
 ee = param.ee;
-num_shuff = param.num_shuff;
-k = param.k;
 p = param.p;
 ge_type = param.ge_type;
 data_path = param.data_path;
 fig_path = param.fig_path.ens;
-save_path = param.result_path.stats_path;
 result_path_base = param.result_path_base;
-savestr = param.savestr;
 ccode_path = param.ccode_path;
 rwbmap = param.rwbmap;
-OSI_thresh = param.OSI_thresh;
 num_expt = length(expt_name);
 linew = param.linew;
-mc_minsz = param.mc_minsz;
 
 qnoise = 0.7;
 
@@ -65,7 +60,7 @@ for n = 1:num_expt
             end
         end
     end
-       
+    
     % predict each neuron in turn
     LL_frame = zeros(num_node,num_frame,2);
     for ii = 1:num_node
@@ -81,6 +76,16 @@ for n = 1:num_expt
     end
     LL_on = squeeze(LL_frame(:,:,2)-LL_frame(:,:,1));
     
+    % AUC
+    auc = zeros(num_node,num_stim);
+    for ii = 1:num_stim
+        true_label = double(vis_stim_high==ii)';
+        for jj = 1:num_node
+            [~,~,~,auc(jj,ii)] = perfcurve(true_label,LL_frame(ii,:,1)-LL_frame(ii,:,2),1);
+        end
+    end
+    
+    % threshold and count
     thr = zeros(num_node,1);
     LL_pred = nan(num_node,num_frame);
     for ii = 1:num_node

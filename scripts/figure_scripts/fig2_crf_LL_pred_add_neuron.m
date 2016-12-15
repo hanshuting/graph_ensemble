@@ -1,10 +1,9 @@
 function [] = fig2_crf_LL_pred_add_neuron(param)
+% THIS VERSION ONLY WORKS FOR 2 STIMULI
 
 % parameters
 expt_name = param.expt_name;
 ee = param.ee;
-num_shuff = param.num_shuff;
-k = param.k;
 p = param.p;
 ge_type = param.ge_type;
 data_path = param.data_path;
@@ -14,7 +13,6 @@ result_path_base = param.result_path_base;
 savestr = param.savestr;
 ccode_path = param.ccode_path;
 rwbmap = param.rwbmap;
-OSI_thresh = param.OSI_thresh;
 num_expt = length(expt_name);
 linew = param.linew;
 
@@ -27,6 +25,8 @@ load(rwbmap);
 pred_mLL = cell(num_expt,1);
 pred_stats = zeros(2,num_expt,3);
 thr = zeros(num_expt,1);
+scores = cell(num_expt,2);
+label = cell(num_expt,2);
 
 % cos_sim = {};
 % cos_sim_avg = [];
@@ -34,8 +34,7 @@ thr = zeros(num_expt,1);
 % pred = {};
 % pred_stats = [];
 
-%%
-expt_count = 0;
+%% process each experiment
 for n = 1:num_expt
     
     expt_ee = ee{n}{1};
@@ -57,7 +56,7 @@ for n = 1:num_expt
     plotHighlightSecondOrder(best_model.graph,Coord_active,num_stim);
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_second_order_ensemble.pdf'])
     
-    % find ensembles
+    % find second order ensembles
     ens = cell(num_stim,1);
     for ii = 1:num_stim
         fo = setdiff(find(best_model.graph(num_node+ii,:)),num_node+ii:num_node+num_stim)';
@@ -68,7 +67,7 @@ for n = 1:num_expt
         ens{ii} = [unique([reshape(unique(cell2mat(so)),[],1);fo]);num_node+ii];
     end
     
-%     % prediction
+%     % prediction with cosine similarity
 %     pred_mat = [];
 %     for ii = 1:num_stim
 %         expt_count = expt_count+1;
@@ -89,7 +88,7 @@ for n = 1:num_expt
 %     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
 %         expt_ee '_' ge_type '_all_pred_raster.pdf'])
     
-    % prediction
+    % calculate likelihood difference
     LL_frame = zeros(num_frame,num_stim);
     for ii = 1:num_frame
         for jj = 1:num_stim
@@ -137,6 +136,12 @@ for n = 1:num_expt
         pred_mat_full(ii,Pks_Frame) = pred==ii;
     end
     
+    % collect scores for ROC
+    scores{n,1} = LLs;
+    scores{n,2} = -LLs;
+    label{n,1} = reshape(vis_stim_high==1,[],1);
+    label{n,2} = reshape(vis_stim_high==2,[],1);
+    
     % plot prediction
     plot_pred_raster(pred_mat_full,vis_stim,cmap);
 %     plot_pred_raster(pred_mat,vis_stim_high,cmap);
@@ -160,55 +165,25 @@ for n = 1:num_expt
     
 end
 
-% %% plot stats
-% figure;
-% set(gcf,'color','w','position',[2038 520 778 221]);
-% set(gcf,'paperpositionmode','auto')
-% 
-% stepsz = 0.5;
-% binsz = 0.1;
-% ww = 0.2;
-% 
-% % mean sim value
-% subplot(1,4,1); hold on
-% scatter((stepsz-binsz)*ones(size(cos_sim_avg(:,1))),cos_sim_avg(:,1),30,mycc.gray,'+','linewidth',linew);
-% scatter((stepsz+binsz)*ones(size(cos_sim_avg(:,2))),cos_sim_avg(:,2),30,mycc.black,'+','linewidth',linew);
-% plot([(stepsz-binsz)*ones(size(cos_sim_avg(:,1))),(stepsz+binsz)*ones(size(cos_sim_avg(:,1)))]',...
-%     cos_sim_avg','color',mycc.gray);
-% plot([stepsz-binsz*1.5,stepsz-binsz*0.5],nanmean(cos_sim_avg(:,1))*ones(2,1),'color',...
-%     mycc.black,'linewidth',3*linew);
-% plot([stepsz+binsz*0.5,stepsz+binsz*1.5],nanmean(cos_sim_avg(:,2))*ones(2,1),'color',...
-%     mycc.black,'linewidth',3*linew);
-% xlim([0.2 2*stepsz-0.2])
-% ylabel('Similarity')
-% 
-% % accuracy
-% subplot(1,4,2); hold on
-% h = boxplot(pred_stats(:,1),'positions',stepsz,'width',ww,'colors',mycc.black);
-% setBoxStyle(h,linew)
-% xlim([0 2*stepsz]); ylim([0 1])
-% ylabel('Accuracy')
-% box off
-% 
-% % precision
-% subplot(1,4,3); hold on
-% h = boxplot(pred_stats(:,2),'positions',stepsz,'width',ww,'colors',mycc.black);
-% setBoxStyle(h,linew)
-% xlim([0 2*stepsz]); ylim([0 1])
-% ylabel('Precision')
-% box off
-% 
-% % recall
-% subplot(1,4,4); hold on
-% h = boxplot(pred_stats(:,3),'positions',stepsz,'width',ww,'colors',mycc.black);
-% setBoxStyle(h,linew)
-% xlim([0 2*stepsz]); ylim([0 1])
-% set(gca,'xtick',[1,2]*stepsz);
-% ylabel('Recall')
-% box off
-% 
-% print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee '_' ge_type ...
-%     '_all_pred_stats.pdf'])
+%% ROC curve
+figure;set(gcf,'color','w','position',[2801 517 248 225])
+hold on
+
+% individual curve
+auc = zeros(num_expt,2);
+for ii = 1:num_expt
+    auc(ii,1) = plotROCmultic(label{ii,1},scores{ii,1},1,mycc.red_light,linew);
+    auc(ii,2) = plotROCmultic(label{ii,2},scores{ii,2},1,mycc.blue_light,linew);
+end
+
+% mean curve
+plotROCmultic(cell2mat(label(:,1)),cell2mat(scores(:,1)),1,mycc.red,3*linew);
+plotROCmultic(cell2mat(label(:,2)),cell2mat(scores(:,2)),1,mycc.blue,3*linew);
+
+set(gca,'linewidth',linew)
+legend('off')
+
+saveas(gcf,[fig_path expt_ee '_' ge_type '_roc.pdf'])
 
 %% plot stats
 figure;
@@ -233,8 +208,21 @@ box off
 pval = ranksum(pred_mLL{1,1},pred_mLL{1,2});
 title(num2str(pval));
 
+% AUC
+subplot(1,5,2); hold on
+h = boxplot(auc(:,1),'positions',1,'width',ww,'colors',mycc.red);
+setBoxStyle(h,linew)
+h = boxplot(auc(:,2),'positions',1.5,'width',ww,'colors',mycc.blue);
+setBoxStyle(h,linew)
+xlim([0.5 2]); ylim([0 1])
+ylabel('AUC')
+set(gca,'xcolor','w')
+box off
+pval = ranksum(pred_stats(1,:,1),pred_stats(2,:,1));
+title(num2str(pval));
+
 % accuracy
-subplot(1,4,2); hold on
+subplot(1,5,3); hold on
 h = boxplot(pred_stats(1,:,1),'positions',1,'width',ww,'colors',mycc.red);
 setBoxStyle(h,linew)
 h = boxplot(pred_stats(2,:,1),'positions',1.5,'width',ww,'colors',mycc.blue);
@@ -247,7 +235,7 @@ pval = ranksum(pred_stats(1,:,1),pred_stats(2,:,1));
 title(num2str(pval));
 
 % precision
-subplot(1,4,3); hold on
+subplot(1,5,4); hold on
 h = boxplot(pred_stats(1,:,2),'positions',1,'width',ww,'colors',mycc.red);
 setBoxStyle(h,linew)
 h = boxplot(pred_stats(2,:,2),'positions',1.5,'width',ww,'colors',mycc.blue);
@@ -260,7 +248,7 @@ pval = ranksum(pred_stats(1,:,3),pred_stats(2,:,3));
 title(num2str(pval));
 
 % recall
-subplot(1,4,4); hold on
+subplot(1,5,5); hold on
 h = boxplot(pred_stats(1,:,3),'positions',1,'width',ww,'colors',mycc.red);
 setBoxStyle(h,linew)
 h = boxplot(pred_stats(2,:,3),'positions',1.5,'width',ww,'colors',mycc.blue);

@@ -30,6 +30,7 @@ cos_sim_avg = [];
 cos_thresh = [];
 pred = {};
 pred_stats = [];
+true_label = {};
 
 sample_step = 0.1;
 num_rand = 100;
@@ -83,7 +84,7 @@ for n = 1:length(expt_name)
     for ss = 1:num_stim
         
         expt_count = expt_count+1;
-        true_label = double(vis_stim_high==ss)';
+        true_label{expt_count} = double(vis_stim_high==ss)';
         
         crf_osi = intersect(core_crf{ss},core_osi{ss});
         num_cell(expt_count) = size(Spikes,1);
@@ -94,11 +95,13 @@ for n = 1:length(expt_name)
         % prediction
         % crf
         [pred.crf{expt_count},cos_sim.crf{expt_count},cos_thresh.crf(expt_count),...
-            cos_sim_avg.crf(expt_count,:),acc,prc,rec] = core_cos_sim(core_crf{ss},data_high,true_label);
+            cos_sim_avg.crf(expt_count,:),acc,prc,rec] = core_cos_sim(core_crf{ss},...
+            data_high,true_label{expt_count});
         pred_stats.crf(expt_count,:) = [acc,prc,rec];
         % osi
         [pred.osi{expt_count},cos_sim.osi{expt_count},cos_thresh.osi(expt_count),...
-            cos_sim_avg.osi(expt_count,:),acc,prc,rec] = core_cos_sim(core_osi{ss},data_high,true_label);
+            cos_sim_avg.osi(expt_count,:),acc,prc,rec] = core_cos_sim(core_osi{ss},...
+            data_high,true_label{expt_count});
         pred_stats.osi(expt_count,:) = [acc,prc,rec];
         
         subplot(2,num_stim,ss);
@@ -111,9 +114,11 @@ for n = 1:length(expt_name)
         % randomly take out cores - svd
         if ~isempty(core_svd{ss})
             
+            % deal with experiments where svd can't find an ensemble
             svd_expt_count = svd_expt_count+1;
             svd_indx(end+1) = 1;
             
+            % initialize results
             crf_svd = intersect(core_crf{ss},core_svd{ss});
             num_crf_svd(svd_expt_count) = length(crf_svd);
             num_svd(svd_expt_count) = length(core_svd{ss});
@@ -121,7 +126,7 @@ for n = 1:length(expt_name)
             % svd
             [pred.svd{svd_expt_count},cos_sim.svd{svd_expt_count},...
                 cos_thresh.svd(svd_expt_count),cos_sim_avg.svd(svd_expt_count,:),...
-                acc,prc,rec] = core_cos_sim(core_svd{ss},data_high,true_label);
+                acc,prc,rec] = core_cos_sim(core_svd{ss},data_high,true_label{expt_count});
             pred_stats.svd(svd_expt_count,:) = [acc,prc,rec];
             
             % rand core
@@ -137,7 +142,8 @@ for n = 1:length(expt_name)
                         rand_core = [core_osi{ss};rand_core'];
                     end
                     % predict
-                    [~,~,~,sim_avg,acc,prc,rec] = core_cos_sim(rand_core,data_high,true_label);
+                    [~,~,~,sim_avg,acc,prc,rec] = core_cos_sim(rand_core,...
+                        data_high,true_label{expt_count});
                     msim_pl_all_svd(svd_expt_count,ii,jj,:) = sim_avg;
                     stats_pl_all_svd(svd_expt_count,ii,jj,:) = [acc,prc,rec];
 
@@ -161,7 +167,8 @@ for n = 1:length(expt_name)
                 end
                 
                 % predict
-                [~,~,~,sim_avg,acc,prc,rec] = core_cos_sim(rand_core,data_high,true_label);
+                [~,~,~,sim_avg,acc,prc,rec] = core_cos_sim(rand_core,data_high,...
+                    true_label{expt_count});
                 msim_pl_all_osi(expt_count,ii,jj,:) = sim_avg;
                 stats_pl_all_osi(expt_count,ii,jj,:) = [acc,prc,rec];
                 
@@ -198,7 +205,7 @@ set(gca,'xcolor','w')
 ylabel('cells (%)')
 box off
 
-% overlap
+% plot shared number
 subplot(1,2,2); hold on
 h = boxplot(num_crf_svd./num_crf(svd_indx==1),'positions',stepsz,'width',ww,'colors',mycc.green);
 setBoxStyle(h,linew);
@@ -212,6 +219,34 @@ box off
 
 saveas(gcf,[fig_path expt_ee '_' savestr '_svd_osi_core_nums.pdf'])
 
+%% ROC curve
+figure;set(gcf,'color','w','position',[2801 517 248 225])
+hold on
+
+% individual curves
+svd_count = 0;
+for ii = 1:expt_count
+    [auc.crf(ii),xx.crf{ii},yy.crf{ii}] = plotROCmultic(true_label{ii},...
+        cos_sim.crf{ii}',1,mycc.orange_light,linew);
+    if svd_indx(ii)==1
+        svd_count = svd_count+1;
+        [auc.svd(svd_count),xx.svd{svd_count},yy.svd{svd_count}] = plotROCmultic...
+            (true_label{ii},cos_sim.svd{svd_count}',1,mycc.green_light,linew);
+    end
+    [auc.osi(ii),xx.osi{ii},yy.osi{ii}] = plotROCmultic(true_label{ii},...
+        cos_sim.osi{ii}',1,mycc.gray_light,linew);
+end
+
+% average curve
+plotROCmultic(cell2mat(true_label),cell2mat(cos_sim.crf)',1,mycc.orange,3*linew);
+plotROCmultic(cell2mat(true_label(svd_indx==1)),cell2mat(cos_sim.svd)',1,mycc.green,3*linew);
+plotROCmultic(cell2mat(true_label),cell2mat(cos_sim.osi)',1,mycc.gray,3*linew);
+
+set(gca,'linewidth',linew)
+legend('off')
+
+saveas(gcf,[fig_path expt_ee '_' savestr '_svd_osi_roc_curve.pdf'])
+
 %% plot stats
 figure;
 set(gcf,'color','w','position',[2038 520 778 221]);
@@ -222,7 +257,7 @@ binsz = 0.1;
 ww = 0.2;
 
 % mean sim value
-subplot(1,4,1); hold on
+subplot(1,5,1); hold on
 scatter((stepsz-binsz)*ones(size(cos_sim_avg.crf(:,1))),cos_sim_avg.crf(:,1),...
     30,mycc.orange_light,'+','linewidth',linew);
 scatter((stepsz+binsz)*ones(size(cos_sim_avg.crf(:,2))),cos_sim_avg.crf(:,2),...
@@ -260,8 +295,21 @@ xlim([0.2 4*stepsz-0.2])
 set(gca,'xcolor','w')
 ylabel('Similarity')
 
+% AUC
+subplot(1,5,2); hold on
+h = boxplot(auc.crf,'positions',stepsz,'width',ww,'colors',mycc.orange);
+setBoxStyle(h,linew)
+h = boxplot(auc.svd,'positions',2*stepsz,'width',ww,'colors',mycc.green);
+setBoxStyle(h,linew)
+h = boxplot(auc.osi,'positions',3*stepsz,'width',ww,'colors',mycc.gray);
+setBoxStyle(h,linew)
+xlim([0 4*stepsz]); ylim([0 1])
+ylabel('AUC')
+set(gca,'xcolor','w')
+box off
+
 % accuracy
-subplot(1,4,2); hold on
+subplot(1,5,3); hold on
 h = boxplot(pred_stats.crf(:,1),'positions',stepsz,'width',ww,'colors',mycc.orange);
 setBoxStyle(h,linew)
 h = boxplot(pred_stats.svd(:,1),'positions',2*stepsz,'width',ww,'colors',mycc.green);
@@ -274,7 +322,7 @@ set(gca,'xcolor','w')
 box off
 
 % precision
-subplot(1,4,3); hold on
+subplot(1,5,4); hold on
 h = boxplot(pred_stats.crf(:,2),'positions',stepsz,'width',ww,'colors',mycc.orange);
 setBoxStyle(h,linew)
 h = boxplot(pred_stats.svd(:,2),'positions',2*stepsz,'width',ww,'colors',mycc.green);
@@ -287,7 +335,7 @@ set(gca,'xcolor','w')
 box off
 
 % recall
-subplot(1,4,4); hold on
+subplot(1,5,5); hold on
 h = boxplot(pred_stats.crf(:,3),'positions',stepsz,'width',ww,'colors',mycc.orange);
 setBoxStyle(h,linew)
 h = boxplot(pred_stats.svd(:,3),'positions',2*stepsz,'width',ww,'colors',mycc.green);

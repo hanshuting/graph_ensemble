@@ -10,10 +10,10 @@ param.ee = {{'all_high'},{'all_high'}};
 % param.expt_name = {'pa_511510855_1_TF1','pa_511510650_1_TF1','pa_511507650_1_TF1',...
 %     'pa_511509529_1_TF1','pa_511510670_1_TF1'};
 % param.ee = {{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'}};
-param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
-    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
-param.ee = {{'all_high'},{'all_high'},{'vis_high'},{'vis_high'},{'vis_high'},...
-    {'vis_high'},{'vis_high'}};
+% param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
+%     'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
+% param.ee = {{'all_high'},{'all_high'},{'vis_high'},{'vis_high'},{'vis_high'},...
+%     {'vis_high'},{'vis_high'}};
 
 % param.num_stim = [2,1];
 param.ge_type = 'full'; % 'full', 'on', 'thresh'
@@ -48,6 +48,7 @@ param.rwbmap = [param.result_path_base '\rwbmap.mat']; % red white blue map
 param.graymap = [param.result_path_base '\graymap.mat']; % gray map
 param.bluemap = [param.result_path_base '\bluemap.mat']; % blue map
 param.redmap = [param.result_path_base '\redmap.mat']; % red map
+param.redmap_light = [param.result_path_base '\redmap_light.mat']; % lighter red map
 param.four_stim_cmap = [param.result_path_base '\four_stim_cmap.mat']; % four colors
 
 param.OSI_thresh = 0.7;
@@ -111,11 +112,8 @@ randGraphMC(param);
 
 %% figures
 an_param = param;
-an_param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
-    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
-an_param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'},{'vis_high_add_neuron'},...
-    {'vis_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
-    {'vis_high_add_neuron'}};
+an_param.expt_name = {'m21_d2_vis','m37_d2'};
+an_param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'}};
 fig2_crf_LL_pred_add_neuron(an_param);
 
 fig5_ensemble_identification_add_neuron_CRFSVD(param);
@@ -124,8 +122,7 @@ fig6_ensemble_reduction_add_neuron(param);
 
 %% opto spont data
 opto_param = param;
-opto_param.npot_bin_range = -1:0.05:1;
-opto_param.epot_bin_range = -1:0.05:1;
+opto_param.ndeg_bin_range = 0.02:0.02:0.12;
 opto_param.expt_name = {'m23_d1_opto_corrected'};
 opto_param.ee = {{'high_pre_add_neuron','high_post_add_neuron'}};
 
@@ -144,10 +141,10 @@ fig7_opto_stim(opto_stim_param);
 %% supplementary figures
 % PA dataset
 pa_param = param;
-pa_param.expt_name = {'pa_511510855_1_TF1','pa_511507650_1_TF1',...
-    'pa_511510650_1_TF1'};
-pa_param.ee = {'vis_high_add_neuron','vis_high_add_neuron',...
-    'vis_high_add_neuron'};
+pa_param.expt_name = {'pa_511510855_1_TF1','pa_511510650_1_TF1',...
+    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
+pa_param.ee = {{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
+    {'vis_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high_add_neuron'}};
 pa_param.tf_seq = [1,2,4,8,15];
 for n = 1:length(pa_param.expt_name)
     for m = 1:length(pa_param.tf_seq)

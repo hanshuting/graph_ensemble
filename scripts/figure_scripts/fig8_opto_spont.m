@@ -15,71 +15,57 @@ linew = param.linew;
 p = param.p;
 
 ndeg_bin_range = param.ndeg_bin_range;
-lcc_bin_range = param.lcc_bin_range;
-cent_bin_range = param.cent_bin_range;
-mc_sz_bin_range = param.mc_sz_bin_range;
 
 load(ccode_path);
 graymap = load(param.graymap); % variable: cmap
 bmap = load(param.bluemap); % variable: cmap
 
 %% initialize
-ndeg = cell(length(expt_name),2);
-ndeg_in = cell(length(expt_name),2);
-ndeg_out = cell(length(expt_name),2);
-ndeg_cum = cell(length(expt_name),2);
-ndeg_in_cum = cell(length(expt_name),2);
+num_expt = length(expt_name);
 
-dens = cell(length(expt_name),2);
-dens_in = cell(length(expt_name),2);
-dens_out = cell(length(expt_name),2);
+ndeg = cell(num_expt,2);
+ndeg_in = cell(num_expt,2);
+ndeg_out = cell(num_expt,2);
 
-lcc = cell(length(expt_name),2);
-lcc_in = cell(length(expt_name),2);
-lcc_out = cell(length(expt_name),2);
-lcc_cum = cell(length(expt_name),2);
-lcc_in_cum = cell(length(expt_name),2);
+ndeg_dist = zeros(num_expt,length(ndeg_bin_range),2);
+ndeg_in_dist = zeros(num_expt,length(ndeg_bin_range),2);
+ndeg_out_dist = zeros(num_expt,length(ndeg_bin_range),2);
 
-cent = cell(length(expt_name),2);
-cent_in = cell(length(expt_name),2);
-cent_out = cell(length(expt_name),2);
-cent_cum = cell(length(expt_name),2);
-cent_in_cum = cell(length(expt_name),2);
+dens = cell(num_expt,2);
+dens_in = cell(num_expt,2);
+dens_out = cell(num_expt,2);
 
-ep_sum = cell(length(expt_name),1);
-ep_sum_in = cell(length(expt_name),1);
-ep_sum_out = cell(length(expt_name),1);
-ep_sum_cum = cell(length(expt_name),1);
+lcc = cell(num_expt,2);
+lcc_in = cell(num_expt,2);
+lcc_out = cell(num_expt,2);
 
-npot_out = cell(length(expt_name),2);
-npot_in = cell(length(expt_name),2);
-npot_out_cum = cell(length(expt_name),2);
-npot_in_cum = cell(length(expt_name),2);
+cent = cell(num_expt,2);
+cent_in = cell(num_expt,2);
+cent_out = cell(num_expt,2);
 
-epot_out = cell(length(expt_name),2);
-epot_in = cell(length(expt_name),2);
-epot_out_cum = cell(length(expt_name),2);
-epot_in_cum = cell(length(expt_name),2);
+ep_sum = cell(num_expt,1);
+ep_sum_in = cell(num_expt,1);
+ep_sum_out = cell(num_expt,1);
 
-% mc_num = zeros(length(expt_name),2);
-% mc_sz = cell(length(expt_name),2);
-% mc_sz_cum = cell(length(expt_name),2);
+% number of edges for high-ranked neurons
+hr_nedge = cell(num_expt,2);
 
 %% collect data from all experiments
-for n = 1:length(expt_name)
+for n = 1:num_expt
     
     expt_ee = param.ee{n};
     model_path = [result_path_base '\' expt_name{n} '\models\']; 
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
     load([data_path expt_name{n} '\Stim_cells.mat']);
-    num_node = size(Spikes,1);
-    num_stim_cell = length(Stim_cells);
-    nostim_cells = setdiff(1:num_node,Stim_cells);
-    num_nostim_cell = num_node-num_stim_cell;
     
     pre_model = load([model_path expt_name{n} '_' expt_ee{1} '_loopy_best_model_' ge_type '.mat']);
     post_model = load([model_path expt_name{n} '_' expt_ee{2} '_loopy_best_model_' ge_type '.mat']);
     post_model.graph = full(post_model.graph);
+    
+    num_node = size(pre_model.graph,1);
+    num_stim_cell = length(Stim_cells);
+    nostim_cells = setdiff(1:num_node,Stim_cells);
+    num_nostim_cell = num_node-num_stim_cell;
     
     % convert to on edges
     pre_model.ep_on = getOnEdgePot(pre_model.graph,pre_model.G)';
@@ -90,7 +76,58 @@ for n = 1:length(expt_name)
     coords(end+1,:) = [0 max(coords(:,2))];
     coords(end+1,:) = [0 0];
     
-    % plot pre and post models
+    %% visualize graph with circle layout, highlight pattern completion neuron
+    [~,hr_indx] = max(sum(post_model.ep_on(Stim_cells,Stim_cells),2));
+    hr_indx = Stim_cells(hr_indx); % 22 
+    nonpt_cell = setdiff(Stim_cells,hr_indx);
+    num_half = round(num_nostim_cell/2); num_half(2) = num_nostim_cell-num_half;
+    sort_indx = [nostim_cells(1:num_half(1)),hr_indx,...
+        nostim_cells(num_half(1)+1:sum(num_half)),nonpt_cell];
+    nodec = zeros(num_node,3);
+    nodec(1:num_half(1),:) = repmat(mycc.gray_light,num_half(1),1);
+    nodec(num_half(1)+1,:) = mycc.blue;
+    nodec(num_half(1)+2:num_nostim_cell+1,:) = repmat(mycc.gray_light,num_half(2),1);
+    nodec(num_nostim_cell+2:end,:) = repmat(mycc.blue,num_stim_cell-1,1);
+    
+    % set pre-model edge colors
+    pre_edge_list = zeros(sum(pre_model.graph(:))/2,2);
+    [pre_edge_list(:,2),pre_edge_list(:,1)] = find(tril(pre_model.graph(sort_indx,sort_indx)));
+    pre_edgec = num2cell(pre_edge_list);
+    for ii = 1:size(pre_edge_list,1)
+        if ismember(pre_edge_list(ii,1),[num_half(1)+1,num_nostim_cell+2:num_node]) && ...
+                ismember(pre_edge_list(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
+            pre_edgec{ii,3} = mycc.blue;
+        else
+            pre_edgec{ii,3} = mycc.gray_light; % NaN
+        end
+    end
+    
+    % set post-model edge colors
+    post_edge_list = zeros(sum(post_model.graph(:))/2,2);
+    [post_edge_list(:,2),post_edge_list(:,1)] = find(tril(post_model.graph(sort_indx,sort_indx)));
+    post_edgec = num2cell(post_edge_list);
+    for ii = 1:size(post_edge_list,1)
+        if ismember(post_edge_list(ii,1),[num_half(1)+1,num_nostim_cell+2:num_node]) && ...
+                ismember(post_edge_list(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
+            post_edgec{ii,3} = mycc.blue;
+        else
+            post_edgec{ii,3} = mycc.gray_light; % NaN;
+        end
+    end
+    
+    % plot
+    figure; set(gcf,'color','w','position',[2022 313 894 372]);
+    subplot(1,2,1); title('pre')
+    visGraphCirc(pre_model.graph(sort_indx,sort_indx),'edgeColor',pre_edgec,...
+        'nodeColor',nodec);
+    subplot(1,2,2); title('post')
+    visGraphCirc(post_model.graph(sort_indx,sort_indx),'edgeColor',post_edgec,...
+        'nodeColor',nodec);
+    
+    print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_circlelayout_' ...
+        ge_type '_stim_neuron.pdf']);
+    
+    %% plot pre and post models
     figure; set(gcf,'color','w','position',[2154 340 941 597])
     cc_range = [min(pre_model.ep_on(:)) max(pre_model.ep_on(:))];
     ep_range = [-1 0.2];
@@ -102,7 +139,12 @@ for n = 1:length(expt_name)
         cc_range,ep_range,bmap.cmap,[]);
     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_ON_unnormalized_' ...
         ge_type '_pre_post_models.pdf']);
-
+    
+    %% graph properties
+    % high-ranked neuron connections
+    hr_nedge{n,1} = sum(pre_model.graph(hr_indx,Stim_cells),2);
+    hr_nedge{n,2} = sum(post_model.graph(hr_indx,Stim_cells),2);
+    
     % edge potential sum
     ep_sum{n,1} = sum(pre_model.ep_on,2);
     ep_sum{n,2} = sum(post_model.ep_on,2);
@@ -110,8 +152,6 @@ for n = 1:length(expt_name)
     ep_sum_in{n,2} = ep_sum{n,2}(Stim_cells);
     ep_sum_out{n,1} = ep_sum{n,1}(nostim_cells);
     ep_sum_out{n,2} = ep_sum{n,2}(nostim_cells);
-%     ep_sum_cum{n,1} = calc_cum_dist(ep_sum{n,1},epsum_bin_range);
-%     ep_sum_cum{n,2} = calc_cum_dist(ep_sum{n,2},epsum_bin_range);
     
     % density
     dens{n,1} = sum(sum(pre_model.graph))/num_node/(num_node-1);
@@ -132,8 +172,20 @@ for n = 1:length(expt_name)
     ndeg_in{n,2} = ndeg{n,2}(Stim_cells);
     ndeg_out{n,1} = ndeg{n,1}(nostim_cells);
     ndeg_out{n,2} = ndeg{n,2}(nostim_cells);
-%     ndeg_cum{n,1} = calc_cum_dist(ndeg{n,1},ndeg_bin_range);
-%     ndeg_cum{n,2} = calc_cum_dist(ndeg{n,2},ndeg_bin_range);
+    
+    % node degree distribution
+    ndeg_dist(n,:,1) = histc(ndeg{n,1},ndeg_bin_range);
+    ndeg_dist(n,:,1) = ndeg_dist(n,:,1)/sum(ndeg_dist(n,:,1));
+    ndeg_dist(n,:,2) = histc(ndeg{n,2},ndeg_bin_range);
+    ndeg_dist(n,:,2) = ndeg_dist(n,:,2)/sum(ndeg_dist(n,:,2));
+    ndeg_in_dist(n,:,1) = histc(ndeg_in{n,1},ndeg_bin_range);
+    ndeg_in_dist(n,:,1) = ndeg_in_dist(n,:,1)/sum(ndeg_in_dist(n,:,1));
+    ndeg_in_dist(n,:,2) = histc(ndeg_in{n,2},ndeg_bin_range);
+    ndeg_in_dist(n,:,2) = ndeg_in_dist(n,:,2)/sum(ndeg_in_dist(n,:,2));
+    ndeg_out_dist(n,:,1) = histc(ndeg_out{n,1},ndeg_bin_range);
+    ndeg_out_dist(n,:,1) = ndeg_out_dist(n,:,1)/sum(ndeg_out_dist(n,:,1));
+    ndeg_out_dist(n,:,2) = histc(ndeg_out{n,2},ndeg_bin_range);
+    ndeg_out_dist(n,:,2) = ndeg_out_dist(n,:,2)/sum(ndeg_out_dist(n,:,2));
     
     % lcc
     lcc{n,1} = local_cluster_coeff(pre_model.graph);
@@ -142,8 +194,6 @@ for n = 1:length(expt_name)
     lcc_in{n,2} = lcc{n,2}(Stim_cells);
     lcc_out{n,1} = lcc{n,1}(nostim_cells);
     lcc_out{n,2} = lcc{n,2}(nostim_cells);
-%     lcc_cum{n,1} = calc_cum_dist(lcc{n,1},lcc_bin_range);
-%     lcc_cum{n,2} = calc_cum_dist(lcc{n,2},lcc_bin_range);
     
     % centrality
     cent{n,1} = eigenvec_centrality(pre_model.graph);
@@ -152,12 +202,61 @@ for n = 1:length(expt_name)
     cent_in{n,2} = cent{n,2}(Stim_cells);
     cent_out{n,1} = cent{n,1}(nostim_cells);
     cent_out{n,2} = cent{n,2}(nostim_cells);
-%     cent_cum{n,1} = calc_cum_dist(cent{n,1},cent_bin_range);
-%     cent_cum{n,2} = calc_cum_dist(cent{n,2},cent_bin_range);
 
 end
 
 save([save_path 'opto_spont_prop.mat'],'-v7.3');
+
+%% distribution of P(k)
+nsz = 5;
+figure;
+subplot(2,3,1); hold on
+for ii = 1:num_expt
+    plot(ndeg_bin_range,ndeg_dist(ii,:,1),'color',mycc.gray,'linewidth',linew);
+    plot(ndeg_bin_range,ndeg_dist(ii,:,2),'color',mycc.blue_light,'linewidth',linew);
+    scatter(ndeg_bin_range,ndeg_dist(ii,:,1),nsz,mycc.gray,'o','filled')
+    scatter(ndeg_bin_range,ndeg_dist(ii,:,2),nsz,mycc.blue_light,'o','filled')
+end
+
+subplot(2,3,2); hold on
+for ii = 1:num_expt
+    plot(ndeg_bin_range,ndeg_in_dist(ii,:,1),'color',mycc.gray,'linewidth',linew);
+    plot(ndeg_bin_range,ndeg_in_dist(ii,:,2),'color',mycc.blue_light,'linewidth',linew);
+    scatter(ndeg_bin_range,ndeg_in_dist(ii,:,1),nsz,mycc.gray,'o','filled')
+    scatter(ndeg_bin_range,ndeg_in_dist(ii,:,2),nsz,mycc.blue_light,'o','filled')
+end
+
+subplot(2,3,3); hold on
+for ii = 1:num_expt
+    plot(ndeg_bin_range,ndeg_out_dist(ii,:,1),'color',mycc.gray,'linewidth',linew);
+    plot(ndeg_bin_range,ndeg_out_dist(ii,:,2),'color',mycc.blue_light,'linewidth',linew);
+    scatter(ndeg_bin_range,ndeg_out_dist(ii,:,1),nsz,mycc.gray,'o','filled')
+    scatter(ndeg_bin_range,ndeg_out_dist(ii,:,2),nsz,mycc.blue_light,'o','filled')
+end
+
+subplot(2,3,4); hold on
+for ii = 1:num_expt
+    plot(log(ndeg_bin_range),log(ndeg_dist(ii,:,1)),'color',mycc.gray,'linewidth',linew);
+    plot(log(ndeg_bin_range),log(ndeg_dist(ii,:,2)),'color',mycc.blue_light,'linewidth',linew);
+    scatter(log(ndeg_bin_range),log(ndeg_dist(ii,:,1)),nsz,mycc.gray,'o','filled')
+    scatter(log(ndeg_bin_range),log(ndeg_dist(ii,:,2)),nsz,mycc.blue_light,'o','filled')
+end
+
+subplot(2,3,5); hold on
+for ii = 1:num_expt
+    plot(log(ndeg_bin_range),log(ndeg_in_dist(ii,:,1)),'color',mycc.gray,'linewidth',linew);
+    plot(log(ndeg_bin_range),log(ndeg_in_dist(ii,:,2)),'color',mycc.blue_light,'linewidth',linew);
+    scatter(log(ndeg_bin_range),log(ndeg_in_dist(ii,:,1)),nsz,mycc.gray,'o','filled')
+    scatter(log(ndeg_bin_range),log(ndeg_in_dist(ii,:,2)),nsz,mycc.blue_light,'o','filled')
+end
+
+subplot(2,3,6); hold on
+for ii = 1:num_expt
+    plot(log(ndeg_bin_range),log(ndeg_out_dist(ii,:,1)),'color',mycc.gray,'linewidth',linew);
+    plot(log(ndeg_bin_range),log(ndeg_out_dist(ii,:,2)),'color',mycc.blue_light,'linewidth',linew);
+    scatter(log(ndeg_bin_range),log(ndeg_out_dist(ii,:,1)),nsz,mycc.gray,'o','filled')
+    scatter(log(ndeg_bin_range),log(ndeg_out_dist(ii,:,2)),nsz,mycc.blue_light,'o','filled')
+end
 
 %% graph properties - whole network
 stepsz = 0.5;
@@ -184,42 +283,42 @@ set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
 set(gca,'position',gcapos);
 box off
 
+% high-ranked neuron connections
+subplot(2,3,2);hold on;
+pp = plot_pair_graph(cell2mat(hr_nedge(:,1)),cell2mat(hr_nedge(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('high-ranked neuron connections'); title(num2str(pp));
+set(gca,'position',gcapos);
+legend off; box off
+
 % edge pot sum
-subplot(2,3,2)
-% plot_opto_spont_cum_hist(ep_sum_cum,mycc,epsum_bin_range,linew);
+subplot(2,3,3)
 pp = plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('rank');ylabel('log(p)');
 ylabel('rank'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % node degree
-subplot(2,3,3)
-% plot_opto_spont_cum_hist(ndeg_cum,mycc,ndeg_bin_range,linew);
+subplot(2,3,4)
 pp = plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('node degree');ylabel('log(p)');
 ylabel('node degree');title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
-subplot(2,3,4)
-% plot_opto_spont_cum_hist(lcc_cum,mycc,lcc_bin_range,linew);
+subplot(2,3,5)
 pp = plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('clustering coeff');ylabel('log(p)');
 ylabel('clustering coeff'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
-subplot(2,3,5)
-% plot_opto_spont_cum_hist(cent_cum,mycc,cent_bin_range,linew);
+subplot(2,3,6)
 pp = plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('centrality');ylabel('log(p)');
 ylabel('centrality'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
