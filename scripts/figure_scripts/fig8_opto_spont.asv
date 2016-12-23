@@ -8,9 +8,6 @@ fig_path = param.fig_path.opto_spont;
 save_path = param.result_path.stats_path;
 result_path_base = param.result_path_base;
 ccode_path = param.ccode_path;
-npot_bin_range = param.npot_bin_range;
-epot_bin_range = param.epot_bin_range;
-epsum_bin_range = param.epsum_bin_range;
 linew = param.linew;
 p = param.p;
 
@@ -19,6 +16,8 @@ ndeg_bin_range = param.ndeg_bin_range;
 load(ccode_path);
 graymap = load(param.graymap); % variable: cmap
 bmap = load(param.bluemap); % variable: cmap
+
+qnoise = 0.7;
 
 %% initialize
 num_expt = length(expt_name);
@@ -66,6 +65,17 @@ for n = 1:num_expt
     num_stim_cell = length(Stim_cells);
     nostim_cells = setdiff(1:num_node,Stim_cells);
     num_nostim_cell = num_node-num_stim_cell;
+    num_neuron = num_node-1; % exclude added node
+    
+    pre_data = load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee{1} '.mat']);
+    pre_data = pre_data.data(:,1:num_neuron);
+    post_data = load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee{2} '.mat']);
+    post_data = post_data.data(:,1:num_neuron);
+    num_frame_pre = size(pre_data,1);
+    num_frame_post = size(post_data,1);
+    
+    load([data_path expt_name{n} '\opto_stim_pre.mat']); % opto_stim_pre
+    load([data_path expt_name{n} '\opto_stim_post.mat']); % opto_stim_post
     
     % convert to on edges
     pre_model.ep_on = getOnEdgePot(pre_model.graph,pre_model.G)';
@@ -98,7 +108,7 @@ for n = 1:num_expt
                 ismember(pre_edge_list(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
             pre_edgec{ii,3} = mycc.blue;
         else
-            pre_edgec{ii,3} = NaN;
+            pre_edgec{ii,3} = mycc.gray_light; % NaN
         end
     end
     
@@ -111,7 +121,7 @@ for n = 1:num_expt
                 ismember(post_edge_list(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
             post_edgec{ii,3} = mycc.blue;
         else
-            post_edgec{ii,3} = NaN;
+            post_edgec{ii,3} = mycc.gray_light; % NaN;
         end
     end
     
@@ -202,10 +212,100 @@ for n = 1:num_expt
     cent_in{n,2} = cent{n,2}(Stim_cells);
     cent_out{n,1} = cent{n,1}(nostim_cells);
     cent_out{n,2} = cent{n,2}(nostim_cells);
-
+    
+    %% plot node strength against lcc
+%     nodesz = 30;
+% 
+%     figure; set(gcf,'color','w','position',[1983 442 339 290])
+%     subplot(1,2,1); hold on
+%     scatter(ep_sum{n,1},lcc{n,1},nodesz,mycc.gray_light,'filled')
+%     scatter(ep_sum{n,1}(hr_indx),lcc{n,1}(hr_indx),nodesz,mycc.red,'filled')
+%     xlabel('node strength'); ylabel('local clustering coeff')
+%     subplot(1,2,2); hold on
+%     scatter(ep_sum{n,2},lcc{n,2},nodesz,mycc.gray_light,'filled')
+%     scatter(ep_sum{n,2}(hr_indx),lcc{n,2}(hr_indx),nodesz,mycc.red,'filled')
+%     xlabel('node strength'); ylabel('local clustering coeff')
+%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_nodestrength_lcc.pdf']);
+    
+    %% predict with model
+    % change single node activity and predict with LL
+    LL_frame_pre = zeros(num_neuron,num_frame_pre,2);
+    LL_frame_post = zeros(num_neuron,num_frame_post,2);
+    for ii = 1:num_neuron
+        for jj = 1:num_frame_pre
+            frame_vec = pre_data(jj,:);
+            frame_vec(ii) = 0;
+            LL_frame_pre(ii,jj,1) = compute_avg_log_likelihood(pre_model.node_pot(1:num_neuron),...
+                pre_model.edge_pot(1:num_neuron,1:num_neuron),pre_model.logZ,frame_vec);
+            frame_vec(ii) = 1;
+            LL_frame_pre(ii,jj,2) = compute_avg_log_likelihood(pre_model.node_pot(1:num_neuron),...
+                pre_model.edge_pot(1:num_neuron,1:num_neuron),pre_model.logZ,frame_vec);
+        end
+        for jj = 1:num_frame_post
+            frame_vec = post_data(jj,:);
+            frame_vec(ii) = 0;
+            LL_frame_post(ii,jj,1) = compute_avg_log_likelihood(post_model.node_pot(1:num_neuron),...
+                post_model.edge_pot(1:num_neuron,1:num_neuron),post_model.logZ,frame_vec);
+            frame_vec(ii) = 1;
+            LL_frame_post(ii,jj,2) = compute_avg_log_likelihood(post_model.node_pot(1:num_neuron),...
+                post_model.edge_pot(1:num_neuron,1:num_neuron),post_model.logZ,frame_vec);
+        end
+    end
+    LL_on_pre = squeeze(LL_frame_pre(:,:,2)-LL_frame_pre(:,:,1));
+    LL_on_post = squeeze(LL_frame_post(:,:,2)-LL_frame_post(:,:,1));
+    
+    % make predictions
+    thr_pre = zeros(num_neuron,1);
+    thr_post = zeros(num_neuron,1);
+    LL_pred_pre = nan(num_neuron,num_frame_pre);
+    LL_pred_post = nan(num_neuron,num_frame_post);
+    for ii = 1:num_neuron
+        [LL_pred_pre(ii,:),thr_pre(ii)] = pred_from_LL(LL_on_pre(ii,:),qnoise);
+        [LL_pred_post(ii,:),thr_post(ii)] = pred_from_LL(LL_on_post(ii,:),qnoise);
+    end
+    
+    % calculate TPR and FPR
+    TPR_pre = zeros(num_neuron,1);
+    FPR_pre = zeros(num_neuron,1);
+    TPR_post = zeros(num_neuron,1);
+    FPR_post = zeros(num_neuron,1);
+    for jj = 1:num_neuron
+        TP = sum(LL_pred_pre(jj,:)==1&opto_stim_pre'==1);
+        FP = sum(LL_pred_pre(jj,:)~=1&opto_stim_pre'==1);
+        TN = sum(LL_pred_pre(jj,:)~=1&opto_stim_pre'~=1);
+        FN = sum(LL_pred_pre(jj,:)==1&opto_stim_pre'~=1);
+        TPR_pre(jj) = TP/(TP+FN);
+        FPR_pre(jj) = FP/(FP+TN);
+        
+        TP = sum(LL_pred_post(jj,:)==1&opto_stim_post'==1);
+        FP = sum(LL_pred_post(jj,:)~=1&opto_stim_post'==1);
+        TN = sum(LL_pred_post(jj,:)~=1&opto_stim_post'~=1);
+        FN = sum(LL_pred_post(jj,:)==1&opto_stim_post'~=1);
+        TPR_post(jj) = TP/(TP+FN);
+        FPR_post(jj) = FP/(FP+TN);
+    end
+    
+    % plot scatter in ROC space
+    nodesz = 15;
+    figure; set(gcf,'color','w','position',[2023 322 445 211])
+    subplot(1,2,1);hold on
+    plot([0 1],[0 1],'k--')
+    scatter(FPR_pre,TPR_pre,nodesz,mycc.gray,'filled')
+    scatter(FPR_pre(hr_indx),TPR_pre(hr_indx),nodesz,mycc.red,'filled')
+    xlim([0 1]); ylim([0 1])
+    xlabel('FPR'); ylabel('TPR'); title('pre')
+    subplot(1,2,2);hold on
+    plot([0 1],[0 1],'k--')
+    scatter(FPR_post,TPR_post,nodesz,mycc.gray,'filled')
+    scatter(FPR_post(hr_indx),TPR_post(hr_indx),nodesz,mycc.red,'filled')
+    xlim([0 1]); ylim([0 1])
+    xlabel('FPR'); ylabel('TPR'); title('post')
+    
+    saveas(gcf,[fig_path 'ROC_scatter.pdf']);
+    
 end
 
-save([save_path 'opto_spont_prop.mat'],'-v7.3');
+% save([save_path 'opto_spont_prop.mat'],'-v7.3');
 
 %% distribution of P(k)
 nsz = 5;
@@ -301,30 +401,24 @@ legend off; box off
 
 % node degree
 subplot(2,3,4)
-% plot_opto_spont_cum_hist(ndeg_cum,mycc,ndeg_bin_range,linew);
 pp = plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('node degree');ylabel('log(p)');
 ylabel('node degree');title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
 subplot(2,3,5)
-% plot_opto_spont_cum_hist(lcc_cum,mycc,lcc_bin_range,linew);
 pp = plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('clustering coeff');ylabel('log(p)');
 ylabel('clustering coeff'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
 subplot(2,3,6)
-% plot_opto_spont_cum_hist(cent_cum,mycc,cent_bin_range,linew);
 pp = plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('centrality');ylabel('log(p)');
 ylabel('centrality'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off

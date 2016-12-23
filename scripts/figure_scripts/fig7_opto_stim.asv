@@ -23,6 +23,8 @@ redmap = load(param.redmap);
 bluemap = load(param.bluemap);
 redmap_light = load(param.redmap_light);
 
+qnoise = 0.7;
+
 %%
 for n = 1:length(expt_name)
     
@@ -30,6 +32,10 @@ for n = 1:length(expt_name)
     model_path = [result_path_base '\' expt_name{n} '\models\']; 
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
     load([data_path expt_name{n} '\stim_indx.mat']); % stim_indx
+    load([data_path expt_name{n} '\Pks_Frame.mat']); % Pks_Frame
+    load([data_path expt_name{n} '\opto_stim_high.mat']); % opto_stim_high
+    load([data_path expt_name{n} '\opto_indx.mat']); % opto_indx
+    load([data_path expt_name{n} '\data_high.mat']); % data_high
     
     model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model_' ge_type '.mat']);
     model.graph = full(model.graph);
@@ -38,6 +44,10 @@ for n = 1:length(expt_name)
     num_stim_cell = length(stim_indx);
     num_nostim_cell = num_node-num_stim_cell;
     nostim_indx = setdiff(1:num_node,stim_indx);
+    
+    num_frame = size(data_high,1);
+    num_add = length(setdiff(unique(opto_stim_high),0));
+    num_neuron = num_node-num_add;
     
     % extend coordinates
     coords = Coord_active;
@@ -69,18 +79,80 @@ for n = 1:length(expt_name)
     stim_norecall = 39;
     
     %% plot node strength against lcc
-    lcc = local_cluster_coeff(model.graph);
+%     lcc = local_cluster_coeff(model.graph);
+%     
+%     nodesz = 30;
+%     figure; set(gcf,'color','w','position',[1983 442 339 290])
+%     hold on
+%     scatter(epsum{n},lcc,nodesz,mycc.gray_light,'filled')
+%     scatter(epsum{n}(stim_indx),lcc(stim_indx),nodesz,mycc.red_light,'filled')
+%     scatter(epsum{n}(stim_recall),lcc(stim_recall),nodesz,mycc.red,'filled')
+%     scatter(epsum{n}(stim_norecall),lcc(stim_norecall),nodesz,mycc.blue,'filled')
+%     xlabel('node strength'); ylabel('local clustering coeff')
+%     
+%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_nodestrength_lcc.pdf']);
+%     
+%     %% clustering
+%     cluster_indx = kmeans([epsum{n}(stim_indx),lcc(stim_indx)],2);
+%     figure; set(gcf,'color','w','position',[1983 442 339 290])
+%     hold on
+%     scatter(epsum{n}(stim_indx),lcc(stim_indx),nodesz,mycc.red_light,'filled')
+%     scatter(epsum{n}(stim_indx(cluster_indx==1)),lcc(stim_indx(cluster_indx==1)),...
+%         nodesz,mycc.red,'filled')
+%     xlabel('node strength'); ylabel('local clustering coeff')
+%     
+    %% use each node to predict opto stim
+    % stimulating the second cell recalls the imprinted ensemble
+    % use the second added neuron as standard
+    pattern_indx = 2;
+    nopattern_indx = 5;
     
+    % change single node activity and predict with LL
+    LL_frame = zeros(num_stim_cell,num_frame,2);
+    for ii = 1:num_stim_cell
+        for jj = 1:num_frame
+            frame_vec = data_high(jj,:);
+            frame_vec(stim_indx(ii)) = 0;
+            LL_frame(ii,jj,1) = compute_avg_log_likelihood(model.node_pot(1:num_neuron),...
+                model.edge_pot(1:num_neuron,1:num_neuron),model.logZ,frame_vec);
+            frame_vec(stim_indx(ii)) = 1;
+            LL_frame(ii,jj,2) = compute_avg_log_likelihood(model.node_pot(1:num_neuron),...
+                model.edge_pot(1:num_neuron,1:num_neuron),model.logZ,frame_vec);
+        end
+    end
+    LL_on = squeeze(LL_frame(:,:,2)-LL_frame(:,:,1));
+    
+    % make predictions
+    thr = zeros(num_stim_cell,1);
+    LL_pred = nan(num_stim_cell,num_frame);
+    for ii = 1:num_stim_cell
+        [LL_pred(ii,:),thr(ii)] = pred_from_LL(LL_on(ii,:),qnoise);
+    end
+    
+    % calculate TPR and FPR
+    TPR = zeros(num_stim_cell,1);
+    FPR = zeros(num_stim_cell,1);
+    for jj = 1:num_stim_cell
+        TP = sum(LL_pred(jj,:)==1&opto_stim_high'==pattern_indx);
+        FP = sum(LL_pred(jj,:)~=1&opto_stim_high'==pattern_indx);
+        TN = sum(LL_pred(jj,:)~=1&opto_stim_high'~=pattern_indx);
+        FN = sum(LL_pred(jj,:)==1&opto_stim_high'~=pattern_indx);
+        TPR(jj) = TP/(TP+FN);
+        FPR(jj) = FP/(FP+TN);
+    end
+    
+    % plot
     nodesz = 30;
-    figure; set(gcf,'color','w','position',[1983 442 339 290])
+    figure; set(gcf,'color','w','position',[2213 298 322 271])
     hold on
-    scatter(epsum{n},lcc,nodesz,mycc.gray_light,'filled')
-    scatter(epsum{n}(stim_indx),lcc(stim_indx),nodesz,mycc.red_light,'filled')
-    scatter(epsum{n}(stim_recall),lcc(stim_recall),nodesz,mycc.red,'filled')
-    scatter(epsum{n}(stim_norecall),lcc(stim_norecall),nodesz,mycc.blue,'filled')
-    xlabel('node strength'); ylabel('local clustering coeff')
-    
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_nodestrength_lcc.pdf']);
+    plot([0 1],[0 1],'k--')
+    scatter(FPR(:,1),TPR(:,1),nodesz,mycc.gray,'filled')
+    scatter(FPR(pattern_indx,1),TPR(pattern_indx,1),nodesz,mycc.red,'filled')
+    scatter(FPR(nopattern_indx,1),TPR(nopattern_indx,1),nodesz,mycc.blue,'filled')
+    xlim([0 0.1]); ylim([0 0.1])
+    xlabel('FPR'); ylabel('TPR');
+
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_ROC_stim_cell.pdf']);
     
     %% plot epsum raster
     wd = 0.01;
@@ -108,6 +180,7 @@ for n = 1:length(expt_name)
         ge_type '_epsum_raster.pdf']);
     
     %% circle representation
+    light_gray = 0.9*[1 1 1];
     cells1 = setdiff(stim_indx,stim_recall)';
     cells2 = setdiff(stim_indx,stim_norecall)';
     num_half = round(num_nostim_cell/2); num_half(2) = num_nostim_cell-num_half;
@@ -118,10 +191,10 @@ for n = 1:length(expt_name)
     
     % node colors for recall experiment
     nodec1 = zeros(num_node,3);
-    nodec1(1:num_half(1),:) = repmat(mycc.gray_light,num_half(1),1);
+    nodec1(1:num_half(1),:) = repmat(light_gray,num_half(1),1);
     nodec1(num_half(1)+1,:) = mycc.red;
-    nodec1(num_half(1)+2:num_nostim_cell+1,:) = repmat(mycc.gray_light,num_half(2),1);
-    nodec1(num_nostim_cell+2:end,:) = repmat(mycc.red_light,num_stim_cell-1,1);
+    nodec1(num_half(1)+2:num_nostim_cell+1,:) = repmat(light_gray,num_half(2),1);
+    nodec1(num_nostim_cell+2:end,:) = repmat(mycc.red,num_stim_cell-1,1);
     
     % node colors for norecall experiment
     nodec2 = nodec1;
@@ -133,15 +206,13 @@ for n = 1:length(expt_name)
     edge_list1 = zeros(sum(model.graph(:))/2,2);
     [edge_list1(:,2),edge_list1(:,1)] = find(tril(model.graph(sort_indx1,sort_indx1)));
     edgec1 = num2cell(edge_list1);
-    tmp = [];
     for ii = 1:size(edge_list1,1)
         if ismember(edge_list1(ii,1),[num_half(1)+1,num_nostim_cell+2:num_node]) && ...
                 ismember(edge_list1(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
-            ep = model.ep_on(edge_list1(ii,1),edge_list1(ii,2));
+            ep = model.ep_on(sort_indx1(edge_list1(ii,1)),sort_indx1(edge_list1(ii,2)));
             edgec1{ii,3} = redmap_light.cmap(ceil((ep-minep)/(maxep-minep)*64),:);
-            tmp(end+1,:) = edge_list1(ii,:);
         else
-            edgec1{ii,3} = mycc.gray_light; % NaN
+            edgec1{ii,3} = light_gray; % mycc.gray_light; % NaN
         end
     end
     
@@ -152,10 +223,10 @@ for n = 1:length(expt_name)
     for ii = 1:size(edge_list2,1)
         if ismember(edge_list2(ii,1),[num_half(1)+1,num_nostim_cell+2:num_node]) && ...
                 ismember(edge_list2(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
-            ep = model.ep_on(edge_list2(ii,1),edge_list2(ii,2));
+            ep = model.ep_on(sort_indx2(edge_list2(ii,1)),sort_indx2(edge_list2(ii,2)));
             edgec2{ii,3} = redmap_light.cmap(ceil((ep-minep)/(maxep-minep)*64),:);
         else
-            edgec2{ii,3} = mycc.gray_light; % NaN
+            edgec2{ii,3} = light_gray; % mycc.gray_light; % NaN
         end
     end
     

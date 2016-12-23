@@ -50,6 +50,7 @@ param.bluemap = [param.result_path_base '\bluemap.mat']; % blue map
 param.redmap = [param.result_path_base '\redmap.mat']; % red map
 param.redmap_light = [param.result_path_base '\redmap_light.mat']; % lighter red map
 param.four_stim_cmap = [param.result_path_base '\four_stim_cmap.mat']; % four colors
+param.bkrmap = [param.result_path_base '\bkrmap.mat']; % blue-black-red map
 
 param.OSI_thresh = 0.7;
 
@@ -116,9 +117,11 @@ an_param.expt_name = {'m21_d2_vis','m37_d2'};
 an_param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'}};
 fig2_crf_LL_pred_add_neuron(an_param);
 
+fig2_plot_ensemble_identification(param);
+
 fig5_ensemble_identification_add_neuron_CRFSVD(param);
 
-fig6_ensemble_reduction_add_neuron(param);
+fig6_ensemble_reduction(param);
 
 %% opto spont data
 opto_param = param;
