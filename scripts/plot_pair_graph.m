@@ -1,5 +1,6 @@
 function [pval] = plot_pair_graph(vec1,vec2,cc1,cc2,p)
 % plot paired data, with linked line and mean per group
+% use Wilcoxon signed-rank test for significance test
 
 stepsz = 0.5;
 binsz = 0.1;
@@ -10,7 +11,8 @@ wdr = 0.3;
 vec1 = reshape(vec1,[],1);
 vec2 = reshape(vec2,[],1);
 
-[~,pval] = ttest(vec1,vec2);
+% [~,pval] = ttest(vec1,vec2);
+pval = signrank(vec1,vec2);
 
 hold on
 plot([(stepsz-binsz)*ones(size(vec1)),(stepsz+binsz)*...

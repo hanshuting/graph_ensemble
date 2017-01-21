@@ -114,95 +114,89 @@ end
 binsz = 0.02;
 wr = 0.3;
 
-figure
+hf = figure;
 set(gcf,'color','w')
-set(gcf,'position',[2041 217 649 756]);
+set(gcf,'position',[2041 92 649 881]);
 set(gcf,'paperpositionmode','auto')
 
 % plus/minus similarity
-subplot(4,2,1);
+subplot(5,2,1);
 gcapos = get(gca,'position');
-plot_box_seq_pair(msim_pl_all,sample_seq,binsz,wr,sample_step,linew,mycc)
+plot_box_seq_pair(msim_pl_all,sample_seq,binsz,wr,sample_step,linew,mycc.gray,mycc.orange)
 ylim([0 0.5])
 ylabel('Similarity');box off
 set(gca,'position',gcapos);
 
 % rand similarity
-subplot(4,2,2);
+subplot(5,2,2);
 gcapos = get(gca,'position');
-plot_box_seq_pair(msim_rd_all,rand_seq,binsz,wr,sample_step,linew,mycc)
+plot_box_seq_pair(msim_rd_all,rand_seq,binsz,wr,sample_step,linew,mycc.gray,mycc.orange)
 ylim([0 0.5])
 box off
 set(gca,'position',gcapos);
 
 % plus/minus statistics
-subplot(4,2,3);
+subplot(5,2,3);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_pl_all(:,:,:,1),sample_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_pl_all(:,:,:,1),sample_seq,wr,sample_step,linew,mycc.black)
 ylim([0 1])
 ylabel('Accuracy');box off
 set(gca,'position',gcapos);
 
-subplot(4,2,5);
+subplot(5,2,5);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_pl_all(:,:,:,2),sample_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_pl_all(:,:,:,2),sample_seq,wr,sample_step,linew,mycc.black)
 ylim([0 1])
 ylabel('Precision');box off
 set(gca,'position',gcapos);
 
-subplot(4,2,7);
+subplot(5,2,7);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_pl_all(:,:,:,3),sample_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_pl_all(:,:,:,3),sample_seq,wr,sample_step,linew,mycc.black)
 ylim([0 1])
 ylabel('Recall');box off
 xlabel('ensemble%')
 set(gca,'position',gcapos);
 
 % rand statistics
-subplot(4,2,4);
+subplot(5,2,4);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_rd_all(:,:,:,1),rand_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_rd_all(:,:,:,1),rand_seq,wr,sample_step,linew,mycc.black)
 ylim([0 1])
 box off
 set(gca,'position',gcapos);
 
-subplot(4,2,6);
+subplot(5,2,6);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_rd_all(:,:,:,2),rand_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_rd_all(:,:,:,2),rand_seq,wr,sample_step,linew,mycc.black)
 ylim([0 1])
 box off
 set(gca,'position',gcapos);
 
-subplot(4,2,8);
+subplot(5,2,8);
 gcapos = get(gca,'position');
-plot_box_seq_single(stats_rd_all(:,:,:,3),rand_seq,wr,sample_step,linew,mycc)
+plot_box_seq_single(stats_rd_all(:,:,:,3),rand_seq,wr,sample_step,linew,mycc.black)
 ylim([0 1])
 box off
 xlabel('total%')
 set(gca,'position',gcapos);
 
-print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee ...
-    '_mc_svd_rand_pred_stats_' ge_type '.pdf'])
-
 %% ROC
 auc_pl = zeros(length(sample_seq),expt_count);
 auc_rd = zeros(length(rand_seq),expt_count);
 
-figure; set(gcf,'color','w','position',[2030 79 974 399])
+figure; set(gcf,'position',[2620 201 974 399],'color','w');
 subplot(1,2,1); hold on
 gcapos = get(gca,'position');
 step = 1/length(sample_seq);
 cc = [interp1(1/64:1/64:1,bkrmap.cmap(:,1),step:step:1);...
     interp1(1/64:1/64:1,bkrmap.cmap(:,2),step:step:1);...
     interp1(1/64:1/64:1,bkrmap.cmap(:,3),step:step:1)];
-% cc_light = min(cc+0.3,1);
-% cc_dark = max(cc-0.3,0);
 cc_dark = cc';
 for jj = 1:length(sample_seq)
     for ii = 1:expt_count
         [xx,yy,~,auc_pl(jj,ii)] = perfcurve(repmat(true_label_all{ii},1,num_rand),...
             reshape(squeeze(cell2mat(sim_pl_all(ii,jj,:))),1,[]),1);
-%         plot(xx,yy,'color',cc_light(jj,:),'linewidth',linew);
     end
     % average across experiments
     [xx,yy] = perfcurve(repmat(cell2mat(true_label_all),1,num_rand),...
@@ -241,27 +235,20 @@ xlabel('FPR'); ylabel('TPR')
 colorbar; colormap(cc_dark); caxis([rand_seq(1) rand_seq(end)])
 set(gca,'position',gcapos);
 
-print(gcf,'-dpdf','-painters','-bestfit',[fig_path 'ensemble_reduction_ROC_curve.pdf'])
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee ...
+    '_core_rand_pred_ROC_' ge_type '.pdf'])
 
 %% plot AUC
-figure; set(gcf,'color','w','position',[1987 380 659 190])
-subplot(1,2,1);hold on;
+figure(hf);
+subplot(5,2,9);hold on;
 gcapos = get(gca,'position');
 plot_box_seq_single(reshape(auc_pl,1,size(auc_pl,1),size(auc_pl,2)),...
     sample_seq,wr,sample_step,linew,mycc.black)
-% for ii = 1:length(xseq)
-%     h = boxplot(mean(squeeze(data(:,ii,:)),2),'positions',...
-%         xseq(ii),'width',step*wr,'colors',cc);
-%     setBoxStyle(h,linew);
-% end
-% xlim([xseq(1)-step,xseq(end)+step])
-% ylim([0 max(data(:))])
-% set(gca,'xtick',xseq,'xticklabel',xseq,'XTickLabelRotation',45)
 ylim([0 1]); ylabel('AUC')
 box off
 set(gca,'position',gcapos);
 
-subplot(1,2,2);
+subplot(5,2,10);
 gcapos = get(gca,'position');
 plot_box_seq_single(reshape(auc_rd,1,size(auc_rd,1),size(auc_rd,2)),...
     rand_seq,wr,sample_step,linew,mycc.black)
@@ -270,7 +257,8 @@ box off
 xlabel('total%'); ylabel('AUC')
 set(gca,'position',gcapos);
 
-print(gcf,'-dpdf','-painters','-bestfit',[fig_path 'ensemble_reduction_AUC.pdf'])
+print(hf,'-dpdf','-painters','-bestfit',[fig_path expt_ee ...
+    '_core_rand_pred_stats_' ge_type '.pdf'])
 
 end
 

@@ -76,78 +76,23 @@ for n = 1:num_expt
     end
     LL_on = squeeze(LL_frame(:,:,2)-LL_frame(:,:,1));
     
-%     % AUC - two stim version
-%     auc = zeros(num_node,num_stim);
-%     true_label = double(vis_stim_high==1)';
-%     for jj = 1:num_node
-%         [~,~,~,auc(jj,1)] = perfcurve(true_label,LL_frame(jj,:,1)-LL_frame(jj,:,2),1);
-%     end
-%     true_label = double(vis_stim_high==2)';
-%     for jj = 1:num_node
-%         [~,~,~,auc(jj,2)] = perfcurve(true_label,LL_frame(jj,:,2)-LL_frame(jj,:,1),1);
-%     end
-%     
-%     % find ensembles
-%     perc_thresh = 0.4;
-%     core_crf = cell(num_stim,1);
-%     core_crf{1} = find((auc(:,1)>auc(:,2))&(auc(:,1)>perc_thresh));
-%     core_crf{2} = find((auc(:,2)>auc(:,1))&(auc(:,2)>perc_thresh));
-
-    % threshold and count
-    thr = zeros(num_node,1);
-    LL_pred = nan(num_node,num_frame);
-    for ii = 1:num_node
-        [LL_pred(ii,:),thr(ii)] = pred_from_LL(LL_on(ii,:),qnoise);
-    end
-%     LL_pred_count = zeros(num_node,num_stim+1);
-%     for ii = 1:num_stim
-%         LL_pred_count(:,ii) = nansum(LL_pred(:,vis_stim_high==ii),2)/sum(vis_stim_high==ii);
-%     end
-%     LL_pred_count(:,end) = nansum(LL_pred(:,vis_stim_high==0),2)/sum(vis_stim_high==0);
-%     [max_perc,node_idt] = max(LL_pred_count,[],2);
-%     
-%     % find percentage threshold
-%     perc_vec = 0:0.05:0.5;
-%     acc_vec = zeros(length(perc_vec),num_stim);
-%     for ii = 1:num_stim
-%         true_label = double(vis_stim_high==ii)';
-%         for jj = 1:length(perc_vec)
-%             core = find(node_idt.*(max_perc>perc_vec(jj))==ii);
-%             [~,~,~,~,acc] = core_cos_sim(core,data_high',true_label);
-%             acc_vec(jj,ii) = acc;
-%         end
-%     end
-%     [~,perc_thresh] = max(mean(acc_vec,2));
-%     perc_thresh = perc_vec(perc_thresh);
-%     
-%     core_crf = cell(num_stim+1,1);
-%     for ii = 1:num_stim+1
-%         core_crf{ii} = find(node_idt.*(max_perc>perc_thresh)==ii);
-%     end
-%     
-%     figure; plot(perc_vec,acc_vec);
-    
-    % calculate TPR and FPR
-    TPR = zeros(num_node,num_stim);
-    FPR = zeros(num_node,num_stim);
+    % ------------ AUC - should work for multiple stimuli ------------ %
+    auc = zeros(num_node,num_stim);
     for ii = 1:num_stim
+        true_label = double(vis_stim_high==ii)';
         for jj = 1:num_node
-            TP = sum(LL_pred(jj,:)==1&vis_stim_high'==ii);
-            FP = sum(LL_pred(jj,:)~=1&vis_stim_high'==ii);
-            TN = sum(LL_pred(jj,:)~=1&vis_stim_high'~=ii);
-            FN = sum(LL_pred(jj,:)==1&vis_stim_high'~=ii);
-            TPR(jj,ii) = TP/(TP+FN);
-            FPR(jj,ii) = FP/(FP+TN);
+            [~,~,~,auc(jj,ii)] = perfcurve(true_label,LL_on(jj,:),1);
         end
     end
     
-    % find the best threshold for each stimulus
-    th_vec = 0.1:0.1:0.9;
+    % find best threshold
+    th_vec = 0.5:0.05:0.8;
     acc_vec = zeros(length(th_vec),num_stim);
     for ii = 1:num_stim
         true_label = vis_stim_high'==ii;
         for jj = 1:length(th_vec)
-            core = find(TPR(:,ii)>th_vec(jj)&FPR(:,ii)<th_vec(jj));
+            core = find(auc(:,ii)>max(auc(:,setdiff(1:num_stim,ii)),[],2)&...
+                auc(:,ii)>th_vec(jj));
             if ~isempty(core)
                 [~,~,~,~,acc] = core_cos_sim(core,data_high',true_label);
             else
@@ -161,36 +106,100 @@ for n = 1:num_expt
         [~,best_indx] = max(acc_vec(:,ii));
         th(ii) = th_vec(best_indx);
     end
-    
-    % identify ensembles
+        
+    % find ensembles
     core_crf = cell(num_stim,1);
-%     tprth = 0.4; fprth = 0.4; % hard definition of threshold
     for ii = 1:num_stim
-        core_crf{ii} = find(TPR(:,ii)>th(ii)&FPR(:,ii)<th(ii));
+        core_crf{ii} = find(auc(:,ii)>max(auc(:,setdiff(1:num_stim,ii)),[],2)&...
+            auc(:,ii)>th(ii));
     end
+
+    % ------------------- use LL and TPR/FPR ---------------- %
+%     % threshold and count
+%     thr = zeros(num_node,1);
+%     LL_pred = nan(num_node,num_frame);
+%     for ii = 1:num_node
+%         [LL_pred(ii,:),thr(ii)] = pred_from_LL(LL_on(ii,:),qnoise);
+%     end
+%     
+%     % calculate TPR and FPR
+%     TPR = zeros(num_node,num_stim);
+%     FPR = zeros(num_node,num_stim);
+%     for ii = 1:num_stim
+%         for jj = 1:num_node
+%             TP = sum(LL_pred(jj,:)==1&vis_stim_high'==ii);
+%             FP = sum(LL_pred(jj,:)~=1&vis_stim_high'==ii);
+%             TN = sum(LL_pred(jj,:)~=1&vis_stim_high'~=ii);
+%             FN = sum(LL_pred(jj,:)==1&vis_stim_high'~=ii);
+%             TPR(jj,ii) = TP/(TP+FN);
+%             FPR(jj,ii) = FP/(FP+TN);
+%         end
+%     end
+%     
+%     % find the best threshold for each stimulus
+%     th_vec = 0.1:0.1:0.9;
+%     acc_vec = zeros(length(th_vec),num_stim);
+%     for ii = 1:num_stim
+%         true_label = vis_stim_high'==ii;
+%         for jj = 1:length(th_vec)
+%             core = find(TPR(:,ii)>th_vec(jj)&FPR(:,ii)<th_vec(jj));
+%             if ~isempty(core)
+%                 [~,~,~,~,acc] = core_cos_sim(core,data_high',true_label);
+%             else
+%                 acc = 0;
+%             end
+%             acc_vec(jj,ii) = acc;
+%         end
+%     end
+%     th = zeros(num_stim,1);
+%     for ii = 1:num_stim
+%         [~,best_indx] = max(acc_vec(:,ii));
+%         th(ii) = th_vec(best_indx);
+%     end
+%     
+%     % identify ensembles
+%     core_crf = cell(num_stim,1);
+%     for ii = 1:num_stim
+%         core_crf{ii} = find(TPR(:,ii)>th(ii)&FPR(:,ii)<th(ii));
+%     end
     
-    % plot each neuron in ROC space
+    %% plot each neuron in ROC space - AUC
     nodesz = 15;
-    figure; set(gcf,'color','w','position',[1984 327 622 274])
-    subplot(1,2,1); hold on
+    figure; set(gcf,'color','w','position',[2060 403 247 230])
+    hold on
     plot([0 1],[0 1],'k--')
     plot([0 th(1)],th(1)*[1 1],'k--')
-    plot(th(1)*[1 1],[th(1) 1],'k--')
-    scatter(FPR(:,1),TPR(:,1),nodesz,mycc.gray,'filled')
-    scatter(FPR(core_crf{1},1),TPR(core_crf{1},1),nodesz,mycc.red,'filled')
+    plot(th(2)*[1 1],[0 th(2)],'k--')
+    scatter(auc(:,1),auc(:,2),nodesz,mycc.gray,'filled')
+    scatter(auc(core_crf{1},1),auc(core_crf{1},2),nodesz,mycc.red,'filled')
+    scatter(auc(core_crf{2},1),auc(core_crf{2},2),nodesz,mycc.blue,'filled')
     xlim([0 1]); ylim([0 1])
-    xlabel('FPR'); ylabel('TPR');
-    subplot(1,2,2); hold on
-    plot([0 1],[0 1],'k--')
-    plot([0 th(2)],th(2)*[1 1],'k--')
-    plot(th(2)*[1 1],[th(2) 1],'k--')
-    scatter(FPR(:,2),TPR(:,2),nodesz,mycc.gray,'filled')
-    scatter(FPR(core_crf{2},2),TPR(core_crf{2},2),nodesz,mycc.blue,'filled')
-    xlim([0 1]); ylim([0 1])
-    xlabel('FPR'); ylabel('TPR');
+    xlabel('AUC 1'); ylabel('AUC 2');
     
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_ROCspace.pdf'])
-    
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_ROCspace.pdf'])   
+
+%     %% plot each neuron in ROC space - LL and FPR/TPR
+%     nodesz = 15;
+%     figure; set(gcf,'color','w','position',[1984 327 622 274])
+%     subplot(1,2,1); hold on
+%     plot([0 1],[0 1],'k--')
+%     plot([0 th(1)],th(1)*[1 1],'k--')
+%     plot(th(1)*[1 1],[th(1) 1],'k--')
+%     scatter(FPR(:,1),TPR(:,1),nodesz,mycc.gray,'filled')
+%     scatter(FPR(core_crf{1},1),TPR(core_crf{1},1),nodesz,mycc.red,'filled')
+%     xlim([0 1]); ylim([0 1])
+%     xlabel('FPR'); ylabel('TPR');
+%     subplot(1,2,2); hold on
+%     plot([0 1],[0 1],'k--')
+%     plot([0 th(2)],th(2)*[1 1],'k--')
+%     plot(th(2)*[1 1],[th(2) 1],'k--')
+%     scatter(FPR(:,2),TPR(:,2),nodesz,mycc.gray,'filled')
+%     scatter(FPR(core_crf{2},2),TPR(core_crf{2},2),nodesz,mycc.blue,'filled')
+%     xlim([0 1]); ylim([0 1])
+%     xlabel('FPR'); ylabel('TPR');
+%     
+%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_ROCspace.pdf'])
+%     
     %% plot prediction example
 %     [~,indx] = max(LL_pred_count(core_crf{1},1));
     [~,indx] = max(TPR(core_crf{1},1)-FPR(core_crf{1},1));
@@ -207,34 +216,6 @@ for n = 1:num_expt
     set(gcf,'position',[2055 522 1121 127])
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
         expt_ee '_LL_cell_' num2str(indx) '.pdf'])
-    
-    %% plot count scatter
-%     dsz = 20;
-%     stepsz = 0.5;
-%     cc_dot = {mycc.red,mycc.red_light;mycc.blue,mycc.blue_light};
-%     figure; set(gcf,'color','w','position',[2271 387 250 277])
-%     hold on
-%     noncore = setdiff(1:num_node,cell2mat(core_crf(1:num_stim)))';
-%     plot(stepsz*[1;2]*ones(size(noncore))',LL_pred_count(noncore,1:2)',...
-%         'color',mycc.gray_light);
-%     scatter(stepsz*ones(size(noncore)),LL_pred_count(noncore,1),...
-%         dsz,mycc.gray,'filled')
-%     scatter(2*stepsz*ones(size(noncore)),LL_pred_count(noncore,2),...
-%         dsz,mycc.gray,'filled')
-%     for ii = 1:num_stim
-%         plot(stepsz*[1;2]*ones(size(core_crf{ii}))',LL_pred_count(core_crf{ii},1:2)',...
-%             'color',cc_dot{ii,2});
-%         scatter(stepsz*ones(size(core_crf{ii})),LL_pred_count(core_crf{ii},1),...
-%             dsz,cc_dot{ii,1},'filled')
-%         scatter(2*stepsz*ones(size(core_crf{ii})),LL_pred_count(core_crf{ii},2),...
-%             dsz,cc_dot{ii,1},'filled')
-%     end
-%     plot([0.3,1.2],perc_thresh*[1,1],'k--');
-%     xlim([0.3 1.2])
-%     set(gca,'xtick',stepsz*[1,2,3],'xticklabel',{'horizontal','vertical'})
-%     ylabel('prediction (%)')
-%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-%         expt_ee '_pred_count.pdf'])
     
     %% plot ensemble highlight
     figure; set(gcf,'color','w','position',[2162 447 434 267])

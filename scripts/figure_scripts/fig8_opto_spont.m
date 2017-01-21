@@ -57,8 +57,10 @@ for n = 1:num_expt
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
     load([data_path expt_name{n} '\Stim_cells.mat']);
     
-    pre_model = load([model_path expt_name{n} '_' expt_ee{1} '_loopy_best_model_' ge_type '.mat']);
-    post_model = load([model_path expt_name{n} '_' expt_ee{2} '_loopy_best_model_' ge_type '.mat']);
+    pre_model = load([model_path expt_name{n} '_' expt_ee{1} ...
+        '_loopy_best_model_' ge_type '.mat']);
+    post_model = load([model_path expt_name{n} '_' expt_ee{2} ...
+        '_loopy_best_model_' ge_type '.mat']);
     post_model.graph = full(post_model.graph);
     
     num_node = size(pre_model.graph,1);
@@ -68,9 +70,9 @@ for n = 1:num_expt
     num_neuron = num_node-1; % exclude added node
     
     pre_data = load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee{1} '.mat']);
-    pre_data = pre_data.data(:,1:num_neuron);
+    pre_data = pre_data.data; %(:,1:num_neuron);
     post_data = load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee{2} '.mat']);
-    post_data = post_data.data(:,1:num_neuron);
+    post_data = post_data.data; %(:,1:num_neuron);
     num_frame_pre = size(pre_data,1);
     num_frame_post = size(post_data,1);
     
@@ -213,95 +215,161 @@ for n = 1:num_expt
     cent_out{n,1} = cent{n,1}(nostim_cells);
     cent_out{n,2} = cent{n,2}(nostim_cells);
     
-    %% plot node strength against lcc
-%     nodesz = 30;
-% 
-%     figure; set(gcf,'color','w','position',[1983 442 339 290])
-%     subplot(1,2,1); hold on
-%     scatter(ep_sum{n,1},lcc{n,1},nodesz,mycc.gray_light,'filled')
-%     scatter(ep_sum{n,1}(hr_indx),lcc{n,1}(hr_indx),nodesz,mycc.red,'filled')
-%     xlabel('node strength'); ylabel('local clustering coeff')
-%     subplot(1,2,2); hold on
-%     scatter(ep_sum{n,2},lcc{n,2},nodesz,mycc.gray_light,'filled')
-%     scatter(ep_sum{n,2}(hr_indx),lcc{n,2}(hr_indx),nodesz,mycc.red,'filled')
-%     xlabel('node strength'); ylabel('local clustering coeff')
-%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_nodestrength_lcc.pdf']);
+    %% predict with cosine similarity
+    label_pre = opto_stim_pre'==1;
+    label_post = opto_stim_post'==1;
+    
+    figure; set(gcf,'color','w','position',[2014 162 476 432])
+    
+    % pre
+    subplot(2,2,1); hold on
+    % ensemble
+    [~,sim_core] = core_cos_sim(Stim_cells,pre_data(:,1:num_neuron),label_pre);
+    [xx,yy,~,auc_ens_pre] = perfcurve(label_pre,sim_core,1);
+    plot(xx,yy,'color','k','linewidth',2*linew);
+    % individual cells
+    cc = jet(64);
+    auc_pre = zeros(num_stim_cell,1);
+    for ii = 1:num_stim_cell
+        [~,sim_core] = core_cos_sim(Stim_cells(ii),pre_data(:,1:num_neuron),label_pre);
+        [xx,yy,~,auc_pre(ii)] = perfcurve(label_pre,sim_core,1);
+        curve_cc = cc(ceil((ep_sum{n,1}(Stim_cells(ii))-min(ep_sum{n,1}(Stim_cells)))/...
+            (max(ep_sum{n,1}(Stim_cells))-min(ep_sum{n,1}(Stim_cells)))*63+1),:);
+        plot(xx,yy,'color',curve_cc,'linewidth',linew);
+    end
+    xlabel('FPR'); ylabel('TPR'); title('pre')
+    % plot auc
+    nodesz = 30;
+    subplot(2,2,3); hold on
+    scatter(ep_sum{n,1}(Stim_cells),auc_pre,nodesz,mycc.gray,'filled')
+    scatter(ep_sum{n,1}(hr_indx),auc_pre(Stim_cells==hr_indx),nodesz,mycc.red,'filled')
+    xlabel('node strength'); ylabel('AUC');
+    
+    % post
+    subplot(2,2,2); hold on
+    % ensemble
+    [~,sim_core] = core_cos_sim(Stim_cells,post_data(:,1:num_neuron),label_post);
+    [xx,yy,~,auc_ens_post] = perfcurve(label_post,sim_core,1);
+    plot(xx,yy,'color','k','linewidth',2*linew);
+    % individual cells
+    cc = jet(64);
+    auc_post = zeros(num_stim_cell,1);
+    for ii = 1:num_stim_cell
+        [~,sim_core] = core_cos_sim(Stim_cells(ii),post_data(:,1:num_neuron),label_post);
+        [xx,yy,~,auc_post(ii)] = perfcurve(label_post,sim_core,1);
+        curve_cc = cc(ceil((ep_sum{n,2}(Stim_cells(ii))-min(ep_sum{n,2}(Stim_cells)))/...
+            (max(ep_sum{n,2}(Stim_cells))-min(ep_sum{n,2}(Stim_cells)))*63+1),:);
+        plot(xx,yy,'color',curve_cc,'linewidth',linew);
+    end
+    xlabel('FPR'); ylabel('TPR'); title('post')
+    % plot auc
+    nodesz = 30;
+    subplot(2,2,4); hold on
+    scatter(ep_sum{n,2}(Stim_cells),auc_post,nodesz,mycc.gray,'filled')
+    scatter(ep_sum{n,2}(hr_indx),auc_post(Stim_cells==hr_indx),nodesz,mycc.red,'filled')
+    xlabel('node strength'); ylabel('AUC');
+    
+    % plot ensemble auc, scale figures
+    aucmi = min([auc_pre;auc_post]);
+    aucma = max([auc_pre;auc_post]);
+    nsmi = min([ep_sum{n,1}(Stim_cells)',ep_sum{n,2}(Stim_cells)']);
+    nsma = max([ep_sum{n,1}(Stim_cells)',ep_sum{n,2}(Stim_cells)']);
+    subplot(2,2,3)
+    plot([nsmi nsma],auc_ens_pre*[1 1],'k--')
+    xlim([nsmi nsma]); ylim([aucmi aucma]);
+    subplot(2,2,4)
+    plot([nsmi nsma],auc_ens_post*[1 1],'k--')
+    xlim([nsmi nsma]); ylim([aucmi aucma]);
+    
+    saveas(gcf,[fig_path 'opto_spont_ROC.pdf']);
     
     %% predict with model
     % change single node activity and predict with LL
-    LL_frame_pre = zeros(num_neuron,num_frame_pre,2);
-    LL_frame_post = zeros(num_neuron,num_frame_post,2);
-    for ii = 1:num_neuron
+    LL_frame_pre_on = zeros(num_stim_cell,num_frame_pre,2);
+    LL_frame_pre_off = zeros(num_stim_cell,num_frame_pre,2);
+    LL_frame_post_on = zeros(num_stim_cell,num_frame_post,2);
+    LL_frame_post_off = zeros(num_stim_cell,num_frame_post,2);
+    for ii = 1:num_stim_cell
         for jj = 1:num_frame_pre
             frame_vec = pre_data(jj,:);
-            frame_vec(ii) = 0;
-            LL_frame_pre(ii,jj,1) = compute_avg_log_likelihood(pre_model.node_pot(1:num_neuron),...
-                pre_model.edge_pot(1:num_neuron,1:num_neuron),pre_model.logZ,frame_vec);
-            frame_vec(ii) = 1;
-            LL_frame_pre(ii,jj,2) = compute_avg_log_likelihood(pre_model.node_pot(1:num_neuron),...
-                pre_model.edge_pot(1:num_neuron,1:num_neuron),pre_model.logZ,frame_vec);
+            % stim on
+            frame_vec(end) = 1;
+            frame_vec(Stim_cells(ii)) = 0;
+            LL_frame_pre_on(ii,jj,1) = compute_avg_log_likelihood(pre_model.node_pot,...
+                pre_model.edge_pot,pre_model.logZ,frame_vec);
+            frame_vec(Stim_cells(ii)) = 1;
+            LL_frame_pre_on(ii,jj,2) = compute_avg_log_likelihood(pre_model.node_pot,...
+                pre_model.edge_pot,pre_model.logZ,frame_vec);
+            % stim off
+            frame_vec(end) = 0;
+            frame_vec(Stim_cells(ii)) = 0;
+            LL_frame_pre_off(ii,jj,1) = compute_avg_log_likelihood(pre_model.node_pot,...
+                pre_model.edge_pot,pre_model.logZ,frame_vec);
+            frame_vec(Stim_cells(ii)) = 1;
+            LL_frame_pre_off(ii,jj,2) = compute_avg_log_likelihood(pre_model.node_pot,...
+                pre_model.edge_pot,pre_model.logZ,frame_vec);
         end
         for jj = 1:num_frame_post
             frame_vec = post_data(jj,:);
-            frame_vec(ii) = 0;
-            LL_frame_post(ii,jj,1) = compute_avg_log_likelihood(post_model.node_pot(1:num_neuron),...
-                post_model.edge_pot(1:num_neuron,1:num_neuron),post_model.logZ,frame_vec);
-            frame_vec(ii) = 1;
-            LL_frame_post(ii,jj,2) = compute_avg_log_likelihood(post_model.node_pot(1:num_neuron),...
-                post_model.edge_pot(1:num_neuron,1:num_neuron),post_model.logZ,frame_vec);
+            % stim on
+            frame_vec(end) = 1;
+            frame_vec(Stim_cells(ii)) = 0;
+            LL_frame_post_on(ii,jj,1) = compute_avg_log_likelihood(post_model.node_pot,...
+                post_model.edge_pot,post_model.logZ,frame_vec);
+            frame_vec(Stim_cells(ii)) = 1;
+            LL_frame_post_on(ii,jj,2) = compute_avg_log_likelihood(post_model.node_pot,...
+                post_model.edge_pot,post_model.logZ,frame_vec);
+            % stim off
+            frame_vec(end) = 0;
+            frame_vec(Stim_cells(ii)) = 0;
+            LL_frame_post_off(ii,jj,1) = compute_avg_log_likelihood(post_model.node_pot,...
+                post_model.edge_pot,post_model.logZ,frame_vec);
+            frame_vec(Stim_cells(ii)) = 1;
+            LL_frame_post_off(ii,jj,2) = compute_avg_log_likelihood(post_model.node_pot,...
+                post_model.edge_pot,post_model.logZ,frame_vec);
         end
     end
-    LL_on_pre = squeeze(LL_frame_pre(:,:,2)-LL_frame_pre(:,:,1));
-    LL_on_post = squeeze(LL_frame_post(:,:,2)-LL_frame_post(:,:,1));
+    LL_stim_pre = squeeze(LL_frame_pre_on(:,:,2)-LL_frame_pre_on(:,:,1));
+    LL_nostim_pre = squeeze(LL_frame_pre_off(:,:,2)-LL_frame_pre_off(:,:,1));
+    LL_rel_pre = LL_stim_pre-LL_nostim_pre;
+    LL_stim_post = squeeze(LL_frame_post_on(:,:,2)-LL_frame_post_on(:,:,1));
+    LL_nostim_post = squeeze(LL_frame_post_off(:,:,2)-LL_frame_post_off(:,:,1));
+    LL_rel_post = LL_stim_post-LL_nostim_post;
     
-    % make predictions
-    thr_pre = zeros(num_neuron,1);
-    thr_post = zeros(num_neuron,1);
-    LL_pred_pre = nan(num_neuron,num_frame_pre);
-    LL_pred_post = nan(num_neuron,num_frame_post);
-    for ii = 1:num_neuron
-        [LL_pred_pre(ii,:),thr_pre(ii)] = pred_from_LL(LL_on_pre(ii,:),qnoise);
-        [LL_pred_post(ii,:),thr_post(ii)] = pred_from_LL(LL_on_post(ii,:),qnoise);
+    % plot
+    figure; set(gcf,'color','w','position',[1979 430 485 430])
+    cc = jet(64); nodesz = 30;
+    % ROC - pre
+    subplot(2,2,1); hold on
+    auc_pre = zeros(num_stim_cell,1);
+    for ii = 1:num_stim_cell
+        [xx,yy,~,auc_pre(ii)] = perfcurve(opto_stim_pre'==1,LL_stim_pre(ii,:),1);
+        curve_cc = cc(ceil((ep_sum{n,1}(Stim_cells(ii))-min(ep_sum{n,1}(Stim_cells)))/...
+            (max(ep_sum{n,1}(Stim_cells))-min(ep_sum{n,1}(Stim_cells)))*63+1),:);
+        plot(xx,yy,'color',curve_cc);
     end
-    
-    % calculate TPR and FPR
-    TPR_pre = zeros(num_neuron,1);
-    FPR_pre = zeros(num_neuron,1);
-    TPR_post = zeros(num_neuron,1);
-    FPR_post = zeros(num_neuron,1);
-    for jj = 1:num_neuron
-        TP = sum(LL_pred_pre(jj,:)==1&opto_stim_pre'==1);
-        FP = sum(LL_pred_pre(jj,:)~=1&opto_stim_pre'==1);
-        TN = sum(LL_pred_pre(jj,:)~=1&opto_stim_pre'~=1);
-        FN = sum(LL_pred_pre(jj,:)==1&opto_stim_pre'~=1);
-        TPR_pre(jj) = TP/(TP+FN);
-        FPR_pre(jj) = FP/(FP+TN);
-        
-        TP = sum(LL_pred_post(jj,:)==1&opto_stim_post'==1);
-        FP = sum(LL_pred_post(jj,:)~=1&opto_stim_post'==1);
-        TN = sum(LL_pred_post(jj,:)~=1&opto_stim_post'~=1);
-        FN = sum(LL_pred_post(jj,:)==1&opto_stim_post'~=1);
-        TPR_post(jj) = TP/(TP+FN);
-        FPR_post(jj) = FP/(FP+TN);
-    end
-    
-    % plot scatter in ROC space
-    nodesz = 15;
-    figure; set(gcf,'color','w','position',[2023 322 445 211])
-    subplot(1,2,1);hold on
-    plot([0 1],[0 1],'k--')
-    scatter(FPR_pre,TPR_pre,nodesz,mycc.gray,'filled')
-    scatter(FPR_pre(hr_indx),TPR_pre(hr_indx),nodesz,mycc.red,'filled')
-    xlim([0 1]); ylim([0 1])
     xlabel('FPR'); ylabel('TPR'); title('pre')
-    subplot(1,2,2);hold on
-    plot([0 1],[0 1],'k--')
-    scatter(FPR_post,TPR_post,nodesz,mycc.gray,'filled')
-    scatter(FPR_post(hr_indx),TPR_post(hr_indx),nodesz,mycc.red,'filled')
-    xlim([0 1]); ylim([0 1])
+    % ROC - post
+    subplot(2,2,2); hold on
+    auc_post = zeros(num_stim_cell,1);
+    for ii = 1:num_stim_cell
+        [xx,yy,~,auc_post(ii)] = perfcurve(opto_stim_post'==1,LL_stim_post(ii,:),1);
+        curve_cc = cc(ceil((ep_sum{n,2}(Stim_cells(ii))-min(ep_sum{n,2}(Stim_cells)))/...
+            (max(ep_sum{n,2}(Stim_cells))-min(ep_sum{n,2}(Stim_cells)))*63+1),:);
+        plot(xx,yy,'color',curve_cc);
+    end
     xlabel('FPR'); ylabel('TPR'); title('post')
+    % AUC vs NS - pre
+    subplot(2,2,3); hold on
+    scatter(ep_sum{n,1}(Stim_cells),auc_pre,nodesz,mycc.gray,'filled')
+    scatter(ep_sum{n,1}(hr_indx),auc_pre(Stim_cells==hr_indx),nodesz,mycc.red,'filled')
+    xlabel('node strength'); ylabel('AUC');
+    % AUC vs NS - post
+    subplot(2,2,4); hold on
+    scatter(ep_sum{n,2}(Stim_cells),auc_post,nodesz,mycc.gray,'filled')
+    scatter(ep_sum{n,2}(hr_indx),auc_post(Stim_cells==hr_indx),nodesz,mycc.red,'filled')
+    xlabel('node strength'); ylabel('AUC');
     
-    saveas(gcf,[fig_path 'ROC_scatter.pdf']);
     
 end
 
@@ -363,11 +431,11 @@ stepsz = 0.5;
 binsz = 0.1;
 ww = 0.2;
 
-figure; set(gcf,'color','w','position',[2006 320 691 425])
+figure; set(gcf,'color','w','position',[2017 597 717 148])
 
 % density
 boxwd = 0.2;
-subplot(2,3,1);hold on;
+subplot(1,5,1);hold on;
 dens_pre = cell2mat(dens(:,1)')*100;
 h = boxplot(dens_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
 setBoxStyle(h,linew);
@@ -384,23 +452,24 @@ set(gca,'position',gcapos);
 box off
 
 % high-ranked neuron connections
-subplot(2,3,2);hold on;
-pp = plot_pair_graph(cell2mat(hr_nedge(:,1)),cell2mat(hr_nedge(:,2)),mycc.black,mycc.blue,p);
-gcapos = get(gca,'position');
-ylabel('high-ranked neuron connections'); title(num2str(pp));
-set(gca,'position',gcapos);
-legend off; box off
+% subplot(1,6,2);hold on;
+% pp = plot_pair_graph(cell2mat(hr_nedge(:,1)),cell2mat(hr_nedge(:,2)),...
+%     mycc.black,mycc.blue,p);
+% gcapos = get(gca,'position');
+% ylabel('high-ranked neuron connections'); title(num2str(pp));
+% set(gca,'position',gcapos);
+% legend off; box off
 
 % edge pot sum
-subplot(2,3,3)
+subplot(1,5,2)
 pp = plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-ylabel('rank'); title(num2str(pp));
+ylabel('node strengh'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % node degree
-subplot(2,3,4)
+subplot(1,5,3)
 pp = plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('node degree');title(num2str(pp));
@@ -408,7 +477,7 @@ set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
-subplot(2,3,5)
+subplot(1,5,4)
 pp = plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('clustering coeff'); title(num2str(pp));
@@ -416,7 +485,7 @@ set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
-subplot(2,3,6)
+subplot(1,5,5)
 pp = plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('centrality'); title(num2str(pp));
@@ -424,14 +493,14 @@ set(gca,'position',gcapos);
 legend off; box off
 
 suptitle('all')
-saveas(gcf,[fig_path 'opto_spont_graph_prop_on_unnormalized_on.pdf']);
+saveas(gcf,[fig_path 'opto_spont_graph_prop_whole_unnormalized_on.pdf']);
 
 %% stim network
-figure; set(gcf,'color','w','position',[2006 320 691 425])
+figure; set(gcf,'color','w','position',[2017 597 717 148])
 
 % density
 boxwd = 0.2;
-subplot(2,3,1);hold on;
+subplot(1,5,1);hold on;
 dens_pre = cell2mat(dens_in(:,1)')*100;
 h = boxplot(dens_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
 setBoxStyle(h,linew);
@@ -448,32 +517,36 @@ set(gca,'position',gcapos);
 box off
 
 % edge pot sum
-subplot(2,3,2)
-pp = plot_pair_graph(cell2mat(ep_sum_in(:,1)),cell2mat(ep_sum_in(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,2)
+pp = plot_pair_graph(cell2mat(ep_sum_in(:,1)),cell2mat(ep_sum_in(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position'); title(num2str(pp));
-ylabel('rank');
+ylabel('node strengh');
 set(gca,'position',gcapos);
 legend off; box off
 
 % node degree
-subplot(2,3,3)
-pp = plot_pair_graph(cell2mat(ndeg_in(:,1)),cell2mat(ndeg_in(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,3)
+pp = plot_pair_graph(cell2mat(ndeg_in(:,1)),cell2mat(ndeg_in(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('node degree'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
-subplot(2,3,4)
-pp = plot_pair_graph(cell2mat(lcc_in(:,1)),cell2mat(lcc_in(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,4)
+pp = plot_pair_graph(cell2mat(lcc_in(:,1)),cell2mat(lcc_in(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('clustering coeff'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
-subplot(2,3,5)
-pp = plot_pair_graph(cell2mat(cent_in(:,1)),cell2mat(cent_in(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,5)
+pp = plot_pair_graph(cell2mat(cent_in(:,1)),cell2mat(cent_in(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('centrality'); title(num2str(pp));
 set(gca,'position',gcapos);
@@ -483,11 +556,11 @@ suptitle('stim')
 saveas(gcf,[fig_path 'opto_spont_graph_prop_stim_network_unnormalized_on.pdf']);
 
 %% nostim network
-figure; set(gcf,'color','w','position',[2006 320 691 425])
+figure; set(gcf,'color','w','position',[2017 597 717 148])
 
 % density
 boxwd = 0.2;
-subplot(2,3,1);hold on;
+subplot(1,5,1);hold on;
 dens_pre = cell2mat(dens_out(:,1)')*100;
 h = boxplot(dens_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
 setBoxStyle(h,linew);
@@ -504,32 +577,36 @@ set(gca,'position',gcapos);
 box off
 
 % edge pot sum
-subplot(2,3,2)
-pp = plot_pair_graph(cell2mat(ep_sum_out(:,1)),cell2mat(ep_sum_out(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,2)
+pp = plot_pair_graph(cell2mat(ep_sum_out(:,1)),cell2mat(ep_sum_out(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-ylabel('rank'); title(num2str(pp));
+ylabel('node strengh'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % node degree
-subplot(2,3,3)
-pp = plot_pair_graph(cell2mat(ndeg_out(:,1)),cell2mat(ndeg_out(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,3)
+pp = plot_pair_graph(cell2mat(ndeg_out(:,1)),cell2mat(ndeg_out(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('node degree'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
-subplot(2,3,4)
-pp = plot_pair_graph(cell2mat(lcc_out(:,1)),cell2mat(lcc_out(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,4)
+pp = plot_pair_graph(cell2mat(lcc_out(:,1)),cell2mat(lcc_out(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('clustering coeff'); title(num2str(pp));
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
-subplot(2,3,5)
-pp = plot_pair_graph(cell2mat(cent_out(:,1)),cell2mat(cent_out(:,2)),mycc.black,mycc.blue,p);
+subplot(1,5,5)
+pp = plot_pair_graph(cell2mat(cent_out(:,1)),cell2mat(cent_out(:,2)),...
+    mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
 ylabel('centrality'); title(num2str(pp));
 set(gca,'position',gcapos);

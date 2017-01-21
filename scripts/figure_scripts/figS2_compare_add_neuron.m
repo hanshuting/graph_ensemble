@@ -54,6 +54,9 @@ for n = 1:length(expt_name)
     coords = Coord_active;
     coords(end+1,:) = [0 max(coords(:,2))];
     coords(end+1,:) = [0 0];
+    coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
+    coords(end+1,:) = [max(coords(:,1)) 0];
+    coords = coords(1:size(an_model.graph,1),:);
     
     % plot pre and post models
     figure; set(gcf,'color','w','position',[2154 340 941 597])
@@ -104,67 +107,106 @@ stepsz = 0.5;
 binsz = 0.1;
 ww = 0.2;
 
-figure; set(gcf,'color','w','position',[2006 320 691 425])
-
 % density
-boxwd = 0.2;
-subplot(2,3,1);hold on;
+figure; set(gcf,'color','w','position',[1978 334 235 223])
+hold on;
+% boxwd = 0.2; 
 dens_pre = cell2mat(dens(:,1)')*100;
-h = boxplot(dens_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
-setBoxStyle(h,linew);
+% h = boxplot(dens_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
+% setBoxStyle(h,linew);
 dens_post = cell2mat(dens(:,2)')*100;
-h = boxplot(dens_post,'positions',2*stepsz,'width',boxwd,'colors',mycc.blue);
-set(h(7,:),'visible','off')
-setBoxStyle(h,linew);
-xlim([0 3*stepsz]);
-ylim([min([dens_pre,dens_post])-0.02 max([dens_pre,dens_post])]+0.02)
-gcapos = get(gca,'position');
+% h = boxplot(dens_post,'positions',2*stepsz,'width',boxwd,'colors',mycc.blue);
+% set(h(7,:),'visible','off')
+% setBoxStyle(h,linew);
+% xlim([0 3*stepsz]);
+% ylim([min([dens_pre,dens_post])-0.02 max([dens_pre,dens_post])]+0.02)
+pval = plot_pair_graph(dens_pre,dens_post,mycc.black,mycc.blue,p);
 ylabel('density (%)')
-set(gca,'xtick',[0.5 1],'xticklabel',{'base','hidden'},'linewidth',linew)
-set(gca,'position',gcapos);
-box off
+title(num2str(pval)); box off
+saveas(gcf,[fig_path 'all_compare_base_add_neuron_dens.pdf']);
+
+for n = 1:length(expt_name)
+
+figure; set(gcf,'color','w','position',[2230 328 1157 232])
 
 % edge pot sum
-subplot(2,3,2)
-% plot_opto_spont_cum_hist(ep_sum_cum,mycc,epsum_bin_range,linew);
-plot_pair_graph(cell2mat(ep_sum(:,1)),cell2mat(ep_sum(:,2)),mycc.black,mycc.blue,p);
+subplot(1,4,1)
+pval = plot_pair_graph(cell2mat(ep_sum(n,1)),cell2mat(ep_sum(n,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('sum(edge pot)');ylabel('log(p)');
-ylabel('rank')
+ylabel('rank'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
 
 % node degree
-subplot(2,3,3)
-% plot_opto_spont_cum_hist(ndeg_cum,mycc,ndeg_bin_range,linew);
-plot_pair_graph(cell2mat(ndeg(:,1)),cell2mat(ndeg(:,2)),mycc.black,mycc.blue,p);
+subplot(1,4,2)
+pval = plot_pair_graph(cell2mat(ndeg(n,1)),cell2mat(ndeg(n,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('node degree');ylabel('log(p)');
-ylabel('node degree')
+ylabel('node degree'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
 
 % lcc
-subplot(2,3,4)
-% plot_opto_spont_cum_hist(lcc_cum,mycc,lcc_bin_range,linew);
-plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
+subplot(1,4,3)
+pval = plot_pair_graph(cell2mat(lcc(:,1)),cell2mat(lcc(:,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('clustering coeff');ylabel('log(p)');
-ylabel('clustering coeff')
+ylabel('clustering coeff'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
 
 % centrality
-subplot(2,3,5)
-% plot_opto_spont_cum_hist(cent_cum,mycc,cent_bin_range,linew);
-plot_pair_graph(cell2mat(cent(:,1)),cell2mat(cent(:,2)),mycc.black,mycc.blue,p);
+subplot(1,4,4)
+pval = plot_pair_graph(cell2mat(cent(n,1)),cell2mat(cent(n,2)),mycc.black,mycc.blue,p);
 gcapos = get(gca,'position');
-% xlabel('centrality');ylabel('log(p)');
-ylabel('centrality')
+ylabel('centrality'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
 
-saveas(gcf,[fig_path 'compare_base_add_neuron_graph_prop.pdf']);
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} ...
+    '_compare_base_add_neuron_graph_prop.pdf']);
+
+end
+
+% mean of all experiments
+figure; set(gcf,'color','w','position',[2230 328 1157 232])
+
+% edge pot sum
+subplot(1,4,1)
+pval = plot_pair_graph(cellfun(@(x) mean(x),ep_sum(:,1)),...
+    cellfun(@(x) mean(x),ep_sum(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('rank'); title(num2str(pval))
+set(gca,'position',gcapos);
+legend off; box off
+
+% node degree
+subplot(1,4,2)
+pval = plot_pair_graph(cellfun(@(x) mean(x),ndeg(:,1)),...
+    cellfun(@(x) mean(x),ndeg(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('node degree'); title(num2str(pval))
+set(gca,'position',gcapos);
+legend off; box off
+
+% lcc
+subplot(1,4,3)
+pval = plot_pair_graph(cellfun(@(x) nanmean(x),lcc(:,1)),...
+    cellfun(@(x) nanmean(x),lcc(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('clustering coeff'); title(num2str(pval))
+set(gca,'position',gcapos);
+legend off; box off
+
+% centrality
+subplot(1,4,4)
+pval = plot_pair_graph(cellfun(@(x) mean(x),cent(:,1)),...
+    cellfun(@(x) mean(x),cent(:,2)),mycc.black,mycc.blue,p);
+gcapos = get(gca,'position');
+ylabel('centrality'); title(num2str(pval))
+set(gca,'position',gcapos);
+legend off; box off
+
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path ...
+    'all_compare_base_add_neuron_graph_prop.pdf']);
 
 
 end

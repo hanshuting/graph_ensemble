@@ -9,18 +9,12 @@ save_path = param.result_path.stats_path;
 result_path_base = param.result_path_base;
 ccode_path = param.ccode_path;
 linew = param.linew;
-epsum_quant = param.ndeg_quant;
-epsum_bin_range = param.epsum_bin_range;
 
 load(ccode_path);
 gmap = load(param.graymap);
-rmap = load(param.redmap);
 
 epsum = cell(length(expt_name),2);
-epsum_cum = cell(length(expt_name),2);
 
-redmap = load(param.redmap);
-bluemap = load(param.bluemap);
 redmap_light = load(param.redmap_light);
 
 qnoise = 0.7;
@@ -35,9 +29,10 @@ for n = 1:length(expt_name)
     load([data_path expt_name{n} '\Pks_Frame.mat']); % Pks_Frame
     load([data_path expt_name{n} '\opto_stim_high.mat']); % opto_stim_high
     load([data_path expt_name{n} '\opto_indx.mat']); % opto_indx
-    load([data_path expt_name{n} '\data_high.mat']); % data_high
+    load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee '.mat']); % data
     
-    model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model_' ge_type '.mat']);
+    model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model_'...
+        ge_type '.mat']);
     model.graph = full(model.graph);
     
     num_node = size(model.graph,1);
@@ -45,7 +40,7 @@ for n = 1:length(expt_name)
     num_nostim_cell = num_node-num_stim_cell;
     nostim_indx = setdiff(1:num_node,stim_indx);
     
-    num_frame = size(data_high,1);
+    num_frame = size(data,1);
     num_add = length(setdiff(unique(opto_stim_high),0));
     num_neuron = num_node-num_add;
     
@@ -78,80 +73,91 @@ for n = 1:length(expt_name)
     stim_recall = 44;
     stim_norecall = 39;
     
-    %% plot node strength against lcc
-%     lcc = local_cluster_coeff(model.graph);
-%     
-%     nodesz = 30;
-%     figure; set(gcf,'color','w','position',[1983 442 339 290])
-%     hold on
-%     scatter(epsum{n},lcc,nodesz,mycc.gray_light,'filled')
-%     scatter(epsum{n}(stim_indx),lcc(stim_indx),nodesz,mycc.red_light,'filled')
-%     scatter(epsum{n}(stim_recall),lcc(stim_recall),nodesz,mycc.red,'filled')
-%     scatter(epsum{n}(stim_norecall),lcc(stim_norecall),nodesz,mycc.blue,'filled')
-%     xlabel('node strength'); ylabel('local clustering coeff')
-%     
-%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_nodestrength_lcc.pdf']);
-%     
-%     %% clustering
-%     cluster_indx = kmeans([epsum{n}(stim_indx),lcc(stim_indx)],2);
-%     figure; set(gcf,'color','w','position',[1983 442 339 290])
-%     hold on
-%     scatter(epsum{n}(stim_indx),lcc(stim_indx),nodesz,mycc.red_light,'filled')
-%     scatter(epsum{n}(stim_indx(cluster_indx==1)),lcc(stim_indx(cluster_indx==1)),...
-%         nodesz,mycc.red,'filled')
-%     xlabel('node strength'); ylabel('local clustering coeff')
-%     
     %% use each node to predict opto stim
     % stimulating the second cell recalls the imprinted ensemble
     % use the second added neuron as standard
     pattern_indx = 2;
     nopattern_indx = 5;
     
-    % change single node activity and predict with LL
-    LL_frame = zeros(num_stim_cell,num_frame,2);
+    % predict cosine similarity
+    true_label = opto_stim_high'==(pattern_indx+1);
+    figure; set(gcf,'color','w','position',[2014 369 518 225])
+    subplot(1,2,1); hold on
+    % ensemble
+    [~,sim_core] = core_cos_sim(stim_indx,data(:,1:num_neuron),true_label);
+    [xx,yy,~,auc_ens] = perfcurve(true_label,sim_core,1);
+    plot(xx,yy,'color','k','linewidth',2*linew);
+    % individual cells
+    cc = jet(64);
+    auc = zeros(num_stim_cell,1);
     for ii = 1:num_stim_cell
-        for jj = 1:num_frame
-            frame_vec = data_high(jj,:);
-            frame_vec(stim_indx(ii)) = 0;
-            LL_frame(ii,jj,1) = compute_avg_log_likelihood(model.node_pot(1:num_neuron),...
-                model.edge_pot(1:num_neuron,1:num_neuron),model.logZ,frame_vec);
-            frame_vec(stim_indx(ii)) = 1;
-            LL_frame(ii,jj,2) = compute_avg_log_likelihood(model.node_pot(1:num_neuron),...
-                model.edge_pot(1:num_neuron,1:num_neuron),model.logZ,frame_vec);
-        end
+        [~,sim_core] = core_cos_sim(stim_indx(ii),data(:,1:num_neuron),true_label);
+        [xx,yy,~,auc(ii)] = perfcurve(true_label,sim_core,1);
+        curve_cc = cc(ceil((epsum{n}(stim_indx(ii))-min(epsum{n}(stim_indx)))/...
+            (max(epsum{n}(stim_indx))-min(epsum{n}(stim_indx)))*63+1),:);
+        plot(xx,yy,'color',curve_cc,'linewidth',linew);
     end
-    LL_on = squeeze(LL_frame(:,:,2)-LL_frame(:,:,1));
-    
-    % make predictions
-    thr = zeros(num_stim_cell,1);
-    LL_pred = nan(num_stim_cell,num_frame);
-    for ii = 1:num_stim_cell
-        [LL_pred(ii,:),thr(ii)] = pred_from_LL(LL_on(ii,:),qnoise);
-    end
-    
-    % calculate TPR and FPR
-    TPR = zeros(num_stim_cell,1);
-    FPR = zeros(num_stim_cell,1);
-    for jj = 1:num_stim_cell
-        TP = sum(LL_pred(jj,:)==1&opto_stim_high'==pattern_indx);
-        FP = sum(LL_pred(jj,:)~=1&opto_stim_high'==pattern_indx);
-        TN = sum(LL_pred(jj,:)~=1&opto_stim_high'~=pattern_indx);
-        FN = sum(LL_pred(jj,:)==1&opto_stim_high'~=pattern_indx);
-        TPR(jj) = TP/(TP+FN);
-        FPR(jj) = FP/(FP+TN);
-    end
-    
-    % plot
+    % plot auc
     nodesz = 30;
-    figure; set(gcf,'color','w','position',[2213 298 322 271])
-    hold on
-    plot([0 1],[0 1],'k--')
-    scatter(FPR(:,1),TPR(:,1),nodesz,mycc.gray,'filled')
-    scatter(FPR(pattern_indx,1),TPR(pattern_indx,1),nodesz,mycc.red,'filled')
-    scatter(FPR(nopattern_indx,1),TPR(nopattern_indx,1),nodesz,mycc.blue,'filled')
-    xlim([0 0.1]); ylim([0 0.1])
-    xlabel('FPR'); ylabel('TPR');
-
+    subplot(1,2,2); hold on
+    scatter(epsum{n}(stim_indx),auc,nodesz,mycc.gray,'filled')
+    scatter(epsum{n}(stim_recall),auc(stim_indx==stim_recall),nodesz,mycc.red,'filled')
+    scatter(epsum{n}(stim_norecall),auc(stim_indx==stim_norecall),nodesz,mycc.blue,'filled')
+    nsmi = min(epsum{n}(stim_indx));
+    nsma = max(epsum{n}(stim_indx));
+    plot([nsmi nsma],auc_ens*[1 1],'k--');
+    xlim([nsmi nsma]);
+    xlabel('node strength'); ylabel('AUC');
+        
+%     % change single node activity and predict with LL
+%     LL_frame_stim = zeros(num_stim_cell,num_frame,2);
+%     LL_frame_nostim = zeros(num_stim_cell,num_frame,2);
+%     for ii = 1:num_stim_cell
+%         for jj = 1:num_frame % 126:214
+%             frame_vec = data(jj,:);
+%             % stim node on
+%             frame_vec(num_neuron+pattern_indx) = 1;
+%             frame_vec(stim_indx(ii)) = 0;
+%             LL_frame_stim(ii,jj,1) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%             frame_vec(stim_indx(ii)) = 1;
+%             LL_frame_stim(ii,jj,2) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%             % stim node off
+%             frame_vec(num_neuron+pattern_indx) = 0;
+%             frame_vec(stim_indx(ii)) = 0;
+%             LL_frame_nostim(ii,jj,1) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%             frame_vec(stim_indx(ii)) = 1;
+%             LL_frame_nostim(ii,jj,2) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%         end
+%     end
+%     LL_stim = squeeze(LL_frame_stim(:,:,2)-LL_frame_stim(:,:,1));
+%     LL_nostim = squeeze(LL_frame_nostim(:,:,2)-LL_frame_nostim(:,:,1));
+%     LL_rel = LL_stim-LL_nostim;
+%     
+%     % plot ROC and calculate AUC
+%     auc = zeros(num_stim_cell,1);
+%     cc = jet(64);
+%     figure; set(gcf,'color','w','position',[2014 369 518 225])
+%     subplot(1,2,1); hold on
+%     for ii = 1:num_stim_cell
+%         [xx,yy,~,auc(ii)] = perfcurve(opto_stim_high'==(pattern_indx+1),...
+%             LL_stim(ii,:),1);
+%         curve_cc = cc(ceil((epsum{n}(stim_indx(ii))-min(epsum{n}(stim_indx)))/...
+%             (max(epsum{n}(stim_indx))-min(epsum{n}(stim_indx)))*63+1),:);
+%         plot(xx,yy,'color',curve_cc);
+%     end
+%     xlabel('FPR'); ylabel('TPR');
+%     
+%     nodesz = 30;
+%     subplot(1,2,2); hold on
+%     scatter(epsum{n}(stim_indx),auc,nodesz,mycc.gray,'filled')
+%     scatter(epsum{n}(stim_recall),auc(stim_indx==stim_recall),nodesz,mycc.red,'filled')
+%     scatter(epsum{n}(stim_norecall),auc(stim_indx==stim_norecall),nodesz,mycc.blue,'filled')
+%     xlabel('node strength'); ylabel('AUC');
+    
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_ROC_stim_cell.pdf']);
     
     %% plot epsum raster

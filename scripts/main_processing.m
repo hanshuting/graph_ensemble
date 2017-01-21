@@ -1,6 +1,8 @@
 % loopy data processing pipeline
 
 rng(1000);
+addpath(genpath('C:\Shuting\graph_ensemble\scripts'));
+addpath('C:\Shuting\graph_ensemble\fwMatch-darpa\src\loopy_model');
 
 %% set parameters
 param = struct();
@@ -164,8 +166,11 @@ figS2_SVD_OSI_pred(param);
 
 % compare base model and hidden node model
 cmp_param = param;
-cmp_param.expt_name = {'m21_d2_vis','m37_d2'};
-cmp_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neuron'}};
+cmp_param.expt_name = {'m21_d2_vis','m37_d2','pa_511507650_1_TF1','pa_511509529_1_TF1',...
+    'pa_511510650_1_TF1','pa_511510855_1_TF1'};
+cmp_param.ee = {{'all_high','all_high_add_neuron'},{'all_high','all_high_add_neuron'},...
+    {'vis_high','vis_high_add_neuron'},{'vis_high','vis_high_add_neuron'},...
+    {'vis_high','vis_high_add_neuron'},{'vis_high','vis_high_add_neuron'}};
 figS2_compare_add_neuron(cmp_param);
 
 % compare number of neurons
