@@ -1,0 +1,47 @@
+string Program.mode EVALUATION
+
+//***  main program (BMRM) parameters ***//
+// verbosity level
+int BMRM.verbosity 1
+	   
+
+//*** loss function parameters ***//
+// type of loss function
+string Loss.lossFunctionType EPSILON_INSENSITIVE
+double EpsilonInsensitiveLoss.epsilon 0.01
+
+// verbosity level
+int Loss.verbosity 0
+
+
+// predicted labels on test set (default: "predictedLabels")
+string Prediction.predictedLabelsFile prediction.txt
+
+// evaluated function values on test set (default: "decisionFunctionValues")
+string Prediction.decisionFunctionValuesFile decision.txt
+
+// learned model (default: "model")
+string Model.modelFile model
+
+
+//*** dataset parameters ***//
+int Data.verbosity 1
+
+
+// add a bias feature to the original feature vector?
+//   default: false
+bool Data.bias false
+
+
+// data set format: svmlight/libsvm format
+string Data.format VECTOR_LABEL_VECTOR_FEATURE
+
+// to be implemented data format.
+//string Data.fileType VECTOR_LABEL_VECTOR_FEATURE_BINARY
+
+// create feature (and label) matrix row views such that individual example can be access as a vector
+// default: 1
+//int VecData.matrixRowView 1
+
+string Data.featureFile ../../../Data/regression/abalone/abalone.train.txt.X
+string Data.labelFile ../../../Data/regression/abalone/abalone.train.txt.Y

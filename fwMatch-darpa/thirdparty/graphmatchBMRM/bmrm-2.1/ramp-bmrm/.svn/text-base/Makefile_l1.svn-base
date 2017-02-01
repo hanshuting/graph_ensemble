@@ -1,0 +1,135 @@
+BOOST_DIR=../externalpackages/
+UTILITIES_DIR=../utilities
+DATA_DIR=../data
+MODEL_DIR=../model
+LOSS_DIR=../loss
+SOLVER_DIR=../solver
+INNER_SOLVER_DIR=../solver/bmrminnersolver
+
+CORE_OBJ = sml.o common.o configuration.o bmrmexception.o timer.o
+DATA_OBJ = data.o vecdata.o
+MODEL_OBJ = model.o
+LOSS_OBJ = loss.o scalarloss.o binaryclassificationloss.o softmarginloss.o squaredsoftmarginloss.o univariateregressionloss.o epsiloninsensitiveloss.o\
+           wtamulticlassloss.o expmulticlassloss.o ndcgrankloss.o
+
+SOLVER_OBJ = bmrm.o lbfgs.o sublbfgs.o
+INNER_SOLVER_OBJ = bmrminnersolver.o l2n2_bmrmdualinnersolver.o l2n2_daifletcherpgm.o l2n2_prloqo.o l2n2_linesearch.o l1n1_clp.o 
+
+FACTORY_SRC = ${LOSS_DIR}/lossfactory.hpp ${DATA_DIR}/datafactory.hpp ${SOLVER_DIR}/solverfactory.hpp ${INNER_SOLVER_DIR}/bmrminnersolverfactory.hpp
+
+#CXX = g++
+
+### for debugging ###
+#COIN_CFLAGS = -I${COIN_INC_DIR} -O3 -fomit-frame-pointer -pipe -pedantic-errors -Wimplicit -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion  
+#CFLAGS = -O0 -g  -DHAVE_L1N1_INNER_SOLVER -I${DATA_DIR} -I${MODEL_DIR} -I${UTILITIES_DIR} -I${LOSS_DIR} -I${SOLVER_DIR} -I${INNER_SOLVER_DIR} -I${BOOST_DIR} ${COIN_CFLAGS}
+
+### for release ###
+COIN_CFLAGS = -I${COIN_INC_DIR} -O3 -fomit-frame-pointer -pipe -DNDEBUG -pedantic-errors -Wimplicit -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion  
+CFLAGS = -O3 -DHAVE_L1N1_INNER_SOLVER -DNDEBUG -I${DATA_DIR} -I${MODEL_DIR} -I${UTILITIES_DIR} -I${LOSS_DIR} -I${SOLVER_DIR} -I${INNER_SOLVER_DIR} -I${BOOST_DIR} ${COIN_CFLAGS}
+
+COIN_LDFLAGS = -L$(COIN_LIB_DIR) -lm -lClp -lCoinUtils `cat $(COIN_LIB_DIR)/coinutils_addlibs.txt`
+LDFLAGS = ${COIN_LDFLAGS}
+
+.PHONY: all
+
+all: ramp-bmrm-train ramp-bmrm-predict
+
+# executable
+ramp-bmrm-train: ramp-bmrm-train.cpp ${CORE_OBJ} ${DATA_OBJ} ${MODEL_OBJ} ${LOSS_OBJ} ${SOLVER_OBJ} ${INNER_SOLVER_OBJ} ${FACTORY_SRC}
+	${CXX} ${CFLAGS} ${LDFLAGS} ramp-bmrm-train.cpp -o ramp-bmrm-train ${CORE_OBJ} ${DATA_OBJ} ${MODEL_OBJ} ${LOSS_OBJ} ${SOLVER_OBJ} ${INNER_SOLVER_OBJ} 
+
+ramp-bmrm-predict: ramp-bmrm-predict.cpp ${CORE_OBJ} ${DATA_OBJ} ${MODEL_OBJ} ${LOSS_OBJ} ${FACTORY_SRC}
+	${CXX} ${CFLAGS} ${LDFLAGS} ramp-bmrm-predict.cpp -o ramp-bmrm-predict ${CORE_OBJ} ${DATA_OBJ} ${MODEL_OBJ} ${LOSS_OBJ} 
+
+
+# solver objects
+sublbfgs.o: ${SOLVER_DIR}/sublbfgs.hpp ${SOLVER_DIR}/sublbfgs.cpp ${FACTORY_SRC}
+	${CXX} ${CFLAGS} -c ${SOLVER_DIR}/sublbfgs.cpp
+
+lbfgs.o: ${SOLVER_DIR}/lbfgs.hpp ${SOLVER_DIR}/lbfgs.cpp ${FACTORY_SRC}
+	${CXX} ${CFLAGS} -c ${SOLVER_DIR}/lbfgs.cpp
+
+bmrm.o: ${SOLVER_DIR}/bmrm.hpp ${SOLVER_DIR}/bmrm.cpp ${FACTORY_SRC}
+	${CXX} ${CFLAGS} -c ${SOLVER_DIR}/bmrm.cpp
+
+bmrminnersolver.o: ${INNER_SOLVER_DIR}/bmrminnersolver.hpp ${INNER_SOLVER_DIR}/bmrminnersolver.cpp
+	${CXX} ${CFLAGS} -c ${INNER_SOLVER_DIR}/bmrminnersolver.cpp
+
+l2n2_bmrmdualinnersolver.o: ${INNER_SOLVER_DIR}/l2n2_bmrmdualinnersolver.hpp ${INNER_SOLVER_DIR}/l2n2_bmrmdualinnersolver.cpp
+	${CXX} ${CFLAGS} -c ${INNER_SOLVER_DIR}/l2n2_bmrmdualinnersolver.cpp
+
+l2n2_daifletcherpgm.o: ${INNER_SOLVER_DIR}/l2n2_daifletcherpgm.hpp ${INNER_SOLVER_DIR}/l2n2_daifletcherpgm.cpp
+	${CXX} ${CFLAGS} -c ${INNER_SOLVER_DIR}/l2n2_daifletcherpgm.cpp
+
+l2n2_prloqo.o: ${INNER_SOLVER_DIR}/l2n2_prloqo.hpp ${INNER_SOLVER_DIR}/l2n2_prloqo.cpp
+	${CXX} ${CFLAGS} -c ${INNER_SOLVER_DIR}/l2n2_prloqo.cpp
+
+l1n1_clp.o: ${INNER_SOLVER_DIR}/l1n1_clp.hpp ${INNER_SOLVER_DIR}/l1n1_clp.cpp
+	${CXX} ${CFLAGS} ${COIN_CFLAGS} -c ${INNER_SOLVER_DIR}/l1n1_clp.cpp
+
+l2n2_linesearch.o: ${INNER_SOLVER_DIR}/l2n2_linesearch.hpp ${INNER_SOLVER_DIR}/l2n2_linesearch.cpp
+	${CXX} ${CFLAGS} -c ${INNER_SOLVER_DIR}/l2n2_linesearch.cpp
+	
+
+# loss objects
+loss.o: ${LOSS_DIR}/loss.hpp ${LOSS_DIR}/loss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/loss.cpp
+
+scalarloss.o: ${LOSS_DIR}/scalarloss.hpp ${LOSS_DIR}/scalarloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/scalarloss.cpp
+
+binaryclassificationloss.o: ${LOSS_DIR}/binaryclassificationloss.hpp ${LOSS_DIR}/binaryclassificationloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/binaryclassificationloss.cpp
+
+univariateregressionloss.o: ${LOSS_DIR}/univariateregressionloss.hpp ${LOSS_DIR}/univariateregressionloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/univariateregressionloss.cpp
+
+softmarginloss.o: ${LOSS_DIR}/softmarginloss.hpp ${LOSS_DIR}/softmarginloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/softmarginloss.cpp
+
+squaredsoftmarginloss.o: ${LOSS_DIR}/squaredsoftmarginloss.hpp ${LOSS_DIR}/squaredsoftmarginloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/squaredsoftmarginloss.cpp
+
+epsiloninsensitiveloss.o: ${LOSS_DIR}/epsiloninsensitiveloss.hpp ${LOSS_DIR}/epsiloninsensitiveloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/epsiloninsensitiveloss.cpp
+
+wtamulticlassloss.o: ${LOSS_DIR}/wtamulticlassloss.hpp ${LOSS_DIR}/wtamulticlassloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/wtamulticlassloss.cpp
+
+expmulticlassloss.o: ${LOSS_DIR}/expmulticlassloss.hpp ${LOSS_DIR}/expmulticlassloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/expmulticlassloss.cpp
+
+ndcgrankloss.o: ${LOSS_DIR}/ndcgrankloss.hpp ${LOSS_DIR}/ndcgrankloss.cpp 
+	${CXX} ${CFLAGS} -c ${LOSS_DIR}/ndcgrankloss.cpp
+
+# data objects
+data.o: ${DATA_DIR}/data.hpp ${DATA_DIR}/data.cpp ${CORE_OBJ}
+	${CXX} ${CFLAGS} -c ${DATA_DIR}/data.cpp
+
+vecdata.o: ${DATA_DIR}/vecdata.hpp ${DATA_DIR}/vecdata.cpp ${CORE_OBJ}
+	${CXX} ${CFLAGS} -c ${DATA_DIR}/vecdata.cpp
+
+# model objects
+model.o: ${MODEL_DIR}/model.hpp ${MODEL_DIR}/model.cpp ${CORE_OBJ}
+	${CXX} ${CFLAGS} -c ${MODEL_DIR}/model.cpp
+
+
+# core objects
+sml.o: ${UTILITIES_DIR}/sml.hpp ${UTILITIES_DIR}/sml.cpp
+	${CXX} ${CFLAGS} -c ${UTILITIES_DIR}/sml.cpp
+
+
+common.o: ${UTILITIES_DIR}/common.hpp ${UTILITIES_DIR}/common.cpp
+	${CXX} ${CFLAGS} -c ${UTILITIES_DIR}/common.cpp
+
+configuration.o: ${UTILITIES_DIR}/configuration.hpp ${UTILITIES_DIR}/configuration.cpp
+	${CXX} ${CFLAGS} -c ${UTILITIES_DIR}/configuration.cpp
+
+bmrmexception.o: ${UTILITIES_DIR}/bmrmexception.hpp ${UTILITIES_DIR}/bmrmexception.cpp
+	${CXX} ${CFLAGS} -c ${UTILITIES_DIR}/bmrmexception.cpp
+
+timer.o: ${UTILITIES_DIR}/timer.hpp ${UTILITIES_DIR}/timer.cpp
+	${CXX} ${CFLAGS} -c ${UTILITIES_DIR}/timer.cpp
+
+clean:
+	rm *.o ramp-bmrm-train ramp-bmrm-predict;

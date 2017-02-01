@@ -1,0 +1,16 @@
+//adapted from Dominic Battre's implementation of the Hungarian algorithm by hbc@mit.edu
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifndef ASP_H
+#define ASP_H
+
+typedef double cost;
+#define COST_TYPE tFloat64
+
+#define INF 100000
+
+void lap(int size, cost **Array, long *col_mate, long *row_mate);
+void lap_q(int size, cost *c, cost *p, cost *a, cost *b, long *col_mate, long *row_mate);
+#endif

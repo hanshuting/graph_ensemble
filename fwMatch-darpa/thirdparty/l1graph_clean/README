@@ -1,0 +1,21 @@
+structSearchInstance.m creates a batch of 100 models (trials) of a given type.
+It takes as input the number of nodes and the number of variables, while
+the other model aspects, such as graph type, etc. can be set by modifying  
+the mtype Hashtable in that function.
+
+logisticRegBoyd.m implements the ell_1 penalized logistic regression.
+It is a wrapper for code by Koh, Kim and Boyd. The binaries of their code 
+for your platform can be downloaded from http://www.stanford.edu/~boyd/l1_logreg/ 
+
+gibbs_mex.cpp needs to be compiled using mex.
+See http://cnx.org/content/m12348/latest/ for more info on mex files.
+
+chowliu.m implements the chow liu algorithm to estimate a tree graph.
+
+getGraphModel.m creates a graphical model instance and takes as input a Hashtable
+containing the model parameter settings.
+
+getSamples.m gets samples.
+
+starmarg.m implements belief propagation for star graphs.
+

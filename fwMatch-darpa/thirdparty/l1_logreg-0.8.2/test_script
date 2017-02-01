@@ -1,0 +1,46 @@
+#! /bin/sh
+
+tests="\
+train_iono                  \
+classify_iono               \
+regpath_iono                \
+classify_path_iono          \
+train_internetad            \
+classify_internetad"
+
+all=0
+passed=0
+failed=0
+
+for tst in $tests; do
+    if /bin/sh -c "cd examples; ./$tst"; then
+        all=`expr $all + 1`;
+        passed=`expr $passed + 1`;
+        echo "PASS: $tst";
+    else
+        all=`expr $all + 1`;
+        failed=`expr $failed + 1`;
+        echo "FAIL: $tst";
+    fi;
+done;
+
+if test $passed -eq $all; then
+    echo " "
+    echo "**********************"
+    echo " "
+    echo "   PASSED ALL TESTS"
+    echo " "
+    echo "**********************"
+    echo " "
+else
+    echo " "
+    echo "**********************"
+    echo " "
+    echo "        FAILED"
+    echo " "
+    echo "**********************"
+    echo " "
+    echo "$passed passed out of $all tests "
+    echo " "
+fi;
+

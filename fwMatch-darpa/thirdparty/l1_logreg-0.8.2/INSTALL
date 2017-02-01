@@ -1,0 +1,88 @@
+
+*************************
+INSTALLATION of l1_logreg
+*************************
+
+Before installation, be sure that BLAS and LAPACK libraries are installed in 
+your machine. For more information for installation and libraries,
+please see the HTML manual at http://www.stanford.edu/~boyd/l1_logreg/XXX/index.html.
+
+
+1. Building programs
+2. Building a HTML manual
+
+
+
+*****************
+BUILDING PROGRAMS
+*****************
+
+The normal way to proceed after untarring the source package is this:
+
+    ./configure
+    make
+    make check
+    make install
+
+
+This will build the three binary files l1_logreg_train, l1_logreg_classify
+and l1_logreg_regpath at the src_c directory, check whether the solver is
+working correctly, and then install (copy) the files to an installation 
+directory. If you come across problems during compilation or configuration,
+you may want to run make distclean before trying again.
+
+The most important option for l1_logreg is --with-blas-dir. This option can 
+be used to specify the directory where BLAS library is installed. For example,
+
+    ./configure --with-blas-dir="/usr/sweet/apps/sunstudio-10/lib"
+
+
+will look for a BLAS library in the specified directory. You may use 
+--with-lapack-dir as well if BLAS and LAPACK are installed in different 
+directories:
+
+    ./configure --with-blas-dir="/home/path_for_blas" --with-lapack-dir="/home/path_for_lapack"
+
+
+To specify a library name as well, you may want to use --with-blas option. For example, if BLAS library, libmyblas.a or libmyblas.so is installed at /home/mylib
+
+    ./configure --with-blas="-L/home/mylib -lmyblas"
+
+
+Note that -L is used in front of the BLAS directory and -l is used in front of the BLAS library name.
+
+The configure script tries to choose a good compiler and optimization option according to your platform. However, you may use some other compiler (and/or other options for C compiler), for example :
+
+    ./configure CC="gcc32" CFLAGS="-o3 -funroll-loops"
+
+
+The configure script use Fortran compiler by default. l1_logreg is written in C, but most BLAS/LAPACK libraries are in Fortran. The calling conventions of Fortran routines from C are different platform by platform. The most widly used convention is using lowercase routine name with underscore (subroutine FOO in Fortran becomes foo_ in C, but foo, Foo, foo__, _foo in some other platforms). However, some Fortran compiler may cause trouble in building process. In this case, you may also want to disable Fortran compiler with:
+
+    ./configure --with-fortran=no
+
+
+Finally, you can build binaries using static linking with:
+
+    ./configure --with-static-linking=yes
+
+
+**********************
+BUILDING A HTML MANUAL
+**********************
+
+You can build a HTML manual if 'doxygen' is installed in your computer with the following commands:
+
+    doxygen doc/document.conf
+
+or
+
+    ./configure
+    make doc
+
+
+If succeeded, you may want to browse the following file to read the manual:
+
+    doc/html/index.html
+
+
+

@@ -1,0 +1,8 @@
+#! /bin/sh
+
+autoreconf -fv
+
+# When using the following command, be sure to backup the INSTALL file.
+# It will overwrite the INSTALL file to a generic GNU one.
+#
+# autoreconf -fvi

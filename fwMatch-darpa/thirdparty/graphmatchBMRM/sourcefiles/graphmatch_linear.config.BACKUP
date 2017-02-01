@@ -1,0 +1,67 @@
+int BMRM.verbosity 1
+int BMRM.convergenceLog 0
+int BMRM.maxNumOfIter 500
+
+// tolerance for gamma termination criterion (set negative value to disable this criterion)
+double BMRM.gammaTol -1
+
+// [optional] other possible choices {L2N2_prLOQO, L1N1_CLP}
+string BMRM.innerSolverType L2N2_DaiFletcherPGM
+
+int InnerSolver.verbosity 0
+string InnerSolver.gradType DENSE
+
+// [optional] maximum number of projection (to a feasible set) iterations
+int L2N2_DaiFletcherPGM.maxProjIter 200
+
+// [optional] maximum numnber of gradient projection iterations
+int L2N2_DaiFletcherPGM.maxPGMIter 30000
+
+// [optional] number of iterations an inactive gradient is allowed to remain in
+int L2N2_DaiFletcherPGM.gradIdleAge 10
+
+// [optional] maximum gradient set size
+int L2N2_DaiFletcherPGM.maxGradSetSize 5000
+
+// [optinal] tolerance
+double L2N2_DaiFletcherPGM.tolerance 1e-8
+
+string Loss.lossFunctionType GRAPHMATCH
+
+double EpsilonInsensitiveLoss.epsilon 0.01
+
+// verbosity level
+int Loss.verbosity 0
+
+int Data.verbosity 1
+int Data.biasFeature 0
+string Data.format GRAPHMATCH
+
+//////////////////////////////////////////////////
+// GRAPHMATCH parameters                        //
+//////////////////////////////////////////////////
+
+// tolerance for epsilon termination criterion (set negative value to disable this criterion)
+double BMRM.epsilonTol 1e-3
+
+// What is the maximum number of training/test examples we may use?
+int maxdata -1
+
+string Program.pairs ALTERNATING
+
+// The parameters below are the ones that you may want to change.
+
+double BMRM.lambda 1
+
+int nnodes 30
+int nfeatures 60
+
+// houses10_train.txt is the baseline 10 dataset.
+string Data.trainFile ../Data/house/pairs/houses80_train.txt
+string Data.testFile ../Data/house/pairs/houses80_test.txt
+
+string Model.modelFile model80_linear
+int quadratic 0
+
+// When delta = -1, don't perform normalisation.
+double delta -1

@@ -1,0 +1,984 @@
+/**
+ * \mainpage    l1_logreg: A large-scale solver for l1-regularized logistic regression problems
+
+<h3 class="centered">
+0.8.2
+</h3>
+ 
+<h3 class="centered">
+<a href="http://www.stanford.edu/~deneb1">Kwangmoo Koh</a>,
+<a href="http://www.stanford.edu/~sjkim">Seung-Jean Kim</a>, and
+<a href="http://www.stanford.edu/~boyd">Stephen Boyd</a>
+</h3>
+
+\section idx Table of contents
+<ul>
+<li> \ref introduction
+<li> \ref install
+<li> \ref download
+<li> \ref usage
+<li> \ref fileformat
+<li> \ref example
+</ul>
+
+\section introduction Introduction
+  
+<code>l1_logreg</code> is an implementation of the interior-point method
+for l1-regularized logistic regression described in the paper,
+<a href="http://www.stanford.edu/~boyd/l1_logistic_reg.html">An Interior-Point Method for Large-Scale l1-Regularized Logistic Regression</a>.
+This implementation consists of three main functions:
+<ul>
+<li> <code>l1_logreg_train</code> for training
+<li> <code>l1_logreg_classify</code> for classification
+<li> <code>l1_logreg_regpath</code> for (approximate) regularization path computation
+</ul>
+
+<code>l1_logreg</code> concerns the <i>logistic model</i> that has the form
+\f[
+    \mbox{Prob}(b|x) = \frac{\exp(b(w^Tx+v))}{1+\exp(b(w^Tx+v))},
+\f]
+where \f$x\in\mathbf{R}^n\f$ denotes a vector of feature variables,
+and \f$b\in\{-1,+1\}\f$ denotes the associated binary outcome (class).
+Here, \f$\mbox{Prob}(b|x)\f$ is the conditional probability of \f$b\f$,
+given \f$x\f$.
+The logistic model has parameters \f$v\in\mathbf{R}\f$ (the intercept)
+and \f$w\in\mathbf{R}^n\f$ (the weight vector).
+
+With a given set of training examples,
+\f[
+    (x_i,b_i)\in \mathbf{R}^n \times \{-1,+1\},~i=1,\ldots,m,
+\f]
+<code>l1_logreg_train</code> finds the logistic model by solving
+an optimization problem of the form
+\f[
+ \begin{array}{ll}\mbox{minimize} &
+ (1/m)\sum_{i=1}^m \log\left(1+\exp(-b_i(x_i^Tw+v))\right)
+     + \lambda \sum_{i=1}^n |w_i|,
+ \end{array}
+\f]
+where the variables are \f$w \in \mathbf R^n\f$, \f$v \in \mathbf R\f$,
+and the problem data are \f$x_i\f$, \f$b_i\f$ and \f$\lambda >0\f$.
+We refer to the problem as a
+<i>\f$l_1\f$-regularized logistic regression problem</i> (l1-regularized LRP).
+
+Once we find maximum likelihood values of \f$v\f$ and \f$w\f$,
+<i>i.e.</i>, a solution of the l1-regularized LRP,
+we can predict the probability of the two possible outcomes,
+\f$\mbox{Prob}(\pm 1|x)\f$, given a new feature vector \f$x\in\mathbf{R}^n\f$,
+using the associated logistic model.
+
+
+<code>l1_logreg_classify</code> performs classification
+over a (test) data set 
+\f$ \{\tilde{x}_i\in\mathbf{R}^n:~i=1,\ldots,\tilde{m}\}\f$ by computing
+\f[
+\hat{b}_i = \mbox{sgn}\left(\tilde{x}_i^Tw+v\right),\quad~i=1,\ldots,\tilde{m},
+\f]
+which picks the more likely outcome, given \f$x_i\f$, according to 
+the logistic model found by <code>l1_logreg_train</code>.
+<p>
+The regularization parameter \f$\lambda\f$ roughly controls the number of
+nonzero components in \f$w\f$, with larger \f$\lambda\f$ typically
+yielding sparser \f$w\f$.
+The family of solutions, as \f$\lambda\f$ varies over \f$(0,\infty)\f$
+is called the <i>regularization path</i>.
+<code>l1_logreg_regpath</code> finds an approximate regularization path
+efficiently using a warmstart technique.
+
+To solve the l1-regularized LRP, <code>l1_logreg</code> uses 
+Preconditioned Conjugate Gradient (PCG) method if the feature matrix 
+is stored in sparse format, and the direct method if the feature matrix 
+is stored in dense format.
+For more information on file format, see \ref fileformat "file format" page.
+
+
+\subsection features Features
+
+<code>l1_logreg</code>
+<ul>
+<li> can handle both dense and sparse problems.
+<li> can handle large-scale (sparse) problems
+(with a million features and examples).
+<li> supports various external \ref library "BLAS and LAPACK libraries"
+(ATLAS, MKL, ACML and so on).
+<li> can apply standardization to sparse data efficiently.
+</ul>
+
+\subsection howtouse How to use the package
+You can use the package in different ways.
+<ul>
+<li>
+The easiest method is to use the stand-alone executables 
+<code>l1_logreg_train</code>, <code>l1_logreg_classify</code> and
+<code>l1_logreg_regpath</code> in the command line.
+See \ref usageshell "using l1_logreg in shell" section.
+<li>
+Write a C-program that calls the function <code>l1_logreg_train</code>
+and <code>l1_logreg_train</code> in <code>src_c/l1_logreg.c</code>.
+<li>
+It is also callable from Matlab, using Matlab system call.
+See \ref usagematlab "using l1_logreg in Matlab" section.
+<li>
+We hope to add an R interface soon.
+</ul>
+
+\section install Installation
+
+To use <code>l1_logreg</code>, you need to get executables compatible
+with your machine. You may download precompiled executables or 
+download the source code to build your own.
+
+To install precompiled executables, you can simply download 
+executables compatible with your OS and CPU. 
+ 
+If your cannot find appropriate binaries for your machine, follow the instructions in \ref srcbuild "build-your-own" section.
+
+If you have trouble in configuration or compilation, see  
+\ref stepbystep "step-by-step installation" or check \ref faq "FAQ".
+
+\section download Download
+<code>l1_logreg</code> is distributed under the terms of the 
+<a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License 2.0</a>.
+For commercial applications that may be incompatible with this license, please do not hesitate to contact us to discuss alternatives.
+
+To obtain the <code>l1_logreg</code> distribution, which includes 
+the source code, the manual, and example data sets, use the following links:
+<ul>
+<li> Source package: <a href="download/l1_logreg-0.8.2.tar.gz">l1_logreg-0.8.2.tar.gz (352K)</a>
+</ul>
+
+If you just want binaries, you can download them from the following links:
+<ul>
+<li> 
+Binaries for Intel/AMD Linux: 
+<a href="download/l1_logreg-0.8.2-i686-pc-linux-gnu.tar.gz">l1_logreg-0.8.2-i686-pc-linux-gnu.tar.gz (2.4M)</a>
+<li> 
+Binaries for Intel MAC OS X (10.5): 
+<a href="download/l1_logreg-0.8.2-i686-apple-darwin9.7.0.tar.gz">l1_logreg-0.8.2-i686-apple-darwin9.7.0.tar.gz (88K)</a>
+</ul>
+</ul>
+
+If you want to run examples, download and untar the source package first,
+and put the executables in the binary package at <code>src_c</code> directory.
+For test, run <code>test_script</code> at the top-build directory of source package 
+after putting/making the binaries in <code>src_c</code> directory.
+
+
+NOTE: The pre-compiled binaries would be slow. To achieve maximum performance
+you might want to compile the source code using BLAS appropriate to your own machine.
+
+Before installation, be sure that BLAS and LAPACK libraries are installed
+in your machine. If not (or not sure), please check the 
+\ref library "libraries" page.
+
+
+\section usage Usage
+
+\subsection usageshell Using l1_logreg in shell
+
+Typical usage of <code>l1_logreg_train</code> is:
+<pre class="shell">
+<span class="cmd">l1_logreg_train -s train_x train_b 0.01 model</span>
+</pre>
+It performs training, that is learning a logistic model from training examples
+of feature matrix <code>train_x</code> and class vector <code>train_b</code> with \f$\lambda\f$= 0.01. The model learned from example data are stored in <code>model</code>.
+
+Typical usage of <code>l1_logreg_classify</code> is:
+<pre class="shell">
+<span class="cmd">l1_logreg_classify model test_x result</span>
+</pre>
+It classifies the test data using the logistic model parameters 
+stored in <code>model</code> and store the classification result to 
+<code>result</code> file.
+If you want to not only classify the test data, but also compare the result with a known class vector <code>test_b</code>, use the <code>-t</code> option:
+<pre class="shell">
+<span class="cmd">l1_logreg_classify -t test_b model test_x results</span>
+</pre>
+
+\subsection usagematlab Using l1_logreg in Matlab
+
+<code>l1_logreg</code> is callable from Matlab. 
+You may write the problem data (feature matrix and class vector) first
+using <code>mmwrite</code> script;
+see \ref matlabmm "writing matrices in Matrix Market (MM) format using Matlab"
+page. 
+You may call stand-alone executables using Matlab <code>system</code> call.
+For example,
+<pre class="matlab">
+<span class="cmd">mmwrite('ex_X',X);</span>
+<span class="cmd">mmwrite('ex_b',b);</span>
+<span class="cmd">system('l1_logreg_train -s ex_X ex_b 0.01 model_iono')</span>
+<span class="result">...</span>
+<span class="cmd">model_iono = mmread('model_iono');</span>
+</pre>
+You may assign the result file to a Matlab variable using
+<code>mmread</code> script.
+For example,
+<pre class="matlab">
+<span class="cmd">system('l1_logreg_classify -t ex_b model_iono ex_X result_iono')</span>
+<span class="result">...</span>
+<span class="cmd">model_iono = mmread('result_iono');</span>
+</pre>
+
+\subsection calltrain Calling sequence for training
+
+Calling sequence for <code>l1_logreg_train</code> is 
+<pre>
+l1_logreg_train [options] feature_file class_file lambda model_file
+</pre>
+Arguments are
+<pre>
+    feature_file        - feature matrix
+    class_file          - output vector
+    lambda              - regularization parameter
+    model_file          - store model data to file model_file
+</pre>
+Options are
+<pre>
+    -q                  - quiet mode
+    -v [0..3]           - set verbosity level (default 1)
+                            0 : show one line summary
+                            1 : show simple log
+                            3 : show detailed log
+    -r                  - use relative lambda
+                            if used,     lambda := lambda*lambda_max
+                            if not used, lambda := lambda
+    -s                  - standardize data
+</pre>
+Advanced options are
+<pre>
+    -h                  - show coefficients histogram and trim
+    -k <double>         - set tolerance for zero coefficients from KKT
+                          condition
+    -t <double>         - set tolerance for duality gap
+</pre>
+
+See \ref fileformat "file format" page for the formats of 
+<code>feature_file</code>, <code>class_file</code> and <code>out_file</code>.
+
+\subsection callclass Calling sequence for classification
+
+Calling sequence for <code>l1_logreg_classify</code> is:
+<pre>
+l1_logreg_classify [options] model_file feature_file result_file
+</pre>
+Arguments are:
+<pre>
+    model_file          - model data(coefficients and intercept)
+                          found by either l1_logreg_train or
+                          l1_logreg_regpath
+    feature_file        - feature matrix
+    result_file         - store classification results to result_file
+                          if model_file is generated from
+                           1) l1_logreg_train, then predicted outcomes
+                           2) l1_logreg_regpath, then the number of errors
+                          will be stored.
+</pre>
+Options are:
+<pre>
+    -q                  - quiet mode
+    -p                  - store probability instead of predicted outcome
+    -t <class_file>     - test classification result
+                          against real class vector in <class_file>
+</pre>
+
+See \ref fileformat "file format" page for the formats of 
+<code>feature_file</code>, <code>class_file</code> and <code>out_file</code>.
+
+\subsection callregpath Calling sequence for regularization path computation
+
+Calling sequence for <code>l1_logreg_regpath</code> is:
+<pre>
+l1_logreg_regpath [options] feature_file class_file lambda_min num_lambda model_file
+</pre>
+Arguments are:
+<pre>
+    feature_file        - feature matrix
+    class_file          - output vector
+    lambda_min          - minimum value of regularization parameter
+    num_lambda          - number of lambdas (sample)
+    model_file          - store results to file model_file
+</pre>
+Options are:
+<pre>
+    -c                  - only coefficients (to know real coefficients).
+                          The model_file generated with -c option cannot
+                          be used for classification.
+                          Use this option only to plot regularization path.
+    -q                  - quiet mode
+    -v [0..3]           - set verbosity level
+                            0 : show one line summary
+                            1 : show simple log
+                            3 : show detailed log
+    -r                  - use relative lambda
+                            if used,     lambda := lambda*lambda_max
+                            if not used, lambda := lambda
+    -s                  - standardize data
+</pre>
+Advanced options are
+<pre>
+    -k <double>         - set tolerance for zero coefficients from KKT
+                          condition
+    -t <double>         - set tolerance for duality gap
+</pre>
+
+See \ref fileformat "file format" page for the formats of 
+<code>feature_file</code>, <code>class_file</code> and <code>out_file</code>.
+
+\section example Example
+
+<ul>
+<li> \ref extraining
+<li> \ref exclassification
+<li> \ref exregpath
+</ul>
+
+\subsection extraining Training
+
+Consider a small problem with 3 examples and 4 features:
+<code> <pre>
+           feature 1   feature 2   feature 3   feature 4       class
+example 1      3           0           1          -2             1
+example 2      0           0           2           5            -1
+example 3      7           1          -4           0             1
+</pre> </code>
+
+To solve associated l1-regularized LRP, a user stores a
+feature matrix and a class vector in MM format.
+Feature matrix can be stored in either array (dense) format and
+coordinate (sparse) format.
+If the problem is stored in dense format, <code>l1_logreg_train</code>
+uses direct methods. If stored in sparse format, 
+<code>l1_logreg_train</code> uses the PCG method in solving the problem.
+
+The associated feature matrix can be stored in the file
+<code>train_x</code> in dense format.
+<pre class="filename"><span>train_x</span></pre>
+<pre class="file">
+%%%MatrixMarket matrix array real general
+3 4
+ 3
+ 0
+ 7
+ 0
+ 0
+ 1
+ 1
+ 2
+-4
+-2
+ 5
+ 0
+</pre>
+The associated feature matrix can be stored in the file
+<code>train_x</code> in sparse format.
+<pre class="filename"><span>train_x</span></pre>
+<pre class="file">
+%%%MatrixMarket matrix coordinate real general
+3 4 8
+1 1  3
+3 1  7
+3 2  1
+1 3  1
+2 3  2
+3 3 -4
+1 4 -2
+2 4  5
+</pre>
+
+A class file must be stored in array (dense) format for both direct 
+and PCG methods.
+<pre class="filename"><span>train_b</span></pre>
+<pre class="file" >
+%%%MatrixMarket matrix array real general
+3 1
+ 1
+-1
+ 1
+</pre>
+
+To standardize training data <code>train_x</code> and to learn a model 
+with \f$\lambda=0.01\f$ from the standardized training data,
+execute the following command:
+<pre class="shell">
+<span class="cmd">l1_logreg_train -s train_x train_b 0.01 model</span>
+</pre>
+This will generate the following file <code>model</code>:
+<pre class="filename"><span>model</span></pre>
+<pre class="file">
+%%MatrixMarket matrix array real general
+%
+% This is a model file of train_x,
+%    generated by l1_logreg_train ver.0.8.2
+% Contents of model:
+%    entry 1: intercept
+%    entries 2..m: coefficients
+%
+5 1
+ 1.568009374292901e+00
+ 4.043495151532541e-01
+ 0.000000000000000e+00
+ 0.000000000000000e+00
+-1.103257200261706e+00
+</pre>
+
+\subsection exclassification Classification
+
+Consider a small test data set of 2 examples with 4 features:
+<pre>
+           feature 1   feature 2   feature 3   feature 4
+example 1      5           1           0           0   
+example 2     -3           0           2           3  
+</pre>
+
+The test data set can be stored in the file
+<code>test_x</code> in dense format.
+<pre class="filename"><span>test_x</span></pre>
+<pre class="file">
+%%MatrixMarket matrix array real general
+2 4
+ 5
+-3
+ 1
+ 0
+ 0
+ 2
+ 0
+ 3
+</pre>
+The test data set can be stored in the file
+<code>test_x</code> in sparse format.
+<pre class="filename"><span>test_x</span></pre>
+<pre class="file">
+%%MatrixMarket matrix coordinate real general
+2 4 5
+1 1  5
+2 1 -3
+1 2  1
+2 3  2
+2 4  3
+</pre>
+
+To classify the test data set using the logistic model stored
+in <code>model</code>, execute the following command:
+<pre class="shell">
+<span class="cmd">l1_logreg_classify model test_x result</span>
+</pre>
+
+The classification result will be saved in the file <code>result</code>.
+<pre class="filename"><span>result</span></pre>
+<pre class="file">
+%%MatrixMarket matrix array real general
+% 
+% This is the file that stores the test result of test_x,
+%    generated by l1_logreg_classify ver 0.8.2
+% Each row contains a predicted class of corresponding example.
+% 
+2 1
+         1
+        -1
+</pre>
+
+To compare the predicted outcome which will be stored in the result file
+<code>result</code> with the known outcome <code>test_b</code>,
+write the known outcome (class) vector file <code>test_b</code> 
+in MM format and execute the following command:
+<pre class="shell">
+<span class="cmd">l1_logreg_classify -t test_b model test_x result</span>
+</pre>
+
+\subsection exregpath Regularization path computation
+
+To generate an approximation of the regularization path,
+from \f$\lambda_{\max}\f$ to a given \f$\lambda=0.01\lambda_{\max}\f$, use
+<pre class="shell">
+<span class="cmd">l1_logreg_regpath -r train_x train_b 0.01 100 path_model</span>
+</pre>
+It generates two files: <code>path_model</code> and 
+<code>path_model_lambda</code>. 
+The former contains a matrix of models whose column corresponds to 
+the logistic model for each \f$\lambda\f$ value.
+The latter contains a vector of \f$\lambda\f$ values.
+The option <code>-r</code> is used to set \f$\lambda\f$ value relative to
+\f$\lambda_{\max}\f$.
+
+To apply classification to this family of models <code>path_model</code>,
+execute the following command:
+<pre class="shell">
+<span class="cmd">l1_logreg_classify -t train_b path_model train_x path_result</span>
+</pre>
+The number of examples whose prediction is wrong will be stored to a result file
+<code>path_result</code>.
+Note that the result of classification using <code>l1_logreg_regpath</code>
+is different from that of <code>l1_logreg_train</code>.
+
+
+\subsection exdata Example data sets
+<code>l1_logreg</code> contains some example data sets as well as their shell scripts 
+in the <code>examples</code> directory. You can download more examples (including large-scale data sets) from the website 
+of <code>l1_logreg</code>.
+
+If you have a problem in using <code>l1_logreg</code>, try \ref faq "FAQ".
+
+
+\section feedback Feedback
+We welcome your feedback. Please contact 
+<a href="mailto:deneb1@stanford.edu"> Kwangmoo Koh</a>\<deneb1@stanford.edu\>,
+<a href="mailto:sjkim@stanford.edu"> Seung-Jean Kim</a>\<sjkim@stanford.edu\> or
+<a href="mailto:boyd@stanford.edu">Stephen Boyd</a>\<boyd@stanford.edu\>
+with your bug reports and suggestions.
+
+If you do send a bug report, please include the following information if possible:
+
+<ol>
+<li> The versions of <code>l1_logreg</code> and platform (OS, CPU) you are using.
+<li> A copy of the error messages, if any, produced by the program.
+<li> The data files that we can use to reproduce the problem.
+</ol>
+
+Your help will be greatly appreciated.
+
+\section ack Acknowledgement
+
+*/
+
+
+
+/** \page fileformat File format
+
+\section infile Input file format
+<code>l1_logreg</code> requires two data files:
+- <code>feature_file</code>
+- <code>class_file</code>
+
+<code>feature_file</code> contains the feature matrix for training examples
+and <code>class_file</code> contains the corresponding class vector
+of training examples.
+
+Data in <code>feature_file</code> and <code>class_file</code>
+are stored in Matrix Market (MM) exchange format;
+see http://math.nist.gov/MatrixMarket/formats.html for more information.
+
+- Dense matrix is stored in array format:
+<pre>
+%%%MatrixMarket matrix array real general
+m &nbsp; n
+x<sub>11</sub>
+x<sub>21</sub>
+...
+x<sub>m1</sub>
+x<sub>12</sub>
+x<sub>22</sub>
+...
+x<sub>m2</sub>
+...
+x<sub>1n</sub>
+...
+x<sub>mn</sub>
+</pre>
+
+The first line contains the header of Matrix Market format. 
+Here, it indicates that the object being represented is a matrix 
+in array format and that the numeric data is real and represented 
+in general form.
+
+The second line contains the number of rows <code>m</code>, and the number
+of columns <code>n</code> of the feature matrix.
+From the third row, the matrix is stored in column-oriented order.
+- Sparse matrix is stored as follows:
+<pre>
+%%%MatrixMarket matrix coordinate real general
+m &nbsp;  n &nbsp;  nnz
+i<sub>1</sub> &nbsp; j<sub>1</sub> &nbsp; x<sub>i1 j1</sub>
+i<sub>1</sub> &nbsp; j<sub>2</sub> &nbsp; x<sub>i1 j2</sub>
+&nbsp; &nbsp; ...
+i<sub>2</sub> &nbsp; j<sub>1</sub> &nbsp; x<sub>i2 j1</sub>
+i<sub>2</sub> &nbsp; j<sub>2</sub> &nbsp; x<sub>i2 j2</sub>
+&nbsp; &nbsp; ...
+i<sub>p</sub> &nbsp; j<sub>q</sub> &nbsp; x<sub>ip jq</sub>
+</pre>
+
+The first line contains the header of Matrix Market format. Here, it indicates that the object being represented is a matrix in coordinate format and that the numeric data is real and represented in general form.
+The second row contains the number of rows <code>m</code>, the number of columns
+<code>n</code> and the number of non-zero entries <code>p</code> of the feature matrix.
+From the third row, the matrix is stored in coordinate format:
+the first column is the example (row) index,
+the second column is the feature (column) index,
+the third column is the corresponding value, of the feature matrix.
+
+Note that the class vector is stored as a matrix in Matrix Market format, whose size is (m x 1).
+Each class can have a value in [+1,-1].
+Here, +1 for positive class, and -1 for negative class.
+
+
+\section outfile Output file format
+- <code>model_file</code> \n
+<code>model_file</code> is generated when <code>l1_logreg_train</code> is 
+executed. It contains a shifted intercept <code>q</code> and
+normalized coefficients <code>r<sub>i</sub>, i=1,...,n</code>.
+The following vector will be stored in Matrix Market format:
+<pre>
+%%%MatrixMarket matrix array real general
+m &nbsp; 1
+q
+r<sub>1</sub>
+r<sub>2</sub>
+...
+r<sub>m-1</sub>
+</pre>
+Here, <code>n = m-1</code>.
+
+Without standardization, we can perform classification on a test set <code>X<sub>test</sub></code>
+\f[
+t
+=\mbox{sgn}\left(X_{test}w+\mathbf{1}v\right)
+\f]
+where <code>t</code> is the prediction (or classification result) for the test data set.
+Thus, <code>q</code> is set to the intercept <code>v</code>
+and the normalized coefficients are set to the coefficients values, that is,
+<code>r<sub>i</sub></code>=\f$ w_i \f$, i=1,...,n.
+
+When standardization is used, the user need to perform the following:
+<ol>
+<li> standardize test example set 
+<li> apply a linear classifier of intercept and coefficients
+</ol>
+This process can be summarized as follows:
+\f[
+t
+=\mbox{sgn}\left((X_{test}-\mathbf{1}\mu^T)\mbox{diag}(\sigma)^{-1}w+\mathbf{1}v\right)
+\f]
+where <code>t</code> is the prediction (or classification result) for the test data set.
+
+For step 1, we need to store the column mean \f$\mu\f$ and
+column standard deviation \f$\sigma\f$ of training example set,
+and everytime we do classification, we should standardize the test data set.
+However, this additional effort can be easily avoided by exploiting
+the property of standardization.
+We set the normalized coefficients <code>r<sub>i</sub></code> 
+to the coefficients divided by corresponding standard-deviations,
+that is,
+\f[
+r=\mbox{diag}(\sigma)^{-1}w. 
+\f]
+Also, the shifted intercept is set to
+\f[
+q=v-\mu^T\mbox{diag}(\sigma)^{-1}w.
+\f]
+Then, the classification can be done as follows:
+\f[
+t
+=\mbox{sgn}\left(X_{test}r+\mathbf{1}q\right),
+\f]
+where <code>t</code> is the prediction (or classification result) for the test data set.
+
+- <code>result_file</code> \n
+<code>result_file</code> is generated when <code>l1_logreg_classify</code> is executed.
+The value of <code>t<sub>i</sub></code> \f$ \in \f$ [+1,-1] 
+of <code>i</code>th line corresponds to
+the classification result of ith example. Here, +1 for positive class,
+and -1 for negative class.
+<pre>
+    t<sub>1</sub>
+    t<sub>2</sub>
+    ...
+    t<sub>m</sub>
+</pre>
+
+
+\section smallex Small example
+
+Consider a small problem with 3 examples and 4 features.
+<code> <pre>
+           feature 1   feature 2   feature 3   feature 4       class
+example 1      3           0           1          -2             1
+example 2      0           0           2           5            -1
+example 3      7           1          -4           0             1
+</pre> </code>
+Feature file of this problem for dense format is:
+<pre>
+%%%MatrixMarket matrix array real general
+3 4
+ 3
+ 0
+ 7
+ 0
+ 0
+ 1
+ 1
+ 2
+-4
+-2
+ 5
+ 0
+</pre>
+Feature file for sparse format is:
+<pre>
+%%%MatrixMarket matrix coordinate real general
+3 4 8
+1 1  3
+3 1  7
+3 2  1
+1 3  1
+2 3  2
+3 3 -4
+1 4 -2
+2 4  5
+</pre>
+Class file for both dense and sparse format is:
+<pre>
+%%%MatrixMarket matrix array real general
+3 1
+ 1
+-1
+ 1
+</pre>
+
+\section datagen Writing matrices in Matrix Market format
+
+You may directly write matrices in Matrix Market format using any editor or C programs.
+Also, various software packages are available for reading and writing
+matrices in Matrix Market format; see http://math.nist.gov/MatrixMarket/formats.html#MMformat.
+
+\subsection matlabmm Writing matrices in Matrix Market format using Matlab
+
+Feature matrices and outcome (class) vectors can be easily written in Matrix Market
+format within Matlab.
+
+For example, the problem data of the above example can be stored
+to files by typing the following script in Matlab:
+<pre>
+    >> X = [3 0 1 -2; 0 0 2 5; 7 1 -4 0];
+    >> b = [1; -1; 1];
+    >> mmwrite('exd_simple_X',X);
+    >> mmwrite('exd_simple_b',b);
+</pre>
+This sequence of commands will generate a dense feature matrix 
+<code>exd_simple_X</code> and the corresponding class vector 
+<code>exd_simple_b</code>.
+
+Sparse matrix can be written to a file in a similar way:
+<pre>
+    >> X = [3 0 1 -2; 0 0 2 5; 7 1 -4 0];
+    >> b = [1; -1; 1];
+    >> X = sparse(X);
+    >> mmwrite('exs_simple_X',X);
+    >> mmwrite('exs_simple_b',b);
+</pre>
+This sequence of commands will generate a sparse feature matrix 
+<code>exs_simple_X</code> and the corresponding class vector 
+<code>exs_simple_b</code>.
+
+*/
+
+
+/** \page faq FAQ
+
+\section faq_q Questions:
+- \ref faq1 "How can I compile l1_logreg in Windows XP?"
+
+\section faq_a Answers:
+\subsection faq1 How can I compile l1_logreg in Windows XP?
+not supported yet.
+
+
+*/
+
+
+/** \page stepbystep Step-by-Step installation
+
+\section linux_intel32 Linux on Intel 32 bit machine
+<ol>
+<li> Download MKL 'Non-Commercial Download' link in http://www.intel.com/cd/software/products/asmo-na/eng/perflib/mkl/index.htm
+<li> Unpack the file
+<pre><div>
+    $ tar -xzvf l_mkl_p_8.1.1.004.tgz
+</div></pre>
+<li> Move to the untarred directory and install MKL
+<pre><div>
+    $ cd l_mkl_p_8.1.1.004
+    $ ./install.sh
+        (install...)
+    $ cd ..
+</div></pre>
+<li> Set LD_LIBRARY_PATH variable
+<pre><div>
+    $ setenv LD_LIBRARY_PATH "<path_to_mkl>/intel/mkl/8.1.1/lib/32:$LD_LIBRARY_PATH"
+    or
+    $ export LD_LIBRARY_PATH="<path_to_mkl>/intel/mkl/8.1.1/lib/32:$LD_LIBRARY_PATH"
+</div></pre>
+<li> Download <code>l1_logreg</code> from http://
+<li> Unpack the file
+<pre><div>
+    $ tar -xzvf l1_logreg-0.9.1.tar.gz
+</div></pre>
+<li> Move to the untarred directory and configure
+<pre><div>
+    $ cd l1_logreg-0.9.1
+    $ ./configure --with-blas-dir="<path_to_mkl>/intel/mkl/8.1.1/lib/32"
+</div></pre>
+<li> Compile and check
+<pre><div>
+    $ make
+    $ make check
+</div></pre>
+</ol>
+
+\section linux_intel64 Linux on Intel 64 bit machine
+All the procedures are the same with 32 bit instruction except library path. Use /intel/mkl/<version>/lib/em64t instead of /intel/mkl/<version>/lib/32.
+
+For more information, see documentations for MKL.
+
+\section linux_amd32 Linux on AMD 32 bit machine
+All the procedures are almost the same with 64 bit instruction. Download 32 bit verion of library, and use appropriate path name, that is, 64 instead of 32.
+
+\section linux_amd64 Linux on AMD 64 bit machine
+<ol>
+<li> Download GNU compiler version of ACML from http://developer.amd.com/acml.jsp. For example, acml-3-5-0-gnu-64bit.tgz
+<li> Make an installation directory and unpack the file
+<pre><div>
+    $ mkdir acml_install
+    $ tar -xzvf acml-3-5-0-gnu-64bit.tgz -C acml_install
+</div></pre>
+<li> Move to the untarred directory and install ACML
+<pre><div>
+    $ cd acml_install
+    $ ./install-acml-3-5-0-gnu-64bit.sh
+        (install...)
+    $ cd ..
+</div></pre>
+<li> Set LD_LIBRARY_PATH variable
+<pre><div>
+    $ setenv LD_LIBRARY_PATH "<path_to_acml>/gnu64/lib:$LD_LIBRARY_PATH"
+    or
+    $ export LD_LIBRARY_PATH="<path_to_acml>/gnu64/lib:$LD_LIBRARY_PATH"
+</div></pre>
+<li> Download <code>l1_logreg</code> from http://
+<li> Unpack the file
+<pre><div>
+    $ tar -xzvf l1_logreg-0.9.1.tar.gz
+</div></pre>
+<li> Move to the untarred directory and configure
+<pre><div>
+    $ cd l1_logreg-0.9.1
+    $ ./configure --with-blas-dir="<path_to_acml>/gnu64/lib"
+</div></pre>
+<li> Make
+<pre><div>
+    $ make
+    $ make check
+</div></pre>
+</ol>
+*/
+
+
+
+
+/** \page   library Libraries
+
+<code>l1_logreg</code> uses BLAS and LAPACK:
+- <a href="http://www.netlib.org/blas/">Basic Linear Algebra Subprograms (BLAS)</a>are routines which perform basic 
+linear algebra operations such as vector and matrix multiplication.
+CBLAS is a C implementation (interface) of BLAS.
+- <a href="http://www.netlib.org/lapack/">The Linear Algebra PACKage (LAPACK)</a>, is a software library for numerical 
+computing written in Fortran 77.
+
+BLAS and LAPACK define interfaces, but the implementations are not
+necessarily optimized to a particular machine.
+In this case, you may speed up <code>l1_logreg</code> a lot by using optimized libraries 
+like vendor specific BLAS/LAPACK (MKL, ACML, etc.) libraries or ALTAS.
+- Automatically Tuned Linear Algebra Software (ATLAS) is a software library
+for linear algebra. It provides an open source implementation of BLAS APIs
+for C and Fortran77.
+- Intel Math Kernel Library (MKL) and AMD core Math Library (ACML) are
+vendor specific, highly optimized math libraries for their own platform.
+
+For best performance, we recommend you to use vendor specific libries,
+or ATLAS. Recent versions of MATLAB are also using vendor specific
+BLAS/LAPACK libraries internally.
+- Intel MKL http://www.intel.com/cd/software/products/asmo-na/eng/perflib/mkl/index.htm
+- AMD ACML http://developer.amd.com/acml.jsp
+- ATLAS http://math-atlas.sourceforge.net
+
+*/
+
+
+/** \page srcbuild  Build your own
+
+To install <code>l1_logreg,</code> you need to download the package
+<code>l1_logreg-\<version\>.tar.gz</code> and untar it.
+\verbatim
+    tar -xzvf l1_logreg-<version>.tar.gz
+    cd l1_logreg-<version>
+\endverbatim
+
+    The normal way to proceed after untarring the source package is:
+\verbatim
+    ./configure
+    make
+    make check
+    make install
+\endverbatim
+
+This will build the three binary files <code>l1_logreg_train</code>,
+<code>l1_logreg_classify</code> and <code>l1_logreg_regpath</code>
+at the <code>src_c</code> directory, and check whether the solver
+is working correctly, and then install (copy) the files
+to an installation directory.
+If you come across problems during compilation or configuration,
+you may want to run <code>make distclean</code> before trying again.
+
+The <code>configure</code> script tries to find out (or guess) all the 
+information which is necessary for build process, but it may not always work. 
+In this case, you may change configurations by specifying options.
+For example, --prefix will install the software into the home directory of
+the user instead of the default location (/usr or /usr/local).
+<pre>
+    ./configure --prefix=/home/user
+</pre>
+
+    The most important option for <code>l1_logreg</code> is <code>--with-blas-dir</code>.
+This option can be used to specify the directory where BLAS library is 
+installed.  For example,
+\verbatim
+    ./configure --with-blas-dir="/usr/sweet/apps/sunstudio-10/lib"
+\endverbatim
+will look for a BLAS library in the specified directory.
+You may use <code>--with-lapack-dir</code> as well if BLAS and LAPACK are installed in different directories:
+<pre>
+    ./configure --with-blas-dir="/home/path_for_blas" --with-lapack-dir="/home/path_for_lapack"
+</pre>
+
+    To specify a library name as well, you may want to use 
+<code>--with-blas</code> option.
+For example, if BLAS library, <code>libmyblas.a</code> or <code>libmyblas.so</code> is 
+installed at <code>/home/mylib</code>
+<pre>
+    ./configure --with-blas="-L/home/mylib -lmyblas"
+</pre>
+Note that <code>-L</code> is used in front of the BLAS directory and  <code>-l</code> is used in front of the BLAS library name.
+
+    The <code>configure</code> script tries to choose a good compiler and optimization option compatible with your platform. However, you may use some other compiler (and/or other options for C compiler), for example :
+<pre>
+    ./configure CC="gcc32" CFLAGS="-o3 -funroll-loops"
+</pre>
+
+    The <code>configure</code> script uses Fortran compiler by default. 
+<code>l1_logreg</code> is written in C, but most BLAS/LAPACK libraries are in Fortran. 
+The calling conventions of Fortran routines from C are different platform by 
+platform. The most widly used convention is using lowercase routine name with 
+underscore (subroutine FOO in Fortran becomes foo_ in C, but foo, Foo, foo__, _foo in some other platforms). 
+However, some Fortran compiler may cause trouble in building process. In this case, you may also want to disable Fortran compiler with:
+<pre>
+    ./configure --with-fortran=no
+</pre>
+
+Finally, you can build binaries using static linking with:
+<pre>
+    ./configure --with-static-linking=yes
+</pre>
+
+*/
+
+
+

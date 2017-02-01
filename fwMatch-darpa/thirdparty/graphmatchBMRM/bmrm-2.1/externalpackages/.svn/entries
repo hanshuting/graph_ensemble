@@ -1,0 +1,31 @@
+8
+
+dir
+1831
+svn+ssh://julianm@sml.nicta.com.au/payload/projects/repos/structuredsvm/Code/bmrm-2.1/externalpackages
+svn+ssh://julianm@sml.nicta.com.au/payload/projects/repos/structuredsvm
+
+
+
+2007-10-08T08:52:04.679402Z
+1292
+chteo
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+f5c3ece1-4b19-0410-bce7-deb783aaa22a
+
+boost
+dir
+

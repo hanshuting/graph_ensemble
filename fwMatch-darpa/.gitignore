@@ -1,0 +1,77 @@
+# IGNORE ALL DATA
+data/*.csv
+
+# Blah
+a.out
+
+# Figures
+#*.eps
+*.dvi
+*.ps
+
+*.mat
+
+# Archives
+*.tgz
+
+# Vim
+*.sw*
+
+*.txt
+!thirdparty/*/*.txt
+
+# Mac OS X
+.DS_Store
+
+# Temp files
+*.log
+*.nfs*
+*#*#
+rez/*
+*.diary
+
+# MATLAB
+*~
+*.mex*
+*.o
+*.mat # Use git add -f to force.
+*.asv
+*.dylib
+*.so
+
+# Compiled files
+linear-bmrm-predict
+linear-bmrm-train
+*dSYM
+
+# BMRM Stuff
+*.dump
+*.model
+*Log
+thirdparty/graphmatchBMRM/sourcefiles/*.config
+thirdparty/graphmatchBMRM/sourcefiles/*.Log*
+thirdparty/graphmatchBMRM/sourcefiles/*.template
+thirdparty/graphmatchBMRM/sourcefiles/*.TEST
+
+# Metis stuff
+thirdparty/metis-5.1.0/build/*
+
+# LaTeX
+#*.pdf
+*.aux
+*.log
+*.bbl
+*.bcf
+*.blg
+*.nav
+*.out
+*.pdf
+*.run.xml
+*.snm
+*.toc
+*.synctex.gz
+
+Thumbs.db
+*gurobiLog
+
+

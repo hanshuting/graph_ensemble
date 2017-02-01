@@ -1,0 +1,299 @@
+MATLAB is selecting SOFTWARE OPENGL rendering.
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2015 The MathWorks, Inc.
+                   R2015a (8.5.0.197613) 64-bit (glnxa64)
+                             February 12, 2015
+
+ 
+To get started, type one of these: helpwin, helpdesk, or demo.
+For product information, visit www.mathworks.com.
+ 
+[Warning: Function cummin has the same name as a MATLAB builtin. We suggest you
+rename the function to avoid a potential name conflict.] 
+[> In path (line 109)
+  In addpath (line 86)
+  In startup (line 19)
+  In matlabrc (line 225)] 
+PATH is now set!
+
+	Academic License
+
+Loaded: /vega/brain/users/sh3276/data/luis/m21_d2_vis_all_high.mat
+data is : 2034, 101
+Structure Learning...
+Structure learning using Lasso Logistic Regression
+Starting Lasso Logistic Regression
+.....................................................................................................
+Lambda is too big, such that it is not possible to achieve the desired graph density.
+Target was 1.262500e+03 edges, but only able to identify 354 non-zero coefficients
+Report
+Total possible edges: 5050
+Density wanted: 25.000000%
+Edges wanted: 1.262500e+03
+Non-zero coefficients: 354
+Selected edges: 354
+Lambda is too big, such that it is not possible to achieve the desired graph density.
+Target was 1313 edges, but only able to identify 354 non-zero coefficients
+Report
+Total possible edges: 5050
+Density wanted: 26.000000%
+Edges wanted: 1313
+Non-zero coefficients: 354
+Selected edges: 354
+Lambda is too big, such that it is not possible to achieve the desired graph density.
+Target was 1.363500e+03 edges, but only able to identify 354 non-zero coefficients
+Report
+Total possible edges: 5050
+Density wanted: 27.000000%
+Edges wanted: 1.363500e+03
+Non-zero coefficients: 354
+Selected edges: 354
+Lambda is too big, such that it is not possible to achieve the desired graph density.
+Target was 1.414000e+03 edges, but only able to identify 354 non-zero coefficients
+Report
+Total possible edges: 5050
+Density wanted: 28.000000%
+Edges wanted: 1.414000e+03
+Non-zero coefficients: 354
+Selected edges: 354
+Lambda is too big, such that it is not possible to achieve the desired graph density.
+Target was 1.464500e+03 edges, but only able to identify 354 non-zero coefficients
+Report
+Total possible edges: 5050
+Density wanted: 29.000000%
+Edges wanted: 1.464500e+03
+Non-zero coefficients: 354
+Selected edges: 354
+Lambda is too big, such that it is not possible to achieve the desired graph density.
+Target was 1515 edges, but only able to identify 354 non-zero coefficients
+Report
+Total possible edges: 5050
+Density wanted: 30.000000%
+Edges wanted: 1515
+Non-zero coefficients: 354
+Selected edges: 354
+Parameter Estimation...
+  LoopyModelCollection with properties:
+
+               x_train: [1627x101 double]
+                x_test: [407x101 double]
+        variable_names: {1x101 cell}
+     s_lambda_sequence: 0.5000
+     p_lambda_sequence: 1.7783e+03
+      density_sequence: [0.2500 0.2600 0.2700 0.2800 0.2900 0.3000]
+                models: {1x6 cell}
+    computed_true_logZ: []
+          hidden_model: []
+
+
+Parameter Estimation: s_lambda=5.000000e-01; density=2.500000e-01; p_lambda = 1.778279e+03
+Debug: Ising edgeRhos+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DEBUG t = 1, nargin = 1
+[BCFW] iter = 1000, fval = -24772.5, dg = , relDg = , totIterTime = 9.26658, trainErr = 0.999988, dx1 = 330807, stepSz = 0.114833
+[BCFW] iter = 2000, fval = -43011.7, dg = , relDg = , totIterTime = 18.0255, trainErr = 0.999988, dx1 = 147799, stepSz = 0.0942389
+[BCFW] iter = 3000, fval = -50104.6, dg = , relDg = , totIterTime = 27.0581, trainErr = 0.999988, dx1 = 89669.9, stepSz = 0.0513472
+[BCFW] iter = 4000, fval = -53804.8, dg = , relDg = , totIterTime = 36.2188, trainErr = 0.999988, dx1 = 58474, stepSz = 0.0178761
+[BCFW] iter = 5000, fval = -55718.7, dg = , relDg = , totIterTime = 45.8955, trainErr = 0.999988, dx1 = 39346.6, stepSz = 0.0588424
+[BCFW] iter = 6000, fval = -56876.3, dg = , relDg = , totIterTime = 56.3514, trainErr = 0.999988, dx1 = 25627.6, stepSz = 0.016662
+[BCFW] iter = 7000, fval = -57452, dg = , relDg = , totIterTime = 67.5768, trainErr = 0.999988, dx1 = 16229, stepSz = 0.0394381
+[BCFW] iter = 8000, fval = -57881.2, dg = , relDg = , totIterTime = 79.554, trainErr = 0.999988, dx1 = 11375.2, stepSz = 4.50855e-08
+[BCFW] iter = 9000, fval = -58065.9, dg = , relDg = , totIterTime = 91.38, trainErr = 0.999988, dx1 = 6328.4, stepSz = 4.50855e-08
+[BCFW] iter = 10000, fval = -58275, dg = , relDg = , totIterTime = 104.187, trainErr = 0.999988, dx1 = 5369.71, stepSz = 4.50855e-08
+[BCFW] iter = 11000, fval = -58347, dg = , relDg = , totIterTime = 117.31, trainErr = 0.999988, dx1 = 2941.96, stepSz = 4.50855e-08
+[BCFW] iter = 12000, fval = -58422.7, dg = , relDg = , totIterTime = 130.639, trainErr = 0.999988, dx1 = 2228.69, stepSz = 4.50855e-08
+[BCFW] iter = 13000, fval = -58472.9, dg = , relDg = , totIterTime = 144.083, trainErr = 0.999988, dx1 = 1548.09, stepSz = 4.50855e-08
+[BCFW] iter = 14000, fval = -58489.6, dg = , relDg = , totIterTime = 156.722, trainErr = 0.999988, dx1 = 888.964, stepSz = 0.0125748
+[BCFW] iter = 15000, fval = -58500.2, dg = , relDg = , totIterTime = 170.196, trainErr = 0.999988, dx1 = 518.223, stepSz = 4.50855e-08
+[BCFW] iter = 16000, fval = -58507.2, dg = , relDg = , totIterTime = 184.26, trainErr = 0.999988, dx1 = 316.864, stepSz = 4.50855e-08
+[BCFW] iter = 17000, fval = -58511.7, dg = , relDg = , totIterTime = 200.037, trainErr = 0.999988, dx1 = 128.576, stepSz = 4.50855e-08
+[BCFW] iter = 18000, fval = -58513.7, dg = , relDg = , totIterTime = 215.868, trainErr = 0.999988, dx1 = 80.9697, stepSz = 4.50855e-08
+[BCFW] iter = 19000, fval = -58515.6, dg = , relDg = , totIterTime = 230.566, trainErr = 0.999988, dx1 = 106.53, stepSz = 4.50855e-08
+[BCFW] iter = 20000, fval = -58516.1, dg = , relDg = , totIterTime = 244.725, trainErr = 0.999988, dx1 = 57.3519, stepSz = 4.50855e-08
+[BCFW] iter = 21000, fval = -58516.5, dg = , relDg = , totIterTime = 258.312, trainErr = 0.999988, dx1 = 12.1196, stepSz = 4.50855e-08
+[BCFW] iter = 22000, fval = -58517.2, dg = , relDg = , totIterTime = 274.048, trainErr = 0.999988, dx1 = 19.3662, stepSz = 4.50855e-08
+[BCFW] iter = 23000, fval = -58517.3, dg = , relDg = , totIterTime = 289.877, trainErr = 0.999988, dx1 = 1.40153, stepSz = 4.50855e-08
+CONVERGENCE REACHED
+Converting F and G to node and edge potentials
+
+Parameter Estimation: s_lambda=5.000000e-01; density=2.600000e-01; p_lambda = 1.778279e+03
+Debug: Ising edgeRhos+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DEBUG t = 1, nargin = 1
+[BCFW] iter = 1000, fval = -24841.3, dg = , relDg = , totIterTime = 8.69033, trainErr = 0.999988, dx1 = 331489, stepSz = 0.116329
+[BCFW] iter = 2000, fval = -43586.7, dg = , relDg = , totIterTime = 17.8239, trainErr = 0.999988, dx1 = 151991, stepSz = 0.0287442
+[BCFW] iter = 3000, fval = -50911.2, dg = , relDg = , totIterTime = 26.8694, trainErr = 0.999988, dx1 = 92761.8, stepSz = 0.172749
+[BCFW] iter = 4000, fval = -54223.8, dg = , relDg = , totIterTime = 36.061, trainErr = 0.999988, dx1 = 59198.6, stepSz = 0.0642593
+[BCFW] iter = 5000, fval = -55970.8, dg = , relDg = , totIterTime = 45.8104, trainErr = 0.999988, dx1 = 36659.4, stepSz = 4.50855e-08
+[BCFW] iter = 6000, fval = -56907.4, dg = , relDg = , totIterTime = 56.4589, trainErr = 0.999988, dx1 = 21318.3, stepSz = 0.0209783
+[BCFW] iter = 7000, fval = -57533.9, dg = , relDg = , totIterTime = 67.6629, trainErr = 0.999988, dx1 = 16418.3, stepSz = 0.0507602
+[BCFW] iter = 8000, fval = -57913.2, dg = , relDg = , totIterTime = 79.6086, trainErr = 0.999988, dx1 = 11130.8, stepSz = 0.00441509
+[BCFW] iter = 9000, fval = -58108.9, dg = , relDg = , totIterTime = 92.4362, trainErr = 0.999988, dx1 = 6791.72, stepSz = 4.50855e-08
+[BCFW] iter = 10000, fval = -58226.4, dg = , relDg = , totIterTime = 105.748, trainErr = 0.999988, dx1 = 4024.66, stepSz = 4.50855e-08
+[BCFW] iter = 11000, fval = -58306.8, dg = , relDg = , totIterTime = 119.337, trainErr = 0.999988, dx1 = 2348.67, stepSz = 0.102034
+[BCFW] iter = 12000, fval = -58338.1, dg = , relDg = , totIterTime = 133.186, trainErr = 0.999988, dx1 = 1778.27, stepSz = 4.50855e-08
+[BCFW] iter = 13000, fval = -58380.5, dg = , relDg = , totIterTime = 147.226, trainErr = 0.999988, dx1 = 1112.4, stepSz = 4.50855e-08
+[BCFW] iter = 14000, fval = -58388.8, dg = , relDg = , totIterTime = 161.471, trainErr = 0.999988, dx1 = 863.949, stepSz = 4.50855e-08
+[BCFW] iter = 15000, fval = -58399.7, dg = , relDg = , totIterTime = 173.713, trainErr = 0.999988, dx1 = 418.298, stepSz = 4.50855e-08
+[BCFW] iter = 16000, fval = -58406.1, dg = , relDg = , totIterTime = 187.99, trainErr = 0.999988, dx1 = 306.132, stepSz = 4.50855e-08
+[BCFW] iter = 17000, fval = -58411.7, dg = , relDg = , totIterTime = 202.294, trainErr = 0.999988, dx1 = 183.331, stepSz = 4.50855e-08
+[BCFW] iter = 18000, fval = -58413.6, dg = , relDg = , totIterTime = 216.742, trainErr = 0.999988, dx1 = 67.3599, stepSz = 4.50855e-08
+[BCFW] iter = 19000, fval = -58415.7, dg = , relDg = , totIterTime = 230.128, trainErr = 0.999988, dx1 = 85.6765, stepSz = 4.50855e-08
+[BCFW] iter = 20000, fval = -58416.6, dg = , relDg = , totIterTime = 244.699, trainErr = 0.999988, dx1 = 34.6021, stepSz = 4.50855e-08
+[BCFW] iter = 21000, fval = -58417.1, dg = , relDg = , totIterTime = 259.257, trainErr = 0.999988, dx1 = 14.5519, stepSz = 4.50855e-08
+[BCFW] iter = 22000, fval = -58418, dg = , relDg = , totIterTime = 273.822, trainErr = 0.999988, dx1 = 48.226, stepSz = 0.00495129
+[BCFW] iter = 23000, fval = -58419, dg = , relDg = , totIterTime = 287.998, trainErr = 0.999988, dx1 = 55.473, stepSz = 4.50855e-08
+[BCFW] iter = 24000, fval = -58419.2, dg = , relDg = , totIterTime = 302.505, trainErr = 0.999988, dx1 = 11.6063, stepSz = 4.50855e-08
+[BCFW] iter = 25000, fval = -58419.3, dg = , relDg = , totIterTime = 317.047, trainErr = 0.999988, dx1 = 4.04949, stepSz = 4.50855e-08
+CONVERGENCE REACHED
+Converting F and G to node and edge potentials
+
+Parameter Estimation: s_lambda=5.000000e-01; density=2.700000e-01; p_lambda = 1.778279e+03
+Debug: Ising edgeRhos+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DEBUG t = 1, nargin = 1
+[BCFW] iter = 1000, fval = -27106.2, dg = , relDg = , totIterTime = 8.70673, trainErr = 0.999988, dx1 = 345678, stepSz = 0.535992
+[BCFW] iter = 2000, fval = -44506, dg = , relDg = , totIterTime = 17.496, trainErr = 0.999988, dx1 = 145377, stepSz = 0.39784
+[BCFW] iter = 3000, fval = -50822.7, dg = , relDg = , totIterTime = 26.6361, trainErr = 0.999988, dx1 = 85673, stepSz = 0.0685272
+[BCFW] iter = 4000, fval = -54166.7, dg = , relDg = , totIterTime = 35.8284, trainErr = 0.999988, dx1 = 58169.2, stepSz = 0.0322847
+[BCFW] iter = 5000, fval = -55771.3, dg = , relDg = , totIterTime = 45.7099, trainErr = 0.999988, dx1 = 36815.5, stepSz = 0.0504833
+[BCFW] iter = 6000, fval = -56743.7, dg = , relDg = , totIterTime = 56.3811, trainErr = 0.999988, dx1 = 23101.4, stepSz = 0.00597431
+[BCFW] iter = 7000, fval = -57456.5, dg = , relDg = , totIterTime = 67.6033, trainErr = 0.999988, dx1 = 15670.7, stepSz = 4.50855e-08
+[BCFW] iter = 8000, fval = -57871.7, dg = , relDg = , totIterTime = 79.3766, trainErr = 0.999988, dx1 = 10598.6, stepSz = 4.50855e-08
+[BCFW] iter = 9000, fval = -58151.8, dg = , relDg = , totIterTime = 91.864, trainErr = 0.999988, dx1 = 6934.46, stepSz = 0.0376296
+[BCFW] iter = 10000, fval = -58291.7, dg = , relDg = , totIterTime = 104.526, trainErr = 0.999988, dx1 = 4350.57, stepSz = 0.0045735
+[BCFW] iter = 11000, fval = -58369.9, dg = , relDg = , totIterTime = 117.991, trainErr = 0.999988, dx1 = 3086.17, stepSz = 4.50855e-08
+[BCFW] iter = 12000, fval = -58401, dg = , relDg = , totIterTime = 131.766, trainErr = 0.999988, dx1 = 1578.45, stepSz = 4.50855e-08
+[BCFW] iter = 13000, fval = -58424.5, dg = , relDg = , totIterTime = 145.798, trainErr = 0.999988, dx1 = 1222.99, stepSz = 4.50855e-08
+[BCFW] iter = 14000, fval = -58440, dg = , relDg = , totIterTime = 159.36, trainErr = 0.999988, dx1 = 793.46, stepSz = 4.50855e-08
+[BCFW] iter = 15000, fval = -58449.2, dg = , relDg = , totIterTime = 171.368, trainErr = 0.999988, dx1 = 490.144, stepSz = 4.50855e-08
+[BCFW] iter = 16000, fval = -58480.1, dg = , relDg = , totIterTime = 185.919, trainErr = 0.999988, dx1 = 526.001, stepSz = 0.00295813
+[BCFW] iter = 17000, fval = -58484.9, dg = , relDg = , totIterTime = 200.482, trainErr = 0.999988, dx1 = 214.087, stepSz = 4.50855e-08
+[BCFW] iter = 18000, fval = -58486.8, dg = , relDg = , totIterTime = 216.004, trainErr = 0.999988, dx1 = 168.478, stepSz = 4.50855e-08
+[BCFW] iter = 19000, fval = -58488.1, dg = , relDg = , totIterTime = 231.221, trainErr = 0.999988, dx1 = 59.1385, stepSz = 4.50855e-08
+[BCFW] iter = 20000, fval = -58490.5, dg = , relDg = , totIterTime = 246.642, trainErr = 0.999988, dx1 = 54.8655, stepSz = 4.50855e-08
+[BCFW] iter = 21000, fval = -58491.6, dg = , relDg = , totIterTime = 261.484, trainErr = 0.999988, dx1 = 42.1211, stepSz = 4.50855e-08
+[BCFW] iter = 22000, fval = -58492.8, dg = , relDg = , totIterTime = 276.069, trainErr = 0.999988, dx1 = 60.183, stepSz = 4.50855e-08
+[BCFW] iter = 23000, fval = -58493.2, dg = , relDg = , totIterTime = 290.68, trainErr = 0.999988, dx1 = 12.2792, stepSz = 4.50855e-08
+[BCFW] iter = 24000, fval = -58493.2, dg = , relDg = , totIterTime = 305.214, trainErr = 0.999988, dx1 = 0.84927, stepSz = 4.50855e-08
+CONVERGENCE REACHED
+Converting F and G to node and edge potentials
+
+Parameter Estimation: s_lambda=5.000000e-01; density=2.800000e-01; p_lambda = 1.778279e+03
+Debug: Ising edgeRhos+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DEBUG t = 1, nargin = 1
+[BCFW] iter = 1000, fval = -24897.9, dg = , relDg = , totIterTime = 9.40556, trainErr = 0.999988, dx1 = 331908, stepSz = 0.0957444
+[BCFW] iter = 2000, fval = -42749.5, dg = , relDg = , totIterTime = 18.4456, trainErr = 0.999988, dx1 = 143850, stepSz = 0.414616
+[BCFW] iter = 3000, fval = -50296.2, dg = , relDg = , totIterTime = 27.0877, trainErr = 0.999988, dx1 = 92598, stepSz = 0.0280046
+[BCFW] iter = 4000, fval = -53802.9, dg = , relDg = , totIterTime = 36.5231, trainErr = 0.999988, dx1 = 59470.8, stepSz = 0.0425236
+[BCFW] iter = 5000, fval = -55814.9, dg = , relDg = , totIterTime = 46.4852, trainErr = 0.999988, dx1 = 39403.1, stepSz = 0.0244255
+[BCFW] iter = 6000, fval = -57052.6, dg = , relDg = , totIterTime = 57.748, trainErr = 0.999988, dx1 = 28037.4, stepSz = 0.025145
+[BCFW] iter = 7000, fval = -57494.8, dg = , relDg = , totIterTime = 69.0851, trainErr = 0.999988, dx1 = 14893.4, stepSz = 4.50855e-08
+[BCFW] iter = 8000, fval = -57781.3, dg = , relDg = , totIterTime = 81.6355, trainErr = 0.999988, dx1 = 9495.08, stepSz = 4.50855e-08
+[BCFW] iter = 9000, fval = -58004.8, dg = , relDg = , totIterTime = 95.5773, trainErr = 0.999988, dx1 = 6184.08, stepSz = 0.000505764
+[BCFW] iter = 10000, fval = -58189, dg = , relDg = , totIterTime = 109.554, trainErr = 0.999988, dx1 = 4810.26, stepSz = 4.50855e-08
+[BCFW] iter = 11000, fval = -58251.3, dg = , relDg = , totIterTime = 123.239, trainErr = 0.999988, dx1 = 2790.36, stepSz = 4.50855e-08
+[BCFW] iter = 12000, fval = -58304.5, dg = , relDg = , totIterTime = 137.167, trainErr = 0.999988, dx1 = 1858.52, stepSz = 4.50855e-08
+[BCFW] iter = 13000, fval = -58350, dg = , relDg = , totIterTime = 151.205, trainErr = 0.999988, dx1 = 1134.64, stepSz = 4.50855e-08
+[BCFW] iter = 14000, fval = -58402.4, dg = , relDg = , totIterTime = 165.573, trainErr = 0.999988, dx1 = 1340.7, stepSz = 4.50855e-08
+[BCFW] iter = 15000, fval = -58413.3, dg = , relDg = , totIterTime = 177.776, trainErr = 0.999988, dx1 = 402.366, stepSz = 4.50855e-08
+[BCFW] iter = 16000, fval = -58423, dg = , relDg = , totIterTime = 189.407, trainErr = 0.999988, dx1 = 398.323, stepSz = 4.50855e-08
+[BCFW] iter = 17000, fval = -58427.4, dg = , relDg = , totIterTime = 201.519, trainErr = 0.999988, dx1 = 190.693, stepSz = 4.50855e-08
+[BCFW] iter = 18000, fval = -58432.6, dg = , relDg = , totIterTime = 215.831, trainErr = 0.999988, dx1 = 209.11, stepSz = 4.50855e-08
+[BCFW] iter = 19000, fval = -58433.6, dg = , relDg = , totIterTime = 230.066, trainErr = 0.999988, dx1 = 39.8591, stepSz = 4.50855e-08
+[BCFW] iter = 20000, fval = -58437.9, dg = , relDg = , totIterTime = 243.928, trainErr = 0.999988, dx1 = 78.2919, stepSz = 4.50855e-08
+[BCFW] iter = 21000, fval = -58438.2, dg = , relDg = , totIterTime = 258.892, trainErr = 0.999988, dx1 = 9.32551, stepSz = 0.00812735
+[BCFW] iter = 22000, fval = -58438.3, dg = , relDg = , totIterTime = 274.501, trainErr = 0.999988, dx1 = 3.96092, stepSz = 4.50855e-08
+[BCFW] iter = 23000, fval = -58438.5, dg = , relDg = , totIterTime = 290.225, trainErr = 0.999988, dx1 = 9.2117, stepSz = 4.50855e-08
+[BCFW] iter = 24000, fval = -58438.6, dg = , relDg = , totIterTime = 305.788, trainErr = 0.999988, dx1 = 1.99546, stepSz = 4.50855e-08
+CONVERGENCE REACHED
+Converting F and G to node and edge potentials
+
+Parameter Estimation: s_lambda=5.000000e-01; density=2.900000e-01; p_lambda = 1.778279e+03
+Debug: Ising edgeRhos+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DEBUG t = 1, nargin = 1
+[BCFW] iter = 1000, fval = -25413.5, dg = , relDg = , totIterTime = 9.46645, trainErr = 0.999988, dx1 = 335165, stepSz = 0.108951
+[BCFW] iter = 2000, fval = -43793.9, dg = , relDg = , totIterTime = 18.9119, trainErr = 0.999988, dx1 = 151792, stepSz = 0.093318
+[BCFW] iter = 3000, fval = -50922.1, dg = , relDg = , totIterTime = 28.3295, trainErr = 0.999988, dx1 = 89949.4, stepSz = 0.0480063
+[BCFW] iter = 4000, fval = -54156.6, dg = , relDg = , totIterTime = 38.282, trainErr = 0.999988, dx1 = 55768.3, stepSz = 0.0589571
+[BCFW] iter = 5000, fval = -55955.1, dg = , relDg = , totIterTime = 48.9426, trainErr = 0.999988, dx1 = 36830.5, stepSz = 0.0618406
+[BCFW] iter = 6000, fval = -56866.8, dg = , relDg = , totIterTime = 60.4668, trainErr = 0.999988, dx1 = 24451.4, stepSz = 0.0411614
+[BCFW] iter = 7000, fval = -57590, dg = , relDg = , totIterTime = 73.0167, trainErr = 0.999988, dx1 = 17899.5, stepSz = 0.0660774
+[BCFW] iter = 8000, fval = -57904.6, dg = , relDg = , totIterTime = 85.2451, trainErr = 0.999988, dx1 = 9601.84, stepSz = 4.50855e-08
+[BCFW] iter = 9000, fval = -58079.7, dg = , relDg = , totIterTime = 99.0269, trainErr = 0.999988, dx1 = 6576.86, stepSz = 0.00365066
+[BCFW] iter = 10000, fval = -58232.3, dg = , relDg = , totIterTime = 113.047, trainErr = 0.999988, dx1 = 3542.65, stepSz = 4.50855e-08
+[BCFW] iter = 11000, fval = -58279.2, dg = , relDg = , totIterTime = 127.217, trainErr = 0.999988, dx1 = 2218.39, stepSz = 4.50855e-08
+[BCFW] iter = 12000, fval = -58307.1, dg = , relDg = , totIterTime = 141.253, trainErr = 0.999988, dx1 = 1436.26, stepSz = 4.50855e-08
+[BCFW] iter = 13000, fval = -58327, dg = , relDg = , totIterTime = 153.134, trainErr = 0.999988, dx1 = 758.869, stepSz = 4.50855e-08
+[BCFW] iter = 14000, fval = -58340, dg = , relDg = , totIterTime = 165.109, trainErr = 0.999988, dx1 = 611.567, stepSz = 4.50855e-08
+[BCFW] iter = 15000, fval = -58346, dg = , relDg = , totIterTime = 179.479, trainErr = 0.999988, dx1 = 631.66, stepSz = 4.50855e-08
+[BCFW] iter = 16000, fval = -58349.2, dg = , relDg = , totIterTime = 193.937, trainErr = 0.999988, dx1 = 132.152, stepSz = 4.50855e-08
+[BCFW] iter = 17000, fval = -58351.1, dg = , relDg = , totIterTime = 208.471, trainErr = 0.999988, dx1 = 144.791, stepSz = 4.50855e-08
+[BCFW] iter = 18000, fval = -58352, dg = , relDg = , totIterTime = 223.051, trainErr = 0.999988, dx1 = 38.0175, stepSz = 4.50855e-08
+[BCFW] iter = 19000, fval = -58353.8, dg = , relDg = , totIterTime = 237.631, trainErr = 0.999988, dx1 = 54.4224, stepSz = 4.50855e-08
+[BCFW] iter = 20000, fval = -58354.1, dg = , relDg = , totIterTime = 252.277, trainErr = 0.999988, dx1 = 7.6245, stepSz = 4.50855e-08
+[BCFW] iter = 21000, fval = -58354.4, dg = , relDg = , totIterTime = 266.862, trainErr = 0.999988, dx1 = 10.8285, stepSz = 4.50855e-08
+[BCFW] iter = 22000, fval = -58354.6, dg = , relDg = , totIterTime = 280.161, trainErr = 0.999988, dx1 = 9.40848, stepSz = 4.50855e-08
+[BCFW] iter = 23000, fval = -58354.6, dg = , relDg = , totIterTime = 292.45, trainErr = 0.999988, dx1 = 2.04963, stepSz = 4.50855e-08
+CONVERGENCE REACHED
+Converting F and G to node and edge potentials
+
+Parameter Estimation: s_lambda=5.000000e-01; density=3.000000e-01; p_lambda = 1.778279e+03
+Debug: Ising edgeRhos+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DEBUG t = 1, nargin = 1
+[BCFW] iter = 1000, fval = -26703, dg = , relDg = , totIterTime = 8.75375, trainErr = 0.999988, dx1 = 343061, stepSz = 0.223837
+[BCFW] iter = 2000, fval = -43875.5, dg = , relDg = , totIterTime = 17.7473, trainErr = 0.999988, dx1 = 143083, stepSz = 0.0987458
+[BCFW] iter = 3000, fval = -50920, dg = , relDg = , totIterTime = 26.9421, trainErr = 0.999988, dx1 = 89299.3, stepSz = 0.108328
+[BCFW] iter = 4000, fval = -54535.4, dg = , relDg = , totIterTime = 36.3968, trainErr = 0.999988, dx1 = 60393.3, stepSz = 0.333206
+[BCFW] iter = 5000, fval = -55948.9, dg = , relDg = , totIterTime = 46.541, trainErr = 0.999988, dx1 = 35323.8, stepSz = 0.153463
+[BCFW] iter = 6000, fval = -56952, dg = , relDg = , totIterTime = 57.5563, trainErr = 0.999988, dx1 = 22836.6, stepSz = 0.0790228
+[BCFW] iter = 7000, fval = -57614, dg = , relDg = , totIterTime = 68.9961, trainErr = 0.999988, dx1 = 15982.8, stepSz = 4.50855e-08
+[BCFW] iter = 8000, fval = -57824.4, dg = , relDg = , totIterTime = 81.2696, trainErr = 0.999988, dx1 = 9465.26, stepSz = 4.50855e-08
+[BCFW] iter = 9000, fval = -58012, dg = , relDg = , totIterTime = 94.5151, trainErr = 0.999988, dx1 = 5783.44, stepSz = 4.50855e-08
+[BCFW] iter = 10000, fval = -58167.7, dg = , relDg = , totIterTime = 107.907, trainErr = 0.999988, dx1 = 4713.76, stepSz = 4.50855e-08
+[BCFW] iter = 11000, fval = -58221.9, dg = , relDg = , totIterTime = 121.707, trainErr = 0.999988, dx1 = 2491.33, stepSz = 4.50855e-08
+[BCFW] iter = 12000, fval = -58270, dg = , relDg = , totIterTime = 135.718, trainErr = 0.999988, dx1 = 1593.11, stepSz = 4.50855e-08
+[BCFW] iter = 13000, fval = -58291.5, dg = , relDg = , totIterTime = 149.821, trainErr = 0.999988, dx1 = 1135.66, stepSz = 4.50855e-08
+[BCFW] iter = 14000, fval = -58303.9, dg = , relDg = , totIterTime = 164.076, trainErr = 0.999988, dx1 = 625.67, stepSz = 4.50855e-08
+[BCFW] iter = 15000, fval = -58311.9, dg = , relDg = , totIterTime = 178.511, trainErr = 0.999988, dx1 = 442.507, stepSz = 4.50855e-08
+[BCFW] iter = 16000, fval = -58316.8, dg = , relDg = , totIterTime = 193.113, trainErr = 0.999988, dx1 = 289.438, stepSz = 0.0146793
+[BCFW] iter = 17000, fval = -58320.2, dg = , relDg = , totIterTime = 207.535, trainErr = 0.999988, dx1 = 181.093, stepSz = 4.50855e-08
+[BCFW] iter = 18000, fval = -58321.3, dg = , relDg = , totIterTime = 222.098, trainErr = 0.999988, dx1 = 142.295, stepSz = 4.50855e-08
+[BCFW] iter = 19000, fval = -58322.3, dg = , relDg = , totIterTime = 236.806, trainErr = 0.999988, dx1 = 32.6035, stepSz = 4.50855e-08
+[BCFW] iter = 20000, fval = -58322.4, dg = , relDg = , totIterTime = 251.386, trainErr = 0.999988, dx1 = 4.65275, stepSz = 4.50855e-08
+[BCFW] iter = 21000, fval = -58322.6, dg = , relDg = , totIterTime = 266.199, trainErr = 0.999988, dx1 = 4.75634, stepSz = 4.50855e-08
+[BCFW] iter = 22000, fval = -58323.2, dg = , relDg = , totIterTime = 281.47, trainErr = 0.999988, dx1 = 26.1709, stepSz = 4.50855e-08
+[BCFW] iter = 23000, fval = -58323.6, dg = , relDg = , totIterTime = 297.009, trainErr = 0.999988, dx1 = 15.1557, stepSz = 4.50855e-08
+[BCFW] iter = 24000, fval = -58323.8, dg = , relDg = , totIterTime = 313.083, trainErr = 0.999988, dx1 = 7.28606, stepSz = 4.50855e-08
+[BCFW] iter = 25000, fval = -58323.8, dg = , relDg = , totIterTime = 327.789, trainErr = 0.999988, dx1 = 0.0159726, stepSz = 4.50855e-08
+CONVERGENCE REACHED
+Converting F and G to node and edge potentials
+Finished estimating parameters.
+model 1:
+Computing training likelihood
+Computing test likelihood
+model 2:
+Computing training likelihood
+Computing test likelihood
+model 3:
+Computing training likelihood
+Computing test likelihood
+model 4:
+Computing training likelihood
+Computing test likelihood
+model 5:
+Computing training likelihood
+Computing test likelihood
+model 6:
+Computing training likelihood
+Computing test likelihood
+  LoopyModelCollection with properties:
+
+               x_train: [1627x101 double]
+                x_test: [407x101 double]
+        variable_names: {1x101 cell}
+     s_lambda_sequence: 0.5000
+     p_lambda_sequence: 1.7783e+03
+      density_sequence: [0.2500 0.2600 0.2700 0.2800 0.2900 0.3000]
+                models: {1x6 cell}
+    computed_true_logZ: 0
+          hidden_model: 1
+

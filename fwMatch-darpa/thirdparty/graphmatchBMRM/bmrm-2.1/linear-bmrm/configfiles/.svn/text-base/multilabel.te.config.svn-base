@@ -1,0 +1,43 @@
+//string Program.mode PREDICTION
+string Program.mode EVALUATION
+
+//***  main program (BMRM) parameters ***//
+// verbosity level
+int BMRM.verbosity 1
+	   
+//*** loss function parameters ***//
+// type of loss function
+string Loss.lossFunctionType MULTI_LABEL_CLASSIFICATION
+
+// verbosity level
+int Loss.verbosity 0
+
+// [optional] start program with the model (i.e. weight vector) in this file
+//string Loss.hotstartModel model
+
+// learned model (default: "model")
+string Model.modelFile model.multilabel
+
+// predicted labels on test set (default: "predictedLabels")
+//string Prediction.predictedLabelsFile prediction
+
+// evaluated function values on test set (default: "decisionFunctionValues")
+//string Prediction.decisionFunctionValuesFile decision
+ 
+
+//*** dataset parameters ***//
+int Data.verbosity 1
+
+// data set format: variable length (or sequence) labels and svmlight/libsvm feature vectors
+string Data.format VARIABLE_LENGTH_VECTOR_LABEL_VECTOR_FEATURE
+
+// add a bias feature to the original feature vector?
+//   default: false
+bool Data.bias false
+
+// feature and label file names (with paths)
+//string Data.featureFile ../../../Data/multilabel/yeast/yeast.test.txt.X		
+//string Data.labelFile ../../../Data/multilabel/yeast/yeast.test.txt.Y.shifted
+
+string Data.featureFile ../../../Data/multilabel/rcv1_topics/rcv1_topics.test.0.txt.X		
+string Data.labelFile ../../../Data/multilabel/rcv1_topics/rcv1_topics.test.0.txt.Y.shifted

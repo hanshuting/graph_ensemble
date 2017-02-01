@@ -1,0 +1,15 @@
+Compilation:
+============
+Do "make linear-bmrm" to build two binaries:
+   a. linear-bmrm-train   : Trainer for linear BMRM.
+   b. linear-bmrm-predict : Predictor for test data (with trained model file supplied by user)
+
+
+Notes:
+======
+1.  Always compile a version of your program without -DNDEBUG flag and run it to check if the program satisfy all assertions (in the program).
+
+
+last update:
+============
+280707 - chteo

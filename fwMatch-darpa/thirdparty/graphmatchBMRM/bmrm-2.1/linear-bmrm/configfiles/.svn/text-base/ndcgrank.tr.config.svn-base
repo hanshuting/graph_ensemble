@@ -1,0 +1,114 @@
+//*** solver used to solve the regularized risk ***//
+string Solver.type BMRM
+
+//***  main program (BMRM) parameters ***//
+// verbosity level
+int BMRM.verbosity 1
+	   
+
+// keep convergence log in files? {1:yes, 0:no}
+int BMRM.convergenceLog 0
+
+
+// maximum number of iteration	
+int BMRM.maxNumOfIter 1000
+
+
+// tolerance for epsilon termination criterion (set negative value to disable this criterion)
+double BMRM.epsilonTol 1e-4
+
+
+// tolerance for gamma termination criterion (set negative value to disable this criterion)
+double BMRM.gammaTol 1e-3
+
+
+// regularization constant
+double BMRM.lambda 1e-2
+
+
+
+// [optional] other possible choices {L2N2_prLOQO, L1N1_CLP}
+string BMRM.innerSolverType L2N2_DaiFletcherPGM
+
+
+// [optional] store intermediate result at every positive multiple of this number of iteration
+//   (default: 1000000)
+//int BMRM.checkpointInterval 200
+
+
+// prefix for all check points
+//string BMRM.checkpointPrefix model.checkpoint
+
+
+// [optional] keep all (ALL) check points or only the latest (LATEST)?
+//string BMRM.checkpointMode ALL
+
+
+
+
+//*** inner solver ***//
+// verbosity level
+int InnerSolver.verbosity 0
+
+// [optional] number of iterations an inactive gradient is allowed to remain in
+//   the gradient set before removal (minimum:2, default:10)
+int L2N2_BMRMDualInnerSolver.gradIdleAge 10
+
+// [optional] maximum gradient set size
+int L2N2_BMRMDualInnerSolver.maxGradSetSize 5000
+
+
+
+//*** loss function parameters ***//
+// type of loss function
+string Loss.lossFunctionType NDCG_RANK
+//string Loss.lossFunctionType ORDINAL_REGRESSION
+//string Loss.lossFunctionType PREFERENCE_RANK
+
+
+// verbosity level
+int Loss.verbosity 0
+
+
+// [optional] start program with the model (i.e. weight vector) in this file
+//string Model.hotstartModel model
+
+// learned model (default: "model")
+string Model.modelFile model
+
+
+// predicted labels on test set (default: "predictedLabels")
+//string Prediction.predictedLabelsFile prediction
+
+// evaluated function values on test set (default: "decisionFunctionValues")
+//string Prediction.decisionFunctionValuesFile decision
+
+
+
+//*** dataset parameters ***//
+int Data.verbosity 1
+
+
+// add a bias feature to the original feature vector?
+//   default: false 
+bool Data.bias false
+
+
+// data set format: svmlight/libsvm format
+string Data.format VECTOR_LABEL_VECTOR_FEATURE
+
+// to be implemented data format.
+//string Data.fileType VECTOR_LABEL_VECTOR_FEATURE_BINARY
+
+
+// feature and label file names (with paths)
+//string Data.featureFile aus.X.qid
+//string Data.labelFile aus.Y
+//string Data.featureFile Xranking.txt
+//string Data.labelFile Yranking.txt
+//string Data.featureFile msntrain_100.txt.X
+//string Data.labelFile msntrain_100.txt.Y
+string Data.featureFile ../../../Data/ranking/OHSUMED/Fold1/trainingset.txt.X
+string Data.labelFile ../../../Data/ranking/OHSUMED/Fold1/trainingset.txt.Y
+
+

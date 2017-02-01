@@ -1,0 +1,27 @@
+
+l1_logreg: A large-scale solver for l1-regularized logistic regression problem
+
+Copyright (C) 2009   Kwangmoo Koh, Seung-Jean Kim and Stephen P. Boyd.
+--------------------------------------------------------------------------------
+
+Thank you for downloading l1_logreg.
+
+Please see the file 'INSTALL' or HTML manual for information on how to install this software.
+
+
+Files/directories of interest:
+
+    COPYING.txt             : copyright information
+    src_c/                  : source files
+    examples/               : usage examples and data
+
+
+Files generated after installation: (see INSTALL)
+
+    src_c/l1_logreg_train   : binary for training 
+    src_c/l1_logreg_classify: binary for classification
+    src_c/l1_logreg_regpath : binary for finding an approximate
+                              regularization path
+
+    doc/html/index.html     : HTML documentation
+

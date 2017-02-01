@@ -83,9 +83,13 @@ for n = 1:length(expt_name)
     true_label = opto_stim_high'==(pattern_indx+1);
     figure; set(gcf,'color','w','position',[2014 369 518 225])
     subplot(1,2,1); hold on
-    % ensemble
-    [~,sim_core] = core_cos_sim(stim_indx,data(:,1:num_neuron),true_label);
-    [xx,yy,~,auc_ens] = perfcurve(true_label,sim_core,1);
+    % random ensemble performance
+    auc_ens = zeros(100,1);
+    for ii = 1:100
+        rd_ens = randperm(num_neuron,length(stim_indx));
+        [~,sim_core] = core_cos_sim(rd_ens,data(:,1:num_neuron),true_label);
+        [xx,yy,~,auc_ens(ii)] = perfcurve(true_label,sim_core,1);
+    end
     plot(xx,yy,'color','k','linewidth',2*linew);
     % individual cells
     cc = jet(64);
@@ -105,7 +109,7 @@ for n = 1:length(expt_name)
     scatter(epsum{n}(stim_norecall),auc(stim_indx==stim_norecall),nodesz,mycc.blue,'filled')
     nsmi = min(epsum{n}(stim_indx));
     nsma = max(epsum{n}(stim_indx));
-    plot([nsmi nsma],auc_ens*[1 1],'k--');
+    plot([nsmi nsma],mean(auc_ens)*[1 1],'k--');
     xlim([nsmi nsma]);
     xlabel('node strength'); ylabel('AUC');
         
