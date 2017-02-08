@@ -35,6 +35,10 @@ for n = 1:length(expt_name)
         ge_type '.mat']);
     model.graph = full(model.graph);
     
+    % shuffled models
+    shuffle_models = load([model_path 'shuffled_' expt_name{n} '_' ...
+        expt_ee '_loopy.mat']);
+    
     num_node = size(model.graph,1);
     num_stim_cell = length(stim_indx);
     num_nostim_cell = num_node-num_stim_cell;
@@ -55,7 +59,15 @@ for n = 1:length(expt_name)
     
     % convert to on edges
     model.ep_on = getOnEdgePot(model.graph,model.G)';
-
+    for ii = 1:length(shuffle_models.graphs)
+        shuffle_models.ep_on{ii} = getOnEdgePot(shuffle_models.graphs{ii},...
+            shuffle_models.G{ii})';
+        shuffle_models.epsum{ii} = sum(shuffle_models.ep_on{ii},2);
+        shuffle_models.epsum{ii}(sum(shuffle_models.graphs{ii},2)==0) = NaN;
+    end
+    shuffle_models.mepsum = nanmean(cellfun(@(x) nanmean(x),shuffle_models.epsum));
+    shuffle_models.sdepsum = nanstd(cellfun(@(x) nanmean(x),shuffle_models.epsum));
+    
     % edge potential sum
     epsum{n} = sum(model.ep_on,2);
     epsum{n}(sum(model.graph,2)==0) = NaN;
@@ -109,8 +121,16 @@ for n = 1:length(expt_name)
     scatter(epsum{n}(stim_norecall),auc(stim_indx==stim_norecall),nodesz,mycc.blue,'filled')
     nsmi = min(epsum{n}(stim_indx));
     nsma = max(epsum{n}(stim_indx));
+    aucmi = min(auc(:))-0.1;
+    aucma = max(auc(:))+0.1;
     plot([nsmi nsma],mean(auc_ens)*[1 1],'k--');
-    xlim([nsmi nsma]);
+    plot([nsmi nsma],(mean(auc_ens)+std(auc_ens))*[1 1],'--','color',mycc.gray_light);
+    plot(shuffle_models.mepsum*[1 1],[aucmi aucma],'k--');
+    plot((shuffle_models.mepsum+shuffle_models.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
+    plot((shuffle_models.mepsum-shuffle_models.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
+    xlim([nsmi nsma]); ylim([aucmi aucma])
     xlabel('node strength'); ylabel('AUC');
         
 %     % change single node activity and predict with LL

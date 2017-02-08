@@ -83,6 +83,28 @@ for n = 1:num_expt
     pre_model.ep_on = getOnEdgePot(pre_model.graph,pre_model.G)';
     post_model.ep_on = getOnEdgePot(post_model.graph,post_model.G)';
     
+    % shuffled models
+    pre_shuffle = load([model_path 'shuffled_' expt_name{n} '_' ...
+        expt_ee{1} '_loopy.mat']);
+    for ii = 1:length(pre_shuffle.graphs)
+        pre_shuffle.ep_on{ii} = getOnEdgePot(pre_shuffle.graphs{ii},...
+            pre_shuffle.G{ii})';
+        pre_shuffle.epsum{ii} = sum(pre_shuffle.ep_on{ii},2);
+        pre_shuffle.epsum{ii}(sum(pre_shuffle.graphs{ii},2)==0) = NaN;
+    end
+    pre_shuffle.mepsum = nanmean(cellfun(@(x) nanmean(x),pre_shuffle.epsum));
+    pre_shuffle.sdepsum = nanstd(cellfun(@(x) nanmean(x),pre_shuffle.epsum));
+    post_shuffle = load([model_path 'shuffled_' expt_name{n} '_' ...
+        expt_ee{2} '_loopy.mat']);
+    for ii = 1:length(post_shuffle.graphs)
+        post_shuffle.ep_on{ii} = getOnEdgePot(post_shuffle.graphs{ii},...
+            post_shuffle.G{ii})';
+        post_shuffle.epsum{ii} = sum(post_shuffle.ep_on{ii},2);
+        post_shuffle.epsum{ii}(sum(post_shuffle.graphs{ii},2)==0) = NaN;
+    end
+    post_shuffle.mepsum = nanmean(cellfun(@(x) nanmean(x),post_shuffle.epsum));
+    post_shuffle.sdepsum = nanstd(cellfun(@(x) nanmean(x),post_shuffle.epsum));
+    
     % extend coordinates for add neuron model
     coords = Coord_active;
     coords(end+1,:) = [0 max(coords(:,2))];
@@ -278,15 +300,33 @@ for n = 1:num_expt
     xlabel('node strength'); ylabel('AUC');
     
     % plot ensemble auc, scale figures
-    aucmi = min([auc_pre;auc_post]);
-    aucma = max([auc_pre;auc_post]);
+    aucmi = min([auc_pre;auc_post])-0.1;
+    aucma = max([auc_pre;auc_post])+0.1;
     nsmi = min([ep_sum{n,1}(Stim_cells)',ep_sum{n,2}(Stim_cells)']);
     nsma = max([ep_sum{n,1}(Stim_cells)',ep_sum{n,2}(Stim_cells)']);
-    subplot(2,2,3)
+    subplot(2,2,3); hold on
     plot([nsmi nsma],mean(auc_rd_pre)*[1 1],'k--')
+    plot([nsmi nsma],(mean(auc_rd_pre)+std(auc_rd_pre))*[1 1],'--',...
+        'color',mycc.gray_light);
+    plot([nsmi nsma],(mean(auc_rd_pre)-std(auc_rd_pre))*[1 1],'--',...
+        'color',mycc.gray_light);
+    plot(pre_shuffle.mepsum*[1 1],[aucmi aucma],'k--');
+    plot((pre_shuffle.mepsum+pre_shuffle.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
+    plot((pre_shuffle.mepsum-pre_shuffle.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
     xlim([nsmi nsma]); ylim([aucmi aucma]);
-    subplot(2,2,4)
+    subplot(2,2,4); hold on
     plot([nsmi nsma],mean(auc_rd_post)*[1 1],'k--')
+    plot([nsmi nsma],(mean(auc_rd_post)+std(auc_rd_post))*[1 1],'--',...
+        'color',mycc.gray_light);
+    plot([nsmi nsma],(mean(auc_rd_post)-std(auc_rd_post))*[1 1],'--',...
+        'color',mycc.gray_light);
+    plot(post_shuffle.mepsum*[1 1],[aucmi aucma],'k--');
+    plot((post_shuffle.mepsum+post_shuffle.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
+    plot((post_shuffle.mepsum-post_shuffle.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
     xlim([nsmi nsma]); ylim([aucmi aucma]);
     
     saveas(gcf,[fig_path 'opto_spont_ROC.pdf']);

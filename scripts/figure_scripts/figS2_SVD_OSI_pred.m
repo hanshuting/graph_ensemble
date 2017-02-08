@@ -204,6 +204,10 @@ xlim([0 4*stepsz])
 set(gca,'xcolor','w')
 ylabel('cells (%)')
 box off
+pval = ranksum(num_crf./num_cell,num_osi./num_cell);
+if pval<p
+    scatter(3*stepsz,0.5,'k*');
+end
 
 % plot shared number
 subplot(1,2,2); hold on

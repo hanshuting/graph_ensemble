@@ -44,10 +44,27 @@ for n = 1:num_expt
     num_frame = length(Pks_Frame);
     num_frame_full = size(Spikes,2);
     vis_stim_high = vis_stim(Pks_Frame);
-    data_high = Spikes(:,Pks_Frame);
+%     data_high = Spikes(:,Pks_Frame);
+    load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee '.mat']);
+    data_high = data';
     
     best_model.ep_on = getOnEdgePot(best_model.graph,best_model.G);
     best_model.ep_on = best_model.ep_on - tril(best_model.ep_on);
+    epsum = sum(best_model.ep_on,2);
+    epsum(sum(best_model.graph,2)==0) = NaN;
+    
+    % shuffled models
+    shuffle_model = load([model_path 'shuffled_' expt_name{n} '_' ...
+        expt_ee '_loopy_fulldata.mat']);
+    for ii = 1:length(shuffle_model.graphs)
+        shuffle_model.ep_on{ii} = getOnEdgePot(shuffle_model.graphs{ii},...
+            shuffle_model.G{ii})';
+        shuffle_model.epsum{ii} = sum(shuffle_model.ep_on{ii},2);
+        shuffle_model.epsum{ii}(sum(shuffle_model.graphs{ii},2)==0) = NaN;
+    end
+    shuffle_model.mepsum = nanmean(cellfun(@(x) nanmean(x),shuffle_model.epsum));
+    shuffle_model.sdepsum = nanstd(cellfun(@(x) nanmean(x),shuffle_model.epsum));
+    
     
     %% find SVD ensemble
     core_svd = cell(num_stim,1);
@@ -86,33 +103,34 @@ for n = 1:num_expt
     end
     
     % find best threshold
-    th_vec = 0.5:0.05:0.8;
-    acc_vec = zeros(length(th_vec),num_stim);
-    for ii = 1:num_stim
-        true_label = vis_stim_high'==ii;
-        for jj = 1:length(th_vec)
-            core = find(auc(:,ii)>max(auc(:,setdiff(1:num_stim,ii)),[],2)&...
-                auc(:,ii)>th_vec(jj));
-            if ~isempty(core)
-                [~,~,~,~,acc] = core_cos_sim(core,data_high',true_label);
-            else
-                acc = 0;
-            end
-            acc_vec(jj,ii) = acc;
-        end
-    end
-    th = zeros(num_stim,1);
-    for ii = 1:num_stim
-        [~,best_indx] = max(acc_vec(:,ii));
-        th(ii) = th_vec(best_indx);
-    end
-        
-    % find ensembles
-    core_crf = cell(num_stim,1);
-    for ii = 1:num_stim
-        core_crf{ii} = find(auc(:,ii)>max(auc(:,setdiff(1:num_stim,ii)),[],2)&...
-            auc(:,ii)>th(ii));
-    end
+%     th_vec = 0.5:0.05:0.8;
+%     acc_vec = zeros(length(th_vec),num_stim);
+%     for ii = 1:num_stim
+%         true_label = vis_stim_high'==ii;
+%         for jj = 1:length(th_vec)
+%             core = find(auc(:,ii)>max(auc(:,setdiff(1:num_stim,ii)),[],2)&...
+%                 auc(:,ii)>th_vec(jj));
+%             if ~isempty(core)
+%                 [~,~,~,~,acc] = core_cos_sim(core,data_high',true_label);
+%             else
+%                 acc = 0;
+%             end
+%             acc_vec(jj,ii) = acc;
+%         end
+%     end
+%     th = zeros(num_stim,1);
+%     for ii = 1:num_stim
+%         [~,best_indx] = max(acc_vec(:,ii));
+%         th(ii) = th_vec(best_indx);
+%     end
+%         
+%     % find ensembles
+%     core_crf = cell(num_stim,1);
+%     for ii = 1:num_stim
+%         core_crf{ii} = find(auc(:,ii)>max(auc(:,setdiff(1:num_stim,ii)),[],2)&...
+%             auc(:,ii)>th(ii));
+%         core_crf{ii} = setdiff(core_crf{ii},num_node-num_stim+ii);
+%     end
 
     % ------------------- use LL and TPR/FPR ---------------- %
 %     % threshold and count
@@ -163,20 +181,47 @@ for n = 1:num_expt
 %         core_crf{ii} = find(TPR(:,ii)>th(ii)&FPR(:,ii)<th(ii));
 %     end
     
-    %% plot each neuron in ROC space - AUC
-    nodesz = 15;
-    figure; set(gcf,'color','w','position',[2060 403 247 230])
-    hold on
-    plot([0 1],[0 1],'k--')
-    plot([0 th(1)],th(1)*[1 1],'k--')
-    plot(th(2)*[1 1],[0 th(2)],'k--')
-    scatter(auc(:,1),auc(:,2),nodesz,mycc.gray,'filled')
-    scatter(auc(core_crf{1},1),auc(core_crf{1},2),nodesz,mycc.red,'filled')
-    scatter(auc(core_crf{2},1),auc(core_crf{2},2),nodesz,mycc.blue,'filled')
-    xlim([0 1]); ylim([0 1])
-    xlabel('AUC 1'); ylabel('AUC 2');
+    % --------------------- node strength + AUC --------------------- %
+    th_vec = 0.5:0.05:0.8;
+    th = zeros(num_stim,1);
+    core_crf = cell(num_stim,1);
+    for ii = 1:num_stim
+        
+        % find best threshold
+        acc_vec = zeros(length(th_vec),1);
+        true_label = vis_stim_high'==ii;
+        core = cell(length(th_vec),1);
+        for jj = 1:length(th_vec)
+            core{jj} = find(auc(:,ii)>th_vec(jj)&(epsum>shuffle_model.mepsum+...
+                shuffle_model.sdepsum));
+            if ~isempty(core{jj})
+                [~,~,~,~,acc] = core_cos_sim(core{jj},data_high',true_label);
+            else
+                acc = 0;
+            end
+            acc_vec(jj) = acc;
+        end
+        
+        [~,indx] = max(acc_vec);
+        core_crf{ii} = setdiff(core{indx},num_node-num_stim+ii);
+        th(ii) = th_vec(indx);
+        
+    end
     
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_ROCspace.pdf'])   
+    %% plot each neuron in ROC space - AUC
+%     nodesz = 15;
+%     figure; set(gcf,'color','w','position',[2060 403 247 230])
+%     hold on
+%     plot([0 1],[0 1],'k--')
+%     plot([0 th(1)],th(1)*[1 1],'k--')
+%     plot(th(2)*[1 1],[0 th(2)],'k--')
+%     scatter(auc(:,1),auc(:,2),nodesz,mycc.gray,'filled')
+%     scatter(auc(core_crf{1},1),auc(core_crf{1},2),nodesz,mycc.red,'filled')
+%     scatter(auc(core_crf{2},1),auc(core_crf{2},2),nodesz,mycc.blue,'filled')
+%     xlim([0 1]); ylim([0 1])
+%     xlabel('AUC 1'); ylabel('AUC 2');
+%     
+%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_ROCspace.pdf'])   
 
 %     %% plot each neuron in ROC space - LL and FPR/TPR
 %     nodesz = 15;
@@ -200,22 +245,45 @@ for n = 1:num_expt
 %     
 %     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_ROCspace.pdf'])
 %     
+
+    % --------------------- node strength + AUC --------------------- %
+    nodesz = 30;
+    nsmi = min(epsum);
+    nsma = max(epsum);
+    aucmi = 0;
+    aucma = 1;
+    figure;
+    for ii = 1:num_stim
+        subplot(1,num_stim,ii); hold on
+        scatter(epsum,auc(:,ii),nodesz,mycc.gray,'filled')
+        scatter(epsum(core_crf{ii}),auc(core_crf{ii},ii),nodesz,mycc.red,'filled')
+        plot([nsmi nsma],th(ii)*[1 1],'k--');
+        plot(shuffle_model.mepsum*[1 1],[aucmi aucma],'k--');
+        plot((shuffle_model.mepsum+shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+            'color',mycc.gray_light);
+        plot((shuffle_model.mepsum-shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+            'color',mycc.gray_light);
+        xlim([nsmi nsma]); ylim([aucmi aucma])
+        xlabel('node strength'); ylabel('AUC');
+    end
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_NS_AUC.pdf'])   
+    
     %% plot prediction example
 %     [~,indx] = max(LL_pred_count(core_crf{1},1));
-    [~,indx] = max(TPR(core_crf{1},1)-FPR(core_crf{1},1));
-    indx = core_crf{1}(indx);
-    
-    figure; set(gcf,'color','w','position',[1988 755 232 209])
-    plotGraphHighlight(Coord_active,indx,'r');
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-        expt_ee '_cell_' num2str(indx) '.pdf'])
-    
-    LL_cell_nor = (LL_on(indx,:)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
-    thr_cell_nor = (thr(indx)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
-    plot_pred(LL_pred(indx,:),LL_cell_nor,thr_cell_nor,vis_stim_high,cmap)
-    set(gcf,'position',[2055 522 1121 127])
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-        expt_ee '_LL_cell_' num2str(indx) '.pdf'])
+%     [~,indx] = max(TPR(core_crf{1},1)-FPR(core_crf{1},1));
+%     indx = core_crf{1}(indx);
+%     
+%     figure; set(gcf,'color','w','position',[1988 755 232 209])
+%     plotGraphHighlight(Coord_active,indx,'r');
+%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
+%         expt_ee '_cell_' num2str(indx) '.pdf'])
+%     
+%     LL_cell_nor = (LL_on(indx,:)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
+%     thr_cell_nor = (thr(indx)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
+%     plot_pred(LL_pred(indx,:),LL_cell_nor,thr_cell_nor,vis_stim_high,cmap)
+%     set(gcf,'position',[2055 522 1121 127])
+%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
+%         expt_ee '_LL_cell_' num2str(indx) '.pdf'])
     
     %% plot ensemble highlight
     figure; set(gcf,'color','w','position',[2162 447 434 267])
