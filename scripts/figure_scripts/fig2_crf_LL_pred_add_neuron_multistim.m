@@ -1,5 +1,6 @@
-function [] = fig2_crf_LL_pred_add_neuron(param)
-% THIS VERSION ONLY WORKS FOR 2 STIMULI
+function [] = fig2_crf_LL_pred_add_neuron_multistim(param)
+% This version should work for multiple stimuli
+% doesn't work well with LC's datasets, but works for PA datasets
 
 % parameters
 expt_name = param.expt_name;
@@ -16,8 +17,6 @@ rwbmap = param.rwbmap;
 num_expt = length(expt_name);
 linew = param.linew;
 
-qnoise = 0.3;
-
 load(ccode_path);
 load(rwbmap);
 
@@ -27,12 +26,6 @@ pred_stats = zeros(2,num_expt,3);
 thr = zeros(num_expt,1);
 scores = cell(num_expt,2);
 label = cell(num_expt,2);
-
-% cos_sim = {};
-% cos_sim_avg = [];
-% cos_thresh = [];
-% pred = {};
-% pred_stats = [];
 
 %% process each experiment
 for n = 1:num_expt
@@ -53,52 +46,12 @@ for n = 1:num_expt
     vis_stim_label = setdiff(unique(vis_stim),0);
     data_high = Spikes(:,Pks_Frame);
     
-    % if dataset has spontaneous activity, use mean +/- 3S.D., otherwise
-    % use mean +/- S.D.
-    if any(vis_stim==0)
-        c = 3;
-    else
-        c = 0;
-    end
-    
     % plot model with secondary connections
-    plotHighlightSecondOrder(best_model.graph,Coord_active,num_stim);
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_second_order_ensemble.pdf'])
-    
-    % find second order ensembles
-    ens = cell(num_stim,1);
-    for ii = 1:num_stim
-        fo = setdiff(find(best_model.graph(num_node+ii,:)),num_node+ii:num_node+num_stim)';
-        so = cell(length(fo),1);
-        for jj = 1:length(fo)
-            so{jj} = setdiff(find(best_model.graph(fo(jj),:)),[fo;(num_node+ii:num_node+num_stim)'])';
-        end
-        ens{ii} = [unique([reshape(unique(cell2mat(so)),[],1);fo]);num_node+ii];
-    end
-    
-%     % prediction with cosine similarity
-%     pred_mat = [];
-%     for ii = 1:num_stim
-%         expt_count = expt_count+1;
-%         [pred{expt_count},cos_sim{expt_count},cos_thresh(expt_count),...
-%             cos_sim_avg(expt_count,:),acc,prc,rec] = core_cos_sim(setdiff(ens{ii},...
-%             num_node+1:num_node+num_stim),data_high',vis_stim_high'==ii);
-%         pred_stats(expt_count,:) = [acc,prc,rec];
-%         pred_mat(ii,:) = pred{expt_count};
-%     end
-%     
-%     plot_pred(pred{expt_count},cos_sim{expt_count},cos_thresh(expt_count),...
-%         vis_stim_high,cmap);
-%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-%         expt_ee '_' ge_type '_pred_sim.pdf'])
-%     
-%     % plot prediction
-%     plot_pred_raster(pred_mat,vis_stim_high,cmap);
-%     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
-%         expt_ee '_' ge_type '_all_pred_raster.pdf'])
-    
-    % calculate likelihood difference
-    LL_frame = zeros(num_frame,num_stim);
+%     plotHighlightSecondOrder(best_model.graph,Coord_active,num_stim);
+%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_second_order_ensemble.pdf'])
+
+    % calculate likelihood difference; last column represents no stim
+    LL_frame = zeros(num_frame,num_stim+1);
     for ii = 1:num_frame
         for jj = 1:num_stim
             stim_vec = zeros(num_stim,1);
@@ -107,30 +60,26 @@ for n = 1:num_expt
             LL_frame(ii,jj) = compute_avg_log_likelihood(best_model.node_pot,...
                 best_model.edge_pot,best_model.logZ,data_stim);
         end
+        stim_vec = zeros(num_stim,1);
+        data_stim = [data_high(:,ii);stim_vec]';
+        LL_frame(ii,num_stim+1) = compute_avg_log_likelihood(best_model.node_pot,...
+            best_model.edge_pot,best_model.logZ,data_stim);
     end
-    LLs = LL_frame(:,1)-LL_frame(:,2); % currently only works for 2 stim
     
-    % threshold by 3 std of noise
-    th1 = quantile(LLs(:),qnoise);
-    th2 = quantile(LLs(:),1-qnoise);
-    LLs_th = LLs;
-    LLs_th(LLs<=th1 | LLs>=th2) = NaN;
-    thr(n,1) = c*nanstd(LLs_th(:))+nanmean(LLs_th(:));
-    thr(n,2) = -c*nanstd(LLs_th(:))+nanmean(LLs_th(:));
-%     sigind = abs(LLs)<=quantile(abs(LLs),qnoise);
-%     thr(n) = 3*std(abs(LLs(sigind)))+mean(abs(LLs(sigind)));
-    [~,pred] = max(LL_frame,[],2);
-    pred(pred==1 & LLs<thr(n,1)) = 0;
-    pred(pred==2 & LLs>thr(n,2)) = 0;
-    
-    % collect LL per stim
-    pred_mLL{n,1} = LLs(vis_stim_high==vis_stim_label(1));
-    pred_mLL{n,2} = LLs(vis_stim_high==vis_stim_label(2));
+    % predict by taking the highest LL
+    [LL_max,pred] = max(LL_frame,[],2);
+    pred(pred==num_stim+1) = 0;
     
     % prediction statistics
     pred_mat = zeros(num_stim,num_frame);
     pred_mat_full = zeros(num_stim,num_frame_full);
     for ii = 1:num_stim
+        
+        % collect scores for ROC
+        scores{n,ii} = LL_frame(:,ii)-LL_max;
+        label{n,ii} = reshape(vis_stim_high==vis_stim_label(ii),[],1);
+        
+        % calculate statistics
         pred = reshape(pred,[],1);
         true_label = reshape(vis_stim_high==vis_stim_label(ii),[],1);
         TP = sum(pred==ii & true_label==1);
@@ -143,34 +92,14 @@ for n = 1:num_expt
         pred_stats(ii,n,:) = [acc,prc,rec];
         pred_mat(ii,:) = pred==ii;
         pred_mat_full(ii,Pks_Frame) = pred==ii;
+        
     end
     
-    % collect scores for ROC
-    scores{n,1} = LLs;
-    scores{n,2} = -LLs;
-    label{n,1} = reshape(vis_stim_high==vis_stim_label(1),[],1);
-    label{n,2} = reshape(vis_stim_high==vis_stim_label(2),[],1);
-    
     % plot prediction
-    plot_pred_raster(pred_mat_full,vis_stim,cmap);
-%     plot_pred_raster(pred_mat,vis_stim_high,cmap);
-    print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
-        expt_ee '_' ge_type '_all_pred_raster.pdf'])
-    
-    % plot LL
-    figure; set(gcf,'color','w','position',[2021 700 807 222])
-    set(gcf,'paperpositionmode','auto')
-    hold on
-    numrep = ceil(max(LLs)-min(LLs));
-    imagesc(repmat(vis_stim_high',numrep,1))
-    colormap(cmap)
-    patch([0 num_frame num_frame 0 0],(numrep+1)/2-[thr(n,1) thr(n,1) thr(n,2)...
-        thr(n,2) thr(n,1)],mycc.gray_light,'edgecolor','none','facealpha',0.5);
-    plot([0 num_frame],(numrep+1)/2*[1 1],'--','color',mycc.black,'linewidth',linew)
-    plot((numrep+1)/2-LLs,'k','linewidth',linew)
-    xlim([1 num_frame]); ylim([0.5 0.5+numrep])
-    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-        expt_ee '_' ge_type '_all_LL.pdf'])
+%     plot_pred_raster(pred_mat_full,vis_stim,cmap);
+    plot_pred_raster(pred_mat,vis_stim_high,cmap);
+%     print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
+%         expt_ee '_' ge_type '_all_pred_raster.pdf'])
     
 end
 
@@ -178,7 +107,7 @@ end
 figure;set(gcf,'color','w','position',[2801 517 248 225])
 hold on
 
-% individual curve
+% plot individual curves
 auc = zeros(num_expt,2);
 xx = cell(num_expt,2);
 yy = cell(num_expt,2);
@@ -187,7 +116,7 @@ for ii = 1:num_expt
     [auc(ii,2),xx{ii,2},yy{ii,2}] = plotROCmultic(label{ii,2},scores{ii,2},1,mycc.blue_light,linew);
 end
 
-% mean curve
+% calculate mean curve
 xvec = 0:0.02:1;
 ymat = zeros(num_expt,length(xvec),2);
 for ii = 1:num_expt
@@ -197,16 +126,18 @@ for ii = 1:num_expt
     ymat(ii,:,2) = interp1(xx{ii,2}(uid),yy{ii,2}(uid),xvec);
 end
 
+% test auc
 pval = ranksum(auc(:,1),auc(:,2));
 title(num2str(pval));
 
-plot(xvec,squeeze(mean(ymat(:,:,1),1)),'color',mycc.red,'linewidth',3*linew)
-plot(xvec,squeeze(mean(ymat(:,:,2),1)),'color',mycc.blue,'linewidth',3*linew)
+% plot mean curve
+plot(xvec,squeeze(mean(ymat(:,:,1),1)),'color',mycc.red,'linewidth',2*linew)
+plot(xvec,squeeze(mean(ymat(:,:,2),1)),'color',mycc.blue,'linewidth',2*linew)
 xlim([0 1]); ylim([0 1])
 set(gca,'linewidth',linew)
 legend('off')
 
-saveas(gcf,[fig_path expt_ee '_' ge_type '_roc.pdf'])
+saveas(gcf,[fig_path expt_ee '_' ge_type '_multistim_roc.pdf'])
 
 %% plot stats
 figure;
@@ -284,7 +215,7 @@ pval = ranksum(pred_stats(1,:,3),pred_stats(2,:,3));
 title(num2str(pval));
 
 print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_ee '_' ge_type ...
-    '_all_pred_stats.pdf'])
+    '_multistim_pred_stats.pdf'])
 
 
 end

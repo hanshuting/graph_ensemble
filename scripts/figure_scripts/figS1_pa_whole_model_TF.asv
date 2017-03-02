@@ -24,7 +24,7 @@ num_tf = length(tf_seq);
 pred_mLL = cell(4,num_tf,num_expt);
 pred_stats = zeros(2,num_expt,num_tf,3);
 thr = zeros(num_expt,num_tf,1);
-LL_pred = cell(4,num_tf,num_expt);
+LL_pred = cell(num_tf,num_expt);
 
 % cos_sim = {};
 % cos_sim_avg = [];
@@ -62,7 +62,7 @@ for n = 1:num_expt
         vis_stim = vis_stim';
         num_frame = size(data,2);
 
-        % calculate likelihood
+        % prediction
         LL_frame = zeros(num_frame,num_stim);
         for ii = 1:num_frame
             for jj = 1:num_stim
@@ -73,14 +73,13 @@ for n = 1:num_expt
                     best_model.edge_pot,best_model.logZ,data_stim);
             end
         end
-        
-        % make prediction
+
         [~,pred] = max(LL_frame,[],2);
         pred_final = zeros(size(pred));
         pred_mat = zeros(num_stim,num_frame);
-        for ii = 1:num_stim % go through each stimulus
+        for ii = 1:num_stim
            pred_cr = pred==ii;
-           for jj = setdiff(1:num_stim,ii) % 
+           for jj = setdiff(1:num_stim,ii)
                 LLs = LL_frame(:,ii)-LL_frame(:,jj);
                 % threshold by 3 std of noise
                 th1 = quantile(LLs(:),qnoise);
@@ -90,8 +89,7 @@ for n = 1:num_expt
                 thr = 3*nanstd(LLs_th(:))+nanmean(LLs_th(:));
                 if ~isnan(thr)
                     pred_cr(LLs<thr) = 0;
-                end
-%                 LL_pred{ii,m,n} = LLs(vis_stim==ii);
+                end        
             end
             pred_mat(ii,:) = pred_cr;
             pred_final = pred_final+pred_cr*ii;
@@ -100,22 +98,24 @@ for n = 1:num_expt
 
         end
         
-%         % ROC
-%         auc = zeros(num_expt,2);
-%         xx = cell(num_expt,2);
-%         yy = cell(num_expt,2);
-%         for ii = 1:num_expt
-%             [auc(ii,1),xx{ii,1},yy{ii,1}] = plotROCmultic(LLs{ii,1},scores{ii,1},1,mycc.red_light,linew);
-%         end
-%         % calculate mean curve
-%         xvec = 0:0.02:1;
-%         ymat = zeros(num_expt,length(xvec),2);
-%         for ii = 1:num_expt
-%             [~,uid] = unique(xx{ii,1});
-%             ymat(ii,:,1) = interp1(xx{ii,1}(uid),yy{ii,1}(uid),xvec);
-%             [~,uid] = unique(xx{ii,2});
-%             ymat(ii,:,2) = interp1(xx{ii,2}(uid),yy{ii,2}(uid),xvec);
-%         end
+        % ROC
+        auc = zeros(num_expt,2);
+        xx = cell(num_expt,2);
+        yy = cell(num_expt,2);
+        for ii = 1:num_expt
+            [auc(ii,1),xx{ii,1},yy{ii,1}] = plotROCmultic(LLs{ii,1},scores{ii,1},1,mycc.red_light,linew);
+            [auc(ii,2),xx{ii,2},yy{ii,2}] = plotROCmultic(label{ii,2},scores{ii,2},1,mycc.blue_light,linew);
+        end
+
+        % calculate mean curve
+        xvec = 0:0.02:1;
+        ymat = zeros(num_expt,length(xvec),2);
+        for ii = 1:num_expt
+            [~,uid] = unique(xx{ii,1});
+            ymat(ii,:,1) = interp1(xx{ii,1}(uid),yy{ii,1}(uid),xvec);
+            [~,uid] = unique(xx{ii,2});
+            ymat(ii,:,2) = interp1(xx{ii,2}(uid),yy{ii,2}(uid),xvec);
+        end
         
         % prediction statistics
         for ii = 1:num_stim

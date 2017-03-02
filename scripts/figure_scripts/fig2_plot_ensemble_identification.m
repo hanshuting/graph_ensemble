@@ -31,7 +31,7 @@ expt_count = 0;
 for n = 1:num_expt
     
     expt_ee = ee{n}{1};
-
+    
     model_path = [result_path_base '\' expt_name{n} '\models\']; 
     
     load([data_path expt_name{n} '\' expt_name{n} '.mat']);
@@ -39,7 +39,7 @@ for n = 1:num_expt
     best_model = load([model_path expt_name{n} '_' expt_ee ...
         '_loopy_best_model_' ge_type '.mat']);
     svd_data = load([data_path 'ensembles\' expt_name{n} '_core_svd.mat']);
-    num_stim = length(unique(vis_stim))-1;
+    num_stim = length(unique(setdiff(vis_stim,0)));
     num_node = size(best_model.graph,1);
     num_frame = length(Pks_Frame);
     num_frame_full = size(Spikes,2);
@@ -182,31 +182,46 @@ for n = 1:num_expt
 %     end
     
     % --------------------- node strength + AUC --------------------- %
-    th_vec = 0.5:0.05:0.8;
-    th = zeros(num_stim,1);
+    auc_ens = cell(num_stim,1);
     core_crf = cell(num_stim,1);
     for ii = 1:num_stim
-        
-        % find best threshold
-        acc_vec = zeros(length(th_vec),1);
-        true_label = vis_stim_high'==ii;
-        core = cell(length(th_vec),1);
-        for jj = 1:length(th_vec)
-            core{jj} = find(auc(:,ii)>th_vec(jj)&(epsum>shuffle_model.mepsum+...
-                shuffle_model.sdepsum));
-            if ~isempty(core{jj})
-                [~,~,~,~,acc] = core_cos_sim(core{jj},data_high',true_label);
-            else
-                acc = 0;
-            end
-            acc_vec(jj) = acc;
+        num_ens = sum(best_model.graph(num_node-num_stim+ii,:));
+        for jj = 1:100
+            rd_ens = randperm(num_node,num_ens);
+            [~,sim_core] = core_cos_sim(rd_ens,data_high',...
+                true_label);
+            [~,~,~,auc_ens{ii}(jj)] = perfcurve(true_label,sim_core,1);
         end
-        
-        [~,indx] = max(acc_vec);
-        core_crf{ii} = setdiff(core{indx},num_node-num_stim+ii);
-        th(ii) = th_vec(indx);
-        
+        core_crf{ii} = find(auc(:,ii)>(mean(auc_ens{ii})+std(auc_ens{ii}))&...
+            (epsum>(shuffle_model.mepsum+shuffle_model.sdepsum)));
+        core_crf{ii} = setdiff(core_crf{ii},num_node-num_stim+ii);
     end
+    
+%     th_vec = 0.5:0.05:0.8;
+%     th = zeros(num_stim,1);
+%     core_crf = cell(num_stim,1);
+%     for ii = 1:num_stim
+%         
+%         % find best threshold
+%         acc_vec = zeros(length(th_vec),1);
+%         true_label = vis_stim_high'==ii;
+%         core = cell(length(th_vec),1);
+%         for jj = 1:length(th_vec)
+%             core{jj} = find(auc(:,ii)>th_vec(jj)&(epsum>shuffle_model.mepsum+...
+%                 shuffle_model.sdepsum));
+%             if ~isempty(core{jj})
+%                 [~,~,~,~,acc] = core_cos_sim(core{jj},data_high',true_label);
+%             else
+%                 acc = 0;
+%             end
+%             acc_vec(jj) = acc;
+%         end
+%         
+%         [~,indx] = max(acc_vec);
+%         core_crf{ii} = setdiff(core{indx},num_node-num_stim+ii);
+%         th(ii) = th_vec(indx);
+%         
+%     end
     
     %% plot each neuron in ROC space - AUC
 %     nodesz = 15;
@@ -252,19 +267,24 @@ for n = 1:num_expt
     nsma = max(epsum);
     aucmi = 0;
     aucma = 1;
-    figure;
+    figure; set(gcf,'color','w','position',[1967 615 555 253])
     for ii = 1:num_stim
         subplot(1,num_stim,ii); hold on
         scatter(epsum,auc(:,ii),nodesz,mycc.gray,'filled')
         scatter(epsum(core_crf{ii}),auc(core_crf{ii},ii),nodesz,mycc.red,'filled')
-        plot([nsmi nsma],th(ii)*[1 1],'k--');
+%         plot([nsmi nsma],th(ii)*[1 1],'k--');
+        plot([nsmi nsma],mean(auc_ens{ii})*[1 1],'k--');
+        plot([nsmi nsma],(mean(auc_ens{ii})+std(auc_ens{ii}))*[1 1],'--',...
+            'color',mycc.gray_light);
+        plot([nsmi nsma],(mean(auc_ens{ii})-std(auc_ens{ii}))*[1 1],'--',...
+            'color',mycc.gray_light);
         plot(shuffle_model.mepsum*[1 1],[aucmi aucma],'k--');
         plot((shuffle_model.mepsum+shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
             'color',mycc.gray_light);
         plot((shuffle_model.mepsum-shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
             'color',mycc.gray_light);
         xlim([nsmi nsma]); ylim([aucmi aucma])
-        xlabel('node strength'); ylabel('AUC');
+        xlabel('node strength'); ylabel(['AUC' num2str(ii)]);
     end
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_NS_AUC.pdf'])   
     
@@ -330,6 +350,10 @@ for n = 1:num_expt
         
     end
     
+    % check if directory exists
+    if exist([result_path_base '\' expt_name{n} '\core'],'dir')~=7
+        mkdir([result_path_base '\' expt_name{n} '\core\']);
+    end
     save([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat'],...
         'core_crf','core_svd');
     

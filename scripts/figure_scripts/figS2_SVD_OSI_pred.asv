@@ -157,7 +157,9 @@ set(gca,'xcolor','w')
 ylabel('cells (%)')
 box off
 pval = ranksum(num_crf./num_cell,num_osi./num_cell);
-title(num2str(pval))
+if pval<p
+    scatter(3*stepsz,0.5,'k*');
+end
 
 % plot shared number
 subplot(1,2,2); hold on
@@ -179,29 +181,36 @@ hold on
 
 % individual curves
 svd_count = 0;
-xvec = 0:0.02:1;
-ymat = struct();
 for ii = 1:expt_count
     [auc.crf(ii),xx.crf{ii},yy.crf{ii}] = plotROCmultic(true_label{ii},...
         cos_sim.crf{ii}',1,mycc.orange_light,linew);
-    [~,uid] = unique(xx.crf{ii});
-    ymat.crf(ii,:) = interp1(xx.crf{ii}(uid),yy.crf{ii}(uid),xvec);
     if svd_indx(ii)==1
         svd_count = svd_count+1;
         [auc.svd(svd_count),xx.svd{svd_count},yy.svd{svd_count}] = plotROCmultic...
             (true_label{ii},cos_sim.svd{svd_count}',1,mycc.green_light,linew);
-        [~,uid] = unique(xx.svd{svd_count});
-        ymat.svd(svd_count,:) = interp1(xx.svd{svd_count}(uid),yy.svd{svd_count}(uid),xvec);
     end
     [auc.osi(ii),xx.osi{ii},yy.osi{ii}] = plotROCmultic(true_label{ii},...
         cos_sim.osi{ii}',1,mycc.gray_light,linew);
+end
+
+% average curve
+xvec = 0:0.02:1;
+ymat = struct();
+for ii = 1:length(true_label)
+    [~,uid] = unique(xx.crf{ii});
+    ymat.crf(ii,:) = interp1(xx.crf{ii}(uid),yy.crf{ii}(uid),xvec);
+    [~,uid] = unique(xx.svd{ii});
+    ymat.svd(ii,:) = interp1(xx.svd{ii}(uid),yy.svd{ii}(uid),xvec);
     [~,uid] = unique(xx.osi{ii});
     ymat.osi(ii,:) = interp1(xx.osi{ii}(uid),yy.osi{ii}(uid),xvec);
 end
-plot(xvec,mean(ymat.crf,1),'color',mycc.orange,'linewidth',2*linew)
-plot(xvec,mean(ymat.svd,1),'color',mycc.green,'linewidth',2*linew)
-plot(xvec,mean(ymat.osi,1),'color',mycc.gray,'linewidth',2*linew)
-xlim([0 1]); ylim([0 1]);
+plot(xvec,mean(ymat.crf,1),'color',mycc.red,'linewidth',3*linew)
+plot(xvec,squeeze(mean(ymat(:,:,2),1)),'color',mycc.blue,'linewidth',3*linew)
+
+plotROCmultic(cell2mat(true_label),cell2mat(cos_sim.crf)',1,mycc.orange,3*linew);
+plotROCmultic(cell2mat(true_label(svd_indx==1)),cell2mat(cos_sim.svd)',1,mycc.green,3*linew);
+plotROCmultic(cell2mat(true_label),cell2mat(cos_sim.osi)',1,mycc.gray,3*linew);
+
 set(gca,'linewidth',linew)
 legend('off')
 
@@ -267,10 +276,6 @@ xlim([0 4*stepsz]); ylim([0 1])
 ylabel('AUC')
 set(gca,'xcolor','w')
 box off
-pval = zeros(1,2);
-pval(1) = ranksum(auc.crf,auc.svd);
-pval(2) = ranksum(auc.crf,auc.osi);
-title([num2str(pval(1)) ', ' num2str(pval(2))])
 
 % accuracy
 subplot(1,5,3); hold on
@@ -284,10 +289,6 @@ xlim([0 4*stepsz]); ylim([0 1])
 ylabel('accuracy')
 set(gca,'xcolor','w')
 box off
-pval = zeros(1,2);
-pval(1) = ranksum(pred_stats.crf(:,1),pred_stats.svd(:,1));
-pval(2) = ranksum(pred_stats.crf(:,1),pred_stats.osi(:,1));
-title([num2str(pval(1)) ', ' num2str(pval(2))])
 
 % precision
 subplot(1,5,4); hold on
@@ -301,10 +302,6 @@ xlim([0 4*stepsz]); ylim([0 1])
 ylabel('precision')
 set(gca,'xcolor','w')
 box off
-pval = zeros(1,2);
-pval(1) = ranksum(pred_stats.crf(:,2),pred_stats.svd(:,2));
-pval(2) = ranksum(pred_stats.crf(:,2),pred_stats.osi(:,2));
-title([num2str(pval(1)) ', ' num2str(pval(2))])
 
 % recall
 subplot(1,5,5); hold on
@@ -318,10 +315,6 @@ xlim([0 4*stepsz]); ylim([0 1])
 ylabel('recall')
 set(gca,'xcolor','w')
 box off
-pval = zeros(1,2);
-pval(1) = ranksum(pred_stats.crf(:,3),pred_stats.svd(:,3));
-pval(2) = ranksum(pred_stats.crf(:,3),pred_stats.osi(:,3));
-title([num2str(pval(1)) ', ' num2str(pval(2))])
 
 saveas(gcf,[fig_path expt_ee '_svd_osi_core_pred_' ge_type '_stats.pdf'])
 

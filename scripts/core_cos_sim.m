@@ -22,6 +22,10 @@ if isnan(sim_thresh)
 end
 pred = sim_core>sim_thresh;
 
+% make sure the dimensions are the same
+pred = reshape(pred,[],1);
+true_label = reshape(true_label,[],1);
+
 % prediction statistics
 TP = sum(pred==1&true_label==1);
 TN = sum(pred==0&true_label==0);

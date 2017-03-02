@@ -7,7 +7,7 @@ function [] = plot_pred_raster(pred,stim_vec,cmap)
 
 num_frame = length(stim_vec);
 num_model = size(pred,1);
-vis_stim_mat = repmat(stim_vec,1,num_model)';
+vis_stim_mat = repmat(reshape(stim_vec,[],1),1,num_model)';
 
 rr = 1;
 ss = 0.2;
@@ -19,6 +19,7 @@ set(gcf,'PaperPositionMode','auto');
 
 imagesc(vis_stim_mat);
 colormap(cmap);
+caxis([0 max(stim_vec)]);
 hold on;
 
 for n = 1:num_model

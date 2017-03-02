@@ -7,15 +7,11 @@ addpath('C:\Shuting\graph_ensemble\fwMatch-darpa\src\loopy_model');
 %% set parameters
 param = struct();
 
-param.expt_name = {'m21_d2_vis','m37_d2'};
-param.ee = {{'all_high_add'},{'all_high'}};
-% param.expt_name = {'pa_511510855_1_TF1','pa_511510650_1_TF1','pa_511507650_1_TF1',...
-%     'pa_511509529_1_TF1','pa_511510670_1_TF1'};
-% param.ee = {{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'},{'vis_high'}};
-% param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_1_TF1','pa_511510650_1_TF1',...
-%     'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
-% param.ee = {{'all_high'},{'all_high'},{'vis_high'},{'vis_high'},{'vis_high'},...
-%     {'vis_high'},{'vis_high'}};
+param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_TF1','pa_511510650_TF1',...
+     'pa_511507650_TF1','pa_511509529_TF1','pa_511510670_TF1'};
+param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'},...
+    {'vis_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
+    {'vis_high_add_neuron'}};
 
 % param.num_stim = [2,1];
 param.ge_type = 'full'; % 'full', 'on', 'thresh'
@@ -114,16 +110,30 @@ randGraphMC(param);
 % randGraphCommStats(param)
 
 %% figures
+% prediction with whole model
 an_param = param;
-an_param.expt_name = {'m21_d2_vis','m37_d2'};
-an_param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'}};
+an_param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_TF1_2stim','pa_511510650_TF1_2stim',...
+     'pa_511507650_TF1_2stim','pa_511509529_TF1_2stim','pa_511510670_1_TF1'};
 fig2_crf_LL_pred_add_neuron(an_param);
 
+% find ensembles
 fig2_plot_ensemble_identification(param);
 
-fig5_ensemble_identification_add_neuron_CRFSVD(param);
+% compare CRF, SVD, OSI
+figS2_SVD_OSI_pred(param);
+
+% fig5_ensemble_identification_add_neuron_CRFSVD(param);
 
 fig6_ensemble_reduction(param);
+
+%% testing: finding ensembles in PA data
+pa_param = param;
+pa_param.expt_name = {'pa_511510855_TF1','pa_511510650_TF1',...
+    'pa_511507650_TF1'};
+pa_param.ee = {{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
+    {'vis_high_add_neuron'}};
+
+fig2_plot_ensemble_identification(pa_param);
 
 %% opto spont data
 opto_param = param;
@@ -161,8 +171,7 @@ pa_param.qnoise = 0.5;
 figS1_pa_whole_model_TF(pa_param);
 
 
-% compare CRF, SVD, OSI
-figS2_SVD_OSI_pred(param);
+
 
 % compare base model and hidden node model
 cmp_param = param;
