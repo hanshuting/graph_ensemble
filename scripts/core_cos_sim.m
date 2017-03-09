@@ -1,10 +1,17 @@
-function [pred,sim_core,sim_thresh,sim_avg,acc,prc,rec] = core_cos_sim(core,data,true_label)
+function [pred,sim_core,sim_thresh,sim_avg,acc,prc,rec] = core_cos_sim(core,data,true_label,ifspont)
 % calculate cosine similarity using ensembles
 % data is num_frame-by-num_neuron
 
 % noise quantile
 qnoise = 0.6;
-% qnoise = 0.3;
+
+% coefficient of S.D.
+c = 3;
+% if nargin<3 || ifspont==1 % if the dataset contains spont activity
+%     c = 3;
+% else % if vis stim only
+%     c = 5;
+% end
 
 num_node = size(data,2);
 core_vec = zeros(num_node,1);
@@ -16,7 +23,7 @@ sim_avg = [mean(sim_core(true_label==0)),mean(sim_core(true_label==1))];
 th = quantile(sim_core(:),qnoise);
 sim_core_th = sim_core;
 sim_core_th(sim_core>=th) = NaN;
-sim_thresh = 3*nanstd(sim_core_th(:))+nanmean(sim_core_th(:));
+sim_thresh = c*nanstd(sim_core_th(:))+nanmean(sim_core_th(:));
 if isnan(sim_thresh)
     sim_thresh = 0;
 end

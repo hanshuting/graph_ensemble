@@ -241,7 +241,7 @@ xlim([0.5 2]); ylim([0 1])
 ylabel('AUC')
 set(gca,'xcolor','w')
 box off
-pval = ranksum(pred_stats(1,:,1),pred_stats(2,:,1));
+pval = ranksum(auc(:,1),auc(:,2));
 title(num2str(pval));
 
 % accuracy
@@ -267,7 +267,7 @@ xlim([0.5 2]); ylim([0 1])
 set(gca,'xcolor','w');
 ylabel('precision')
 box off
-pval = ranksum(pred_stats(1,:,3),pred_stats(2,:,3));
+pval = ranksum(pred_stats(1,:,2),pred_stats(2,:,2));
 title(num2str(pval));
 
 % recall

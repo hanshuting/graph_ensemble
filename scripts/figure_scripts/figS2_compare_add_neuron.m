@@ -154,7 +154,7 @@ print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} ...
 
 end
 
-% mean of all experiments
+%% mean of all experiments
 figure; set(gcf,'color','w','position',[2230 328 1157 232])
 
 % edge pot sum

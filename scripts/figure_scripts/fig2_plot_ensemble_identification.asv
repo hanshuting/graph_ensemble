@@ -14,8 +14,6 @@ rwbmap = param.rwbmap;
 num_expt = length(expt_name);
 linew = param.linew;
 
-qnoise = 0.7;
-
 load(ccode_path);
 load(rwbmap);
 
@@ -289,21 +287,31 @@ for n = 1:num_expt
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_core_NS_AUC.pdf'])   
     
     %% plot prediction example
-%     [~,indx] = max(LL_pred_count(core_crf{1},1));
-%     [~,indx] = max(TPR(core_crf{1},1)-FPR(core_crf{1},1));
-%     indx = core_crf{1}(indx);
-%     
-%     figure; set(gcf,'color','w','position',[1988 755 232 209])
-%     plotGraphHighlight(Coord_active,indx,'r');
-%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-%         expt_ee '_cell_' num2str(indx) '.pdf'])
-%     
-%     LL_cell_nor = (LL_on(indx,:)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
-%     thr_cell_nor = (thr(indx)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
-%     plot_pred(LL_pred(indx,:),LL_cell_nor,thr_cell_nor,vis_stim_high,cmap)
-%     set(gcf,'position',[2055 522 1121 127])
-%     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-%         expt_ee '_LL_cell_' num2str(indx) '.pdf'])
+    % find a representative cell for stim 1
+    [~,indx] = max(auc(core_crf{1},1));
+    indx = core_crf{1}(indx);
+    [pred,thr] = pred_from_LL(LL_on(indx,:),0.7);
+    LL_cell_nor = (LL_on(indx,:)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
+    thr_cell_nor = (thr-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
+    plot_pred(pred,LL_cell_nor,thr_cell_nor,vis_stim_high==1,cmap)
+    set(gcf,'position',[1991 394 758 126])
+    caxis([0 2])
+    
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
+        expt_ee '_stim1_representative_cell.pdf'])
+    
+    % find a representative cell for stim 2
+    [~,indx] = max(auc(core_crf{2},2));
+    indx = core_crf{2}(indx);
+    [pred,thr] = pred_from_LL(LL_on(indx,:),0.7);
+    LL_cell_nor = (LL_on(indx,:)-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
+    thr_cell_nor = (thr-min(LL_on(indx,:)))/(max(LL_on(indx,:))-min(LL_on(indx,:)));
+    plot_pred(pred,LL_cell_nor,thr_cell_nor,vis_stim_high==2,cmap)
+    set(gcf,'position',[1991 394 758 126])
+    caxis([0 1])
+ 
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
+        expt_ee '_stim2_representative_cell.pdf'])
     
     %% plot ensemble highlight
     figure; set(gcf,'color','w','position',[2162 447 434 267])
@@ -351,7 +359,7 @@ for n = 1:num_expt
     end
     
     % check if directory exists
-    if ~exist([result_path_base '\' expt_name{n} '\core'],'dir')==7
+    if exist([result_path_base '\' expt_name{n} '\core'],'dir')~=7
         mkdir([result_path_base '\' expt_name{n} '\core\']);
     end
     save([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat'],...

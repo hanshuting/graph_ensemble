@@ -24,7 +24,8 @@ num_tf = length(tf_seq);
 pred_mLL = cell(4,num_tf,num_expt);
 pred_stats = zeros(2,num_expt,num_tf,3);
 thr = zeros(num_expt,num_tf,1);
-LL_pred = cell(4,num_tf,num_expt);
+LL_pred = cell(num_expt,num_tf);
+true_label = cell(num_expt,num_tf,4);
 
 % cos_sim = {};
 % cos_sim_avg = [];
@@ -48,7 +49,7 @@ for n = 1:num_expt
         coords(end+1,:) = [0 0];
         coords(end+1,:) = [max(coords(:,1)) 0];
         coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
-        figure; set(gcf,'color','w','position',[2084 472 402 319])
+        figure; set(gcf,'color','w','position',[2084 521 299 270])
         plotGraphModel(best_model.graph,coords,best_model.edge_pot,[],gray(64))
         print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
             expt_ee '_' ge_type '_model.pdf'])
@@ -73,6 +74,8 @@ for n = 1:num_expt
                     best_model.edge_pot,best_model.logZ,data_stim);
             end
         end
+        
+        LL_pred{n,m} = LL_frame;
         
         % make prediction
         [~,pred] = max(LL_frame,[],2);
@@ -99,31 +102,14 @@ for n = 1:num_expt
             pred_mLL{ii,m,n} = LLs(vis_stim==ii);
 
         end
-        
-%         % ROC
-%         auc = zeros(num_expt,2);
-%         xx = cell(num_expt,2);
-%         yy = cell(num_expt,2);
-%         for ii = 1:num_expt
-%             [auc(ii,1),xx{ii,1},yy{ii,1}] = plotROCmultic(LLs{ii,1},scores{ii,1},1,mycc.red_light,linew);
-%         end
-%         % calculate mean curve
-%         xvec = 0:0.02:1;
-%         ymat = zeros(num_expt,length(xvec),2);
-%         for ii = 1:num_expt
-%             [~,uid] = unique(xx{ii,1});
-%             ymat(ii,:,1) = interp1(xx{ii,1}(uid),yy{ii,1}(uid),xvec);
-%             [~,uid] = unique(xx{ii,2});
-%             ymat(ii,:,2) = interp1(xx{ii,2}(uid),yy{ii,2}(uid),xvec);
-%         end
-        
+                
         % prediction statistics
         for ii = 1:num_stim
-            true_label = vis_stim'==ii;
-            TP = sum(pred_final==ii & true_label==1);
-            TN = sum(pred_final~=ii & true_label==0);
-            FP = sum(pred_final==ii & true_label==0);
-            FN = sum(pred_final~=ii & true_label==1);
+            true_label{n,m,ii} = vis_stim'==ii;
+            TP = sum(pred_final==ii & true_label{n,m,ii}==1);
+            TN = sum(pred_final~=ii & true_label{n,m,ii}==0);
+            FP = sum(pred_final==ii & true_label{n,m,ii}==0);
+            FN = sum(pred_final~=ii & true_label{n,m,ii}==1);
             acc = (TP+TN)/(TP+TN+FN+FP);
             prc = TP/(TP+FP);
             rec = TP/(TP+FN);
@@ -142,24 +128,87 @@ for n = 1:num_expt
     
 end
 
+%% ROC
+figure; set(gcf,'color','w','position',[2055 378 1126 238])
+cc = {mycc.black,mycc.purple,mycc.red,mycc.green,mycc.blue};
+cc_light = {mycc.gray,mycc.purple_light,mycc.red_light,mycc.green_light,mycc.blue_light};
+
+num_stim = 4;
+auc = zeros(num_expt,num_tf,num_stim);
+
+for n = 1:num_stim
+    
+    subplot(1,num_stim,n);
+    xx = cell(num_expt,num_tf);
+    yy = cell(num_expt,num_tf);
+    for ii = 1:num_expt
+        for jj = 1:num_tf
+            scores = LL_pred{ii,jj}(:,n)-max(LL_pred{ii,jj}...
+                (:,setdiff(1:num_stim,n)),[],2);
+            [auc(ii,jj,n),xx{ii,jj},yy{ii,jj}] = plotROCmultic(true_label{ii,jj,n},...
+                scores,1,cc_light{jj},linew);
+        end
+    end
+
+    % calculate mean curve
+    xvec = 0:0.02:1;
+    ymat = zeros(num_expt,length(xvec),num_tf);
+    h = zeros(num_tf,1);
+    for ii = 1:num_tf
+        for jj = 1:num_expt
+            [~,uid] = unique(xx{jj,ii});
+            ymat(jj,:,ii) = interp1(xx{jj,ii}(uid),yy{jj,ii}(uid),xvec);
+        end
+        h(ii) = plot(xvec,squeeze(mean(ymat(:,:,ii),1)),'color',cc{ii},'linewidth',2*linew);
+    end
+
+    % plot mean
+    xlim([0 1]); ylim([0 1])
+    set(gca,'linewidth',linew)
+    legend('off')
+
+end
+legend(h)
+
+print(gcf,'-dpdf','-painters',[fig_path ge_type ...
+    '_tf_pred_ROC.pdf'])
+
 %% plot stats
 figure;
 set(gcf,'color','w','position',[2041 533 993 235]);
 set(gcf,'paperpositionmode','auto')
 
-ww = 0.2;
-stepsz = 0.2;
+ww = 0.4;
+stepsz = 0;
+
+% ROC
+subplot(1,4,1); hold on
+for m = 1:num_tf
+    h = boxplot(reshape(auc(:,m,:),[],1),'positions',m-stepsz,...
+        'width',ww,'colors','k');
+    setBoxStyle(h,linew)
+end
+xlim([0 m+1]); ylim([0 1])
+set(gca,'xtick',1:m,'xticklabel',tf_seq);
+xlabel('TF (Hz)'); ylabel('AUC')
+box off
+% significance test
+pval = zeros(1,num_tf);
+for m = 2:num_tf
+    pval(m) = ranksum(reshape(auc(:,1,:),[],1),reshape(auc(:,m,:),[],1));
+end
+title(num2str(pval(2:end)));
 
 % accuracy
-subplot(1,3,1); hold on
+subplot(1,4,2); hold on
 for m = 1:num_tf
     h = boxplot(reshape(pred_stats(:,:,m,1),[],1),'positions',m-stepsz,...
         'width',ww,'colors','k');
     setBoxStyle(h,linew)
 end
-xlim([0.5 m+0.5]); ylim([0 1])
+xlim([0 m+1]); ylim([0 1])
 set(gca,'xtick',1:m,'xticklabel',tf_seq);
-xlabel('Temporal frequency (Hz)'); ylabel('Accuracy')
+xlabel('TF (Hz)'); ylabel('accuracy')
 box off
 % significance test
 pval = zeros(1,num_tf);
@@ -169,15 +218,15 @@ end
 title(num2str(pval(2:end)));
 
 % precision
-subplot(1,3,2); hold on
+subplot(1,4,3); hold on
 for m = 1:num_tf
     h = boxplot(reshape(pred_stats(:,:,m,2),[],1),'positions',m-stepsz,...
         'width',ww,'colors','k');
     setBoxStyle(h,linew)
 end
-xlim([0.5 m+0.5]); ylim([0 1])
+xlim([0 m+1]); ylim([0 1])
 set(gca,'xtick',1:m,'xticklabel',tf_seq);
-xlabel('Temporal frequency (Hz)'); ylabel('Precision')
+xlabel('TF (Hz)'); ylabel('precision')
 box off
 % significance test
 pval = zeros(1,num_tf);
@@ -187,15 +236,15 @@ end
 title(num2str(pval(2:end)));
 
 % recall
-subplot(1,3,3); hold on
+subplot(1,4,4); hold on
 for m = 1:num_tf
     h = boxplot(reshape(pred_stats(:,:,m,3),[],1),'positions',m-stepsz,...
         'width',ww,'colors','k');
     setBoxStyle(h,linew)
 end
-xlim([0.5 m+0.5]); ylim([0 1])
+xlim([0 m+1]); ylim([0 1])
 set(gca,'xtick',1:m,'xticklabel',tf_seq);
-xlabel('Temporal frequency (Hz)'); ylabel('Recall')
+xlabel('TF (Hz)'); ylabel('recall')
 box off
 % significance test
 pval = zeros(1,num_tf);

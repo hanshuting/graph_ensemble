@@ -65,6 +65,12 @@ for n = 1:length(expt_name)
     num_stim = length(setdiff(vis_stim,0));
     num_node = size(best_model.graph,1)-num_stim;
     
+%     if any(vis_stim_high==0)
+%         ifspont = 1;
+%     else
+%         ifspont = 0;
+%     end
+    
     %% find ensembles
     % load results: 'core_crf','core_svd'
     load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat']);
@@ -126,7 +132,8 @@ for n = 1:length(expt_name)
             % svd
             [pred.svd{svd_expt_count},cos_sim.svd{svd_expt_count},...
                 cos_thresh.svd(svd_expt_count),cos_sim_avg.svd(svd_expt_count,:),...
-                acc,prc,rec] = core_cos_sim(core_svd{ss},data_high,true_label{expt_count});
+                acc,prc,rec] = core_cos_sim(core_svd{ss},data_high,...
+                true_label{expt_count});
             pred_stats.svd(svd_expt_count,:) = [acc,prc,rec];
         else
             svd_indx(end+1) = 0;
@@ -140,7 +147,7 @@ ww = 0.3;
 
 figure
 set(gcf,'color','w');
-set(gcf,'position',[2096 452 447 233])
+set(gcf,'position',[2096 452 286 233])
 set(gcf,'paperpositionmode','auto')
 
 % ensemble number
@@ -156,7 +163,9 @@ xlim([0 4*stepsz])
 set(gca,'xcolor','w')
 ylabel('cells (%)')
 box off
-pval = ranksum(num_crf./num_cell,num_osi./num_cell);
+pval = zeros(1,2);
+pval(1) = ranksum(num_crf./num_cell,num_svd./num_cell(svd_indx==1));
+pval(2) = ranksum(num_crf./num_cell,num_osi./num_cell);
 title(num2str(pval))
 
 % plot shared number
@@ -173,7 +182,41 @@ box off
 
 saveas(gcf,[fig_path expt_ee '_' savestr '_svd_osi_core_nums.pdf'])
 
-%% ROC curve
+%% ROC curve - SVD
+figure;set(gcf,'color','w','position',[2801 517 248 225])
+hold on
+
+% individual curves
+svd_count = 0;
+xvec = 0:0.02:1;
+ymat = struct();
+for ii = 1:expt_count
+    if svd_indx(ii)==1
+        svd_count = svd_count+1;
+        [auc.svd(svd_count),xx.svd{svd_count},yy.svd{svd_count}] = plotROCmultic...
+            (true_label{ii},cos_sim.svd{svd_count}',1,mycc.green_light,linew);
+        [~,uid] = unique(xx.svd{svd_count});
+        ymat.svd(svd_count,:) = interp1(xx.svd{svd_count}(uid),yy.svd{svd_count}(uid),xvec);
+    end
+    [auc.crf(ii),xx.crf{ii},yy.crf{ii}] = plotROCmultic(true_label{ii},...
+        cos_sim.crf{ii}',1,mycc.orange_light,linew);
+    [~,uid] = unique(xx.crf{ii});
+    ymat.crf(ii,:) = interp1(xx.crf{ii}(uid),yy.crf{ii}(uid),xvec);
+%     [auc.osi(ii),xx.osi{ii},yy.osi{ii}] = plotROCmultic(true_label{ii},...
+%         cos_sim.osi{ii}',1,mycc.gray_light,linew);
+%     [~,uid] = unique(xx.osi{ii});
+%     ymat.osi(ii,:) = interp1(xx.osi{ii}(uid),yy.osi{ii}(uid),xvec);
+end
+plot(xvec,mean(ymat.crf,1),'color',mycc.orange,'linewidth',2*linew)
+plot(xvec,mean(ymat.svd,1),'color',mycc.green,'linewidth',2*linew)
+% plot(xvec,mean(ymat.osi,1),'color',mycc.gray,'linewidth',2*linew)
+xlim([0 1]); ylim([0 1]);
+set(gca,'linewidth',linew)
+legend('off')
+
+saveas(gcf,[fig_path expt_ee '_' savestr '_svd_roc_curve.pdf'])
+
+%% ROC curve - OSI
 figure;set(gcf,'color','w','position',[2801 517 248 225])
 hold on
 
@@ -186,26 +229,26 @@ for ii = 1:expt_count
         cos_sim.crf{ii}',1,mycc.orange_light,linew);
     [~,uid] = unique(xx.crf{ii});
     ymat.crf(ii,:) = interp1(xx.crf{ii}(uid),yy.crf{ii}(uid),xvec);
-    if svd_indx(ii)==1
-        svd_count = svd_count+1;
-        [auc.svd(svd_count),xx.svd{svd_count},yy.svd{svd_count}] = plotROCmultic...
-            (true_label{ii},cos_sim.svd{svd_count}',1,mycc.green_light,linew);
-        [~,uid] = unique(xx.svd{svd_count});
-        ymat.svd(svd_count,:) = interp1(xx.svd{svd_count}(uid),yy.svd{svd_count}(uid),xvec);
-    end
+%     if svd_indx(ii)==1
+%         svd_count = svd_count+1;
+%         [auc.svd(svd_count),xx.svd{svd_count},yy.svd{svd_count}] = plotROCmultic...
+%             (true_label{ii},cos_sim.svd{svd_count}',1,mycc.green_light,linew);
+%         [~,uid] = unique(xx.svd{svd_count});
+%         ymat.svd(svd_count,:) = interp1(xx.svd{svd_count}(uid),yy.svd{svd_count}(uid),xvec);
+%     end
     [auc.osi(ii),xx.osi{ii},yy.osi{ii}] = plotROCmultic(true_label{ii},...
         cos_sim.osi{ii}',1,mycc.gray_light,linew);
     [~,uid] = unique(xx.osi{ii});
     ymat.osi(ii,:) = interp1(xx.osi{ii}(uid),yy.osi{ii}(uid),xvec);
 end
 plot(xvec,mean(ymat.crf,1),'color',mycc.orange,'linewidth',2*linew)
-plot(xvec,mean(ymat.svd,1),'color',mycc.green,'linewidth',2*linew)
+% plot(xvec,mean(ymat.svd,1),'color',mycc.green,'linewidth',2*linew)
 plot(xvec,mean(ymat.osi,1),'color',mycc.gray,'linewidth',2*linew)
 xlim([0 1]); ylim([0 1]);
 set(gca,'linewidth',linew)
 legend('off')
 
-saveas(gcf,[fig_path expt_ee '_' savestr '_svd_osi_roc_curve.pdf'])
+saveas(gcf,[fig_path expt_ee '_' savestr '_osi_roc_curve.pdf'])
 
 %% plot stats
 figure;

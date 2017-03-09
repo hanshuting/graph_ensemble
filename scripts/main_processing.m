@@ -50,16 +50,13 @@ param.redmap_light = [param.result_path_base '\redmap_light.mat']; % lighter red
 param.four_stim_cmap = [param.result_path_base '\four_stim_cmap.mat']; % four colors
 param.bkrmap = [param.result_path_base '\bkrmap.mat']; % blue-black-red map
 
+% threshold of high OSI cells
 param.OSI_thresh = 0.7;
 
 % parameters for reduced models
 param.maxf = 1000; % max frames for reduced models
 param.winsz = 100;
 
-% param.comm_sz_bin_range = 0:0.02:0.6;
-% param.comm_deg_bin_range = 0:0.1:5; %0:0.02:1;
-% param.comm_ov_bin_range = 0:0.02:0.6;
-% param.comm_mem_bin_range = 0:0.02:0.7;
 param.ndeg_bin_range = 0:0.01:0.25;
 param.lcc_bin_range = 0:0.02:1;
 param.cent_bin_range = 0:0.02:1;
@@ -112,13 +109,13 @@ randGraphMC(param);
 %% figures
 % prediction with whole model
 an_param = param;
-an_param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_TF1_2stim','pa_511510650_TF1_2stim',...
-     'pa_511507650_TF1_2stim','pa_511509529_TF1_2stim','pa_511510670_TF1_2stim'};
+an_param.expt_name = {'m21_d2_vis','m37_d2','pa_511510855_TF1','pa_511510650_TF1',...
+     'pa_511507650_TF1','pa_511509529_TF1'};
 an_param.ee = {{'all_high_add_neuron'},{'all_high_add_neuron'},...
     {'vis_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
     {'vis_high_add_neuron'}};
 fig2_crf_LL_pred_add_neuron(an_param);
-% fig2_crf_LL_pred_add_neuron_multistim(an_param);
+% fig2_crf_LL_pred_add_neuron_multistim(an_param); % - not working well
 
 % find ensembles
 fig2_plot_ensemble_identification(param);
@@ -126,8 +123,7 @@ fig2_plot_ensemble_identification(param);
 % compare CRF, SVD, OSI
 figS2_SVD_OSI_pred(param);
 
-% fig5_ensemble_identification_add_neuron_CRFSVD(param);
-
+% optimal ensembles
 fig6_ensemble_reduction(param);
 
 %% testing: finding ensembles in PA data
@@ -161,9 +157,9 @@ fig7_opto_stim(opto_stim_param);
 % PA dataset
 pa_param = param;
 pa_param.expt_name = {'pa_511510855_1_TF1','pa_511510650_1_TF1',...
-    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
+    'pa_511507650_1_TF1','pa_511509529_1_TF1'};%,'pa_511510670_1_TF1'};
 pa_param.ee = {{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
-    {'vis_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high_add_neuron'}};
+    {'vis_high_add_neuron'},{'vis_high_add_neuron'}};%,{'vis_high_add_neuron'}};
 pa_param.tf_seq = [1,2,4,8,15];
 for n = 1:length(pa_param.expt_name)
     for m = 1:length(pa_param.tf_seq)
@@ -171,10 +167,8 @@ for n = 1:length(pa_param.expt_name)
              '_vis_high'];
     end
 end
-pa_param.qnoise = 0.5;
+pa_param.qnoise = 0.3;
 figS1_pa_whole_model_TF(pa_param);
-
-
 
 
 % compare base model and hidden node model
