@@ -26,6 +26,7 @@ pred_stats = zeros(2,num_expt,num_tf,3);
 thr = zeros(num_expt,num_tf,1);
 LL_pred = cell(num_expt,num_tf);
 true_label = cell(num_expt,num_tf,4);
+core_sel = cell(num_expt,4);
 
 % cos_sim = {};
 % cos_sim_avg = [];
@@ -41,6 +42,8 @@ for n = 1:num_expt
     load([data_path expt_name{n} '\coords.mat']);
     best_model = load([model_path expt_name{n} '_' expt_ee ...
         '_loopy_best_model_' ge_type '.mat']);
+    
+    load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat']);
     
     % plot model
     if n==1
@@ -123,8 +126,23 @@ for n = 1:num_expt
             print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
                 expt_ee '_' ge_type '_pred_TF' num2str(tf_seq(m)) '.pdf'])
         end
-        
+
     end
+    
+    % ensemble selectivity for TF=1
+    load([data_path expt_name{n} '\' test_ee{n}{m} '.mat']);
+    num_stim = length(setdiff(unique(vis_stim),0));
+    data = data';
+    vis_stim = vis_stim';
+    num_frame = size(data,2);    
+    ens_auc = zeros(num_stim,1);
+    for ii = 1:num_stim
+        core_vec = zeros(size(data,1),1);
+        core_vec(core_vec{ii}) = 1;
+        sim_core = 1-pdist2(data,core_vec','cosine')';
+        [ens_auc(ii) = 
+    end        
+        
     
 end
 
@@ -172,6 +190,9 @@ legend(h)
 
 print(gcf,'-dpdf','-painters',[fig_path ge_type ...
     '_tf_pred_ROC.pdf'])
+
+%% ensemble selectivity
+
 
 %% plot stats
 figure;

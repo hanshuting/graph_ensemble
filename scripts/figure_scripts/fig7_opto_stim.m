@@ -215,7 +215,7 @@ for n = 1:length(expt_name)
     nonrec_indx = setdiff(1:num_stim_cell,rec_indx)';
     
     ww = 0.4;
-    figure; set(gcf,'color','w')
+    figure; set(gcf,'color','w','position',[2204 432 545 219])
     
     % AUC box plot
     subplot(1,2,1); hold on
@@ -229,17 +229,31 @@ for n = 1:length(expt_name)
     title(num2str(pval))
     xlim([0 3]); ylim([aucmi aucma]); box off
     
-    % node strength box plot
+    % rec/nonrec connectivity
+    conn1 = sum(model.graph(stim_indx(nonrec_indx),stim_indx),2);
+    conn2 = sum(model.graph(stim_indx(rec_indx),stim_indx),2);
     subplot(1,2,2); hold on
-    h = boxplot(epsum{n}(stim_indx(nonrec_indx)),'positions',1,'width',ww,'colors',mycc.blue);
+    h = boxplot(conn1,'positions',1,'width',ww,'colors',mycc.blue);
     setBoxStyle(h,linew);
-    h = boxplot(epsum{n}(stim_indx(rec_indx)),'positions',2,'width',ww,'colors',mycc.red);
+    h = boxplot(conn2,'positions',2,'width',ww,'colors',mycc.red);
     setBoxStyle(h,linew);
     set(gca,'xtick',[1 2],'xticklabel',{'nonrecall','recall'})
-    ylabel('node strength')
-    pval = ranksum(epsum{n}(stim_indx(nonrec_indx)),epsum{n}(stim_indx(rec_indx)));
+    ylabel('# connections')
+    pval = ranksum(conn1,conn2);
     title(num2str(pval));
-    xlim([0 3]); ylim([nsmi nsma]); box off
+    xlim([0 3]); ylim([min([conn1;conn2]) max([conn1;conn2])]); box off
+    
+    % node strength box plot
+%     subplot(1,2,2); hold on
+%     h = boxplot(epsum{n}(stim_indx(nonrec_indx)),'positions',1,'width',ww,'colors',mycc.blue);
+%     setBoxStyle(h,linew);
+%     h = boxplot(epsum{n}(stim_indx(rec_indx)),'positions',2,'width',ww,'colors',mycc.red);
+%     setBoxStyle(h,linew);
+%     set(gca,'xtick',[1 2],'xticklabel',{'nonrecall','recall'})
+%     ylabel('node strength')
+%     pval = ranksum(epsum{n}(stim_indx(nonrec_indx)),epsum{n}(stim_indx(rec_indx)));
+%     title(num2str(pval));
+%     xlim([0 3]); ylim([nsmi nsma]); box off
     
     print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_rec_nonrec_boxplot.pdf']);
     

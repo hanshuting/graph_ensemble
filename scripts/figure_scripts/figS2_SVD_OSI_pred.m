@@ -74,7 +74,7 @@ for n = 1:length(expt_name)
     %% find ensembles
     % load results: 'core_crf','core_svd'
     load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat']);
-        
+    
     % high OSI
     core_osi = cell(num_stim,1);
     [OSI,OSIstim] = calcOSI(Spikes,vis_stim);
