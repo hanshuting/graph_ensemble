@@ -15,8 +15,6 @@ rwbmap = param.rwbmap;
 num_expt = length(expt_name);
 linew = param.linew;
 
-ifsvd = 0;
-
 load(ccode_path);
 load(rwbmap);
 
@@ -39,9 +37,7 @@ for n = 1:num_expt
     load([data_path expt_name{n} '\Pks_Frames.mat']);
     best_model = load([model_path expt_name{n} '_' expt_ee ...
         '_loopy_best_model_' ge_type '.mat']);
-    if ifsvd
-        svd_data = load([data_path 'ensembles\' expt_name{n} '_core_svd.mat']);
-    end
+    svd_data = load([data_path 'ensembles\' expt_name{n} '_core_svd.mat']);
     num_stim = length(unique(setdiff(vis_stim,0)));
     num_node = size(best_model.graph,1);
     num_frame = length(Pks_Frame);
@@ -69,9 +65,7 @@ for n = 1:num_expt
     shuffle_model.sdepsum = nanstd(cellfun(@(x) nanmean(x),shuffle_model.epsum));
     
     
-    %% find SVD ensemble
-    if ifsvd
-        
+    %% find SVD ensemble        
     core_svd = cell(num_stim,1);
     for ii = 1:num_stim
         for jj = 1:length(svd_data.svd_state)
@@ -80,8 +74,6 @@ for n = 1:num_expt
                 break;
             end
         end
-    end
-    
     end
     
     %% find ensemble with CRF
@@ -332,8 +324,6 @@ for n = 1:num_expt
         expt_ee '_vis_core.pdf'])
     
     %% plot SVD+CRF, calc sim
-    if ifsvd
-        
     rr = 1;
     figure;
     set(gcf,'color','w','position',[2041 430 543 338]);
@@ -375,14 +365,7 @@ for n = 1:num_expt
     end
     save([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat'],...
         'core_crf','core_svd');
-    
-    else
-        if exist([result_path_base '\' expt_name{n} '\core'],'dir')~=7
-            mkdir([result_path_base '\' expt_name{n} '\core\']);
-        end
-        save([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat'],...
-            'core_crf');
-    end
+
     
     %% plot cos sim
 %     pind = expt_count-num_stim+1:expt_count;

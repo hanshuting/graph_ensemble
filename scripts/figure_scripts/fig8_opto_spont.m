@@ -47,7 +47,7 @@ ep_sum_in = cell(num_expt,1);
 ep_sum_out = cell(num_expt,1);
 
 % number of edges for high-ranked neurons
-hr_nedge = cell(num_expt,2);
+pt_nedge = cell(num_expt,2);
 nhr_nedge = cell(num_expt,2);
 
 %% collect data from all experiments
@@ -112,8 +112,9 @@ for n = 1:num_expt
     coords(end+1,:) = [0 0];
     
     %% visualize graph with circle layout, highlight pattern completion neuron
-    [~,hr_indx] = max(sum(post_model.ep_on(Stim_cells,Stim_cells),2));
-    hr_indx = Stim_cells(hr_indx); % 22 
+%     [~,hr_indx] = max(sum(post_model.ep_on(Stim_cells,Stim_cells),2));
+%     hr_indx = Stim_cells(hr_indx); % 22 
+    hr_indx = 22;
     nonpt_cell = setdiff(Stim_cells,hr_indx);
     num_half = round(num_nostim_cell/2); num_half(2) = num_nostim_cell-num_half;
     sort_indx = [nostim_cells(1:num_half(1)),hr_indx,...
@@ -177,10 +178,8 @@ for n = 1:num_expt
     
     %% graph properties
     % high-ranked neuron connections
-    hr_nedge{n,1} = sum(pre_model.graph(hr_indx,Stim_cells),2);
-    hr_nedge{n,2} = sum(post_model.graph(hr_indx,Stim_cells),2);
-    nhr_nedge{n,1} = sum(pre_model.graph(nonpt_cell,Stim_cells),2);
-    nhr_nedge{n,2} = sum(post_model.graph(nonpt_cell,Stim_cells),2);
+    pt_nedge{n,1} = sum(pre_model.graph(Stim_cells(pt_indx),Stim_cells),2);
+    pt_nedge{n,2} = sum(post_model.graph(Stim_cells(pt_indx),Stim_cells),2);
     
     % edge potential sum
     ep_sum{n,1} = sum(pre_model.ep_on,2);
@@ -485,22 +484,23 @@ end
 boxwd = 0.2;
 stepsz = 0.5;
 
-figure; hold on
-nedge_pre = cell2mat(hr_nedge(:,1)');
-nedge_post = cell2mat(hr_nedge(:,2)');
+figure; set(gcf,'color','w'); hold on
+nedge_pre = cell2mat(pt_nedge(:,1)');
+nedge_post = cell2mat(pt_nedge(:,2)');
 h = boxplot(nedge_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
 setBoxStyle(h,linew);
 h = boxplot(nedge_post,'positions',2*stepsz,'width',boxwd,'colors',mycc.blue);
 set(h(7,:),'visible','off')
 setBoxStyle(h,linew);
 xlim([0 3*stepsz]);
-ylim([min([nedge_pre,nedge_post])-0.02 max([nedge_pre,nedge_post])]+0.02)
+ylim([min([nedge_pre;nedge_post])-0.02 max([nedge_pre;nedge_post])]+0.02)
 gcapos = get(gca,'position');
 ylabel('# connections')
 set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
 set(gca,'position',gcapos);
 box off
 
+saveas(gcf,[fig_path 'pt_cell_connections.pdf']);
 
 %% graph properties - whole network
 stepsz = 0.5;

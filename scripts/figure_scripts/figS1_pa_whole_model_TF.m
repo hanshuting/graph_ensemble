@@ -26,7 +26,7 @@ pred_stats = zeros(2,num_expt,num_tf,3);
 thr = zeros(num_expt,num_tf,1);
 LL_pred = cell(num_expt,num_tf);
 true_label = cell(num_expt,num_tf,4);
-core_sel = cell(num_expt,4);
+core_sel = cell(num_expt,1);
 
 % cos_sim = {};
 % cos_sim_avg = [];
@@ -43,7 +43,7 @@ for n = 1:num_expt
     best_model = load([model_path expt_name{n} '_' expt_ee ...
         '_loopy_best_model_' ge_type '.mat']);
     
-    load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_svd_core.mat']);
+    load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_core.mat']);
     
     % plot model
     if n==1
@@ -130,15 +130,15 @@ for n = 1:num_expt
     end
     
     % ensemble selectivity for TF=1
-    load([data_path expt_name{n} '\' test_ee{n}{m} '.mat']);
+    load([data_path expt_name{n} '\' test_ee{n}{1} '.mat']);
     num_stim = length(setdiff(unique(vis_stim),0));
     data = data';
     vis_stim = vis_stim'; 
     ens_auc = zeros(num_stim,num_stim);
     for ii = 1:num_stim
         core_vec = zeros(size(data,1),1);
-        core_vec(core_vec{ii}) = 1;
-        sim_core = 1-pdist2(data,core_vec','cosine')';
+        core_vec(core_crf{ii}) = 1;
+        sim_core = 1-pdist2(data',core_vec','cosine')';
         for jj = 1:num_stim
             [~,~,~,ens_auc(ii,jj)] = perfcurve(double(vis_stim==jj),sim_core,1);
         end
@@ -158,19 +158,20 @@ auc = zeros(num_expt,num_tf,num_stim);
 
 for n = 1:num_stim
     
-    subplot(1,num_stim,n);
+    subplot(1,num_stim,n); hold on
     xx = cell(num_expt,num_tf);
     yy = cell(num_expt,num_tf);
     for ii = 1:num_expt
         for jj = 1:num_tf
             scores = LL_pred{ii,jj}(:,n)-max(LL_pred{ii,jj}...
                 (:,setdiff(1:num_stim,n)),[],2);
-            [auc(ii,jj,n),xx{ii,jj},yy{ii,jj}] = plotROCmultic(true_label{ii,jj,n},...
-                scores,1,cc_light{jj},linew);
+            [xx{ii,jj},yy{ii,jj},~,auc(ii,jj,n)] = perfcurve(true_label{ii,jj,n},...
+                scores,1);
+%             plot(xx{ii,jj},yy{ii,jj},'color',cc_light{jj},'linewidth',linew);
         end
     end
 
-    % calculate mean curve
+    % plot calculate mean curve
     xvec = 0:0.02:1;
     ymat = zeros(num_expt,length(xvec),num_tf);
     h = zeros(num_tf,1);
@@ -181,20 +182,43 @@ for n = 1:num_stim
         end
         h(ii) = plot(xvec,squeeze(mean(ymat(:,:,ii),1)),'color',cc{ii},'linewidth',2*linew);
     end
-
-    % plot mean
+    plot([0 1],[0 1],'k--','linewidth',linew);
     xlim([0 1]); ylim([0 1])
-    set(gca,'linewidth',linew)
-    legend('off')
+    xlabel('FPR'); ylabel('TPR')
+    set(gca,'xtick',0:0.5:1,'ytick',0:0.5:1,'linewidth',linew)
 
 end
 legend(h)
 
-print(gcf,'-dpdf','-painters',[fig_path ge_type ...
-    '_tf_pred_ROC.pdf'])
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path ge_type '_tf_pred_ROC.pdf'])
 
 %% ensemble selectivity
+cc = {mycc.red,mycc.green,mycc.blue,mycc.gray};
+figure; set(gcf,'color','w')
+hold on;
+circ_xx = -1:0.01:1;
+circ_yy = (1-circ_xx.^2).^0.5;
+circ_xx = [circ_xx,circ_xx(end:-1:1)];
+circ_yy = [circ_yy,-circ_yy];
+plot(circ_xx,circ_yy,'k','linewidth',linew)
+for ii = 1:num_expt
+    for jj = 1:num_stim
+        plot([-core_sel{ii}(jj,1) 0],[0 core_sel{ii}(jj,2)],'linewidth',linew,...
+            'color',cc{jj});
+        plot([0 core_sel{ii}(jj,3)],[core_sel{ii}(jj,2) 0],'linewidth',linew,...
+            'color',cc{jj});
+        plot([core_sel{ii}(jj,3) 0],[0 -core_sel{ii}(jj,4)],'linewidth',linew,...
+            'color',cc{jj});
+        plot([0 -core_sel{ii}(jj,1)],[-core_sel{ii}(jj,4) 0],'linewidth',linew,...
+            'color',cc{jj});
+    end
+end
+ax = gca;
+ax.XAxisLocation = 'origin';
+ax.YAxisLocation = 'origin';
+set(gca,'xtick',-1:0.5:1,'ytick',-1:0.5:1)
 
+print(gcf,'-dpdf','-painters',[fig_path ge_type '_core_selectivity.pdf'])
 
 %% plot stats
 figure;

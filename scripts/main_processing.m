@@ -129,11 +129,11 @@ fig6_ensemble_reduction(param);
 %% testing: finding ensembles in PA data
 pa_param = param;
 pa_param.expt_name = {'pa_511510855_TF1','pa_511510650_TF1',...
-    'pa_511507650_TF1'};
+    'pa_511507650_TF1','pa_511507650_TF1'};
 pa_param.ee = {{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
     {'vis_high_add_neuron'}};
 
-fig2_plot_ensemble_identification(pa_param);
+% fig2_plot_ensemble_identification(pa_param);
 
 %% opto spont data
 opto_param = param;
@@ -157,9 +157,9 @@ fig7_opto_stim(opto_stim_param);
 % PA dataset
 pa_param = param;
 pa_param.expt_name = {'pa_511510855_1_TF1','pa_511510650_1_TF1',...
-    'pa_511507650_1_TF1','pa_511509529_1_TF1'};%,'pa_511510670_1_TF1'};
+    'pa_511507650_1_TF1','pa_511509529_1_TF1','pa_511510670_1_TF1'};
 pa_param.ee = {{'vis_high_add_neuron'},{'vis_high_add_neuron'},...
-    {'vis_high_add_neuron'},{'vis_high_add_neuron'}};%,{'vis_high_add_neuron'}};
+    {'vis_high_add_neuron'},{'vis_high_add_neuron'},{'vis_high_add_neuron'}};
 pa_param.tf_seq = [1,2,4,8,15];
 for n = 1:length(pa_param.expt_name)
     for m = 1:length(pa_param.tf_seq)
@@ -170,6 +170,7 @@ end
 pa_param.qnoise = 0.3;
 figS1_pa_whole_model_TF(pa_param);
 
+crf_find_ensembles(pa_param);
 
 % compare base model and hidden node model
 cmp_param = param;
