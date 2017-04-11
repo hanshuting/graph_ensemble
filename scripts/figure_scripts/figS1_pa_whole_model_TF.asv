@@ -159,6 +159,7 @@ auc = zeros(num_expt,num_tf,num_stim);
 for n = 1:num_stim
     
     subplot(1,num_stim,n); hold on
+    plot([0 1],[0 1],'k--','linewidth',linew);
     xx = cell(num_expt,num_tf);
     yy = cell(num_expt,num_tf);
     for ii = 1:num_expt
@@ -182,7 +183,6 @@ for n = 1:num_stim
         end
         h(ii) = plot(xvec,squeeze(mean(ymat(:,:,ii),1)),'color',cc{ii},'linewidth',2*linew);
     end
-    plot([0 1],[0 1],'k--','linewidth',linew);
     xlim([0 1]); ylim([0 1])
     xlabel('FPR'); ylabel('TPR')
     set(gca,'xtick',0:0.5:1,'ytick',0:0.5:1,'linewidth',linew)
@@ -195,14 +195,17 @@ print(gcf,'-dpdf','-painters','-bestfit',[fig_path ge_type '_tf_pred_ROC.pdf'])
 %% ensemble selectivity
 cc = {mycc.red,mycc.green,mycc.blue,mycc.gray};
 figure; set(gcf,'color','w')
-hold on;
 circ_xx = -1:0.01:1;
 circ_yy = (1-circ_xx.^2).^0.5;
 circ_xx = [circ_xx,circ_xx(end:-1:1)];
 circ_yy = [circ_yy,-circ_yy];
-plot(circ_xx,circ_yy,'k','linewidth',linew)
-for ii = 1:num_expt
-    for jj = 1:num_stim
+for jj = 1:num_stim
+    subplot(2,2,jj); hold on;
+    plot([-0.5 0],[0 0.5],'k--','linewidth',linew);
+    plot([0 0.5],[0.5 0],'k--','linewidth',linew);
+    plot([0.5 0],[0 -0.5],'k--','linewidth',linew);
+    plot([0 -0.5],[-0.5 0],'k--','linewidth',linew);
+    for ii = 1:num_expt
         plot([-core_sel{ii}(jj,1) 0],[0 core_sel{ii}(jj,2)],'linewidth',linew,...
             'color',cc{jj});
         plot([0 core_sel{ii}(jj,3)],[core_sel{ii}(jj,2) 0],'linewidth',linew,...
@@ -212,11 +215,14 @@ for ii = 1:num_expt
         plot([0 -core_sel{ii}(jj,1)],[-core_sel{ii}(jj,4) 0],'linewidth',linew,...
             'color',cc{jj});
     end
+    plot(circ_xx,circ_yy,'k','linewidth',linew)
+    ax = gca;
+    ax.XAxisLocation = 'origin';
+    ax.YAxisLocation = 'origin';
+    set(gca,'xtick',[],'ytick',[])
+    axis equal
+    xlim([-1 1]); ylim([-1 1]);
 end
-ax = gca;
-ax.XAxisLocation = 'origin';
-ax.YAxisLocation = 'origin';
-set(gca,'xtick',-1:0.5:1,'ytick',-1:0.5:1)
 
 print(gcf,'-dpdf','-painters',[fig_path ge_type '_core_selectivity.pdf'])
 

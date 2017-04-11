@@ -193,12 +193,12 @@ ymat = struct();
 for ii = 1:expt_count
     if svd_indx(ii)==1
         svd_count = svd_count+1;
-        [auc.svd(svd_count),xx.svd{svd_count},yy.svd{svd_count}] = plotROCmultic...
+        [auc.svd(svd_count),xx.svd{svd_count},yy.svd{svd_count}] = plotROC...
             (true_label{ii},cos_sim.svd{svd_count}',1,mycc.green_light,linew);
         [~,uid] = unique(xx.svd{svd_count});
         ymat.svd(svd_count,:) = interp1(xx.svd{svd_count}(uid),yy.svd{svd_count}(uid),xvec);
     end
-    [auc.crf(ii),xx.crf{ii},yy.crf{ii}] = plotROCmultic(true_label{ii},...
+    [auc.crf(ii),xx.crf{ii},yy.crf{ii}] = plotROC(true_label{ii},...
         cos_sim.crf{ii}',1,mycc.orange_light,linew);
     [~,uid] = unique(xx.crf{ii});
     ymat.crf(ii,:) = interp1(xx.crf{ii}(uid),yy.crf{ii}(uid),xvec);
@@ -225,7 +225,7 @@ svd_count = 0;
 xvec = 0:0.02:1;
 ymat = struct();
 for ii = 1:expt_count
-    [auc.crf(ii),xx.crf{ii},yy.crf{ii}] = plotROCmultic(true_label{ii},...
+    [auc.crf(ii),xx.crf{ii},yy.crf{ii}] = plotROC(true_label{ii},...
         cos_sim.crf{ii}',1,mycc.orange_light,linew);
     [~,uid] = unique(xx.crf{ii});
     ymat.crf(ii,:) = interp1(xx.crf{ii}(uid),yy.crf{ii}(uid),xvec);
@@ -236,7 +236,7 @@ for ii = 1:expt_count
 %         [~,uid] = unique(xx.svd{svd_count});
 %         ymat.svd(svd_count,:) = interp1(xx.svd{svd_count}(uid),yy.svd{svd_count}(uid),xvec);
 %     end
-    [auc.osi(ii),xx.osi{ii},yy.osi{ii}] = plotROCmultic(true_label{ii},...
+    [auc.osi(ii),xx.osi{ii},yy.osi{ii}] = plotROC(true_label{ii},...
         cos_sim.osi{ii}',1,mycc.gray_light,linew);
     [~,uid] = unique(xx.osi{ii});
     ymat.osi(ii,:) = interp1(xx.osi{ii}(uid),yy.osi{ii}(uid),xvec);

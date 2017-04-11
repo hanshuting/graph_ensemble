@@ -48,7 +48,7 @@ ep_sum_out = cell(num_expt,1);
 
 % number of edges for high-ranked neurons
 pt_nedge = cell(num_expt,2);
-nhr_nedge = cell(num_expt,2);
+pt_nedge_in = cell(num_expt,2);
 
 %% collect data from all experiments
 for n = 1:num_expt
@@ -177,10 +177,6 @@ for n = 1:num_expt
         ge_type '_pre_post_models.pdf']);
     
     %% graph properties
-    % high-ranked neuron connections
-    pt_nedge{n,1} = sum(pre_model.graph(Stim_cells(pt_indx),Stim_cells),2);
-    pt_nedge{n,2} = sum(post_model.graph(Stim_cells(pt_indx),Stim_cells),2);
-    
     % edge potential sum
     ep_sum{n,1} = sum(pre_model.ep_on,2);
     ep_sum{n,2} = sum(post_model.ep_on,2);
@@ -337,6 +333,13 @@ for n = 1:num_expt
     pt_indx = find(auc_post>=(mean(auc_rd_post)+std(auc_rd_post)) & ...
         ep_sum{n,2}(Stim_cells)>=(post_shuffle.mepsum+post_shuffle.sdepsum));
     
+    % high-ranked neuron connections
+    pt_nedge{n,1} = sum(pre_model.graph(Stim_cells(pt_indx),:),2);
+    pt_nedge{n,2} = sum(post_model.graph(Stim_cells(pt_indx),:),2);
+    pt_nedge_in{n,1} = sum(pre_model.graph(Stim_cells(pt_indx),Stim_cells),2);
+    pt_nedge_in{n,2} = sum(post_model.graph(Stim_cells(pt_indx),Stim_cells),2);
+    
+    
     %% predict with model
     % change single node activity and predict with LL
 %     LL_frame_pre_on = zeros(num_stim_cell,num_frame_pre,2);
@@ -484,7 +487,28 @@ end
 boxwd = 0.2;
 stepsz = 0.5;
 
-figure; set(gcf,'color','w'); hold on
+% stim network
+figure; set(gcf,'color','w'); 
+subplot(1,2,1); hold on
+nedge_pre = cell2mat(pt_nedge_in(:,1)');
+nedge_post = cell2mat(pt_nedge_in(:,2)');
+h = boxplot(nedge_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
+setBoxStyle(h,linew);
+h = boxplot(nedge_post,'positions',2*stepsz,'width',boxwd,'colors',mycc.blue);
+set(h(7,:),'visible','off')
+setBoxStyle(h,linew);
+xlim([0 3*stepsz]);
+ylim([min([nedge_pre;nedge_post])-0.02 max([nedge_pre;nedge_post])]+0.02)
+gcapos = get(gca,'position');
+ylabel('# connections')
+set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
+set(gca,'position',gcapos);
+[~,pval] = ttest2(nedge_pre,nedge_post);
+title(num2str(pval));
+box off
+
+% whole network
+subplot(1,2,2); hold on
 nedge_pre = cell2mat(pt_nedge(:,1)');
 nedge_post = cell2mat(pt_nedge(:,2)');
 h = boxplot(nedge_pre,'positions',stepsz,'width',boxwd,'colors',mycc.black);
@@ -498,6 +522,8 @@ gcapos = get(gca,'position');
 ylabel('# connections')
 set(gca,'xtick',[0.5 1],'xticklabel',{'pre','post'},'linewidth',linew)
 set(gca,'position',gcapos);
+[~,pval] = ttest2(nedge_pre,nedge_post);
+title(num2str(pval));
 box off
 
 saveas(gcf,[fig_path 'pt_cell_connections.pdf']);

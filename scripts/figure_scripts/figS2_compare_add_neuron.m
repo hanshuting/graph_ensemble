@@ -165,8 +165,8 @@ gcapos = get(gca,'position');
 ylabel('rank'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
-[~,pval] = ttest2(cellfun(@(x) mean(x),ep_sum(:,1)),...
-    cellfun(@(x) mean(x),ep_sum(:,2)));
+% pval = signrank(cellfun(@(x) mean(x),ep_sum(:,1)),...
+%     cellfun(@(x) mean(x),ep_sum(:,2)));
 title(num2str(pval));
 
 % node degree
@@ -177,8 +177,8 @@ gcapos = get(gca,'position');
 ylabel('node degree'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
-[~,pval] = ttest2(cellfun(@(x) mean(x),ndeg(:,1)),...
-    cellfun(@(x) mean(x),ndeg(:,2)));
+% pval = signrank(cellfun(@(x) mean(x),ndeg(:,1)),...
+%     cellfun(@(x) mean(x),ndeg(:,2)));
 title(num2str(pval));
 
 % lcc
@@ -189,8 +189,8 @@ gcapos = get(gca,'position');
 ylabel('clustering coeff'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
-[~,pval] = ttest2(cellfun(@(x) nanmean(x),lcc(:,1)),...
-    cellfun(@(x) nanmean(x),lcc(:,2)));
+% pval = signrank(cellfun(@(x) nanmean(x),lcc(:,1)),...
+%     cellfun(@(x) nanmean(x),lcc(:,2)));
 title(num2str(pval));
 
 % centrality
@@ -201,8 +201,8 @@ gcapos = get(gca,'position');
 ylabel('centrality'); title(num2str(pval))
 set(gca,'position',gcapos);
 legend off; box off
-[~,pval] = ttest2(cellfun(@(x) mean(x),cent(:,1)),...
-    cellfun(@(x) mean(x),cent(:,2)));
+% pval = signrank(cellfun(@(x) mean(x),cent(:,1)),...
+%     cellfun(@(x) mean(x),cent(:,2)));
 title(num2str(pval));
 
 print(gcf,'-dpdf','-painters','-bestfit',[fig_path ...
