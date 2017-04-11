@@ -1,6 +1,8 @@
 fwMatch -- Frank-Wolfe Bethe Matching
 ===
-**Note to CU/DARPA/Bloomberg collaborators: You should be working in the `darpa` branch, NOT master. Do not push changes to this branch; we are working on other projects here!** I will occasionally move changes between the two branches in a way that does not break anything.
+
+**==Modified by Shuting Han, 2016==**
+
 
 Please read about [git branches](Git Branches -- http://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging) if you are not yet familiar with this.
 
