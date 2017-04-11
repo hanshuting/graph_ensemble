@@ -2,6 +2,7 @@ fwMatch -- Frank-Wolfe Bethe Matching
 ===
 
 **==Modified by Shuting Han, 2016==**
+**Original repo at https://github.com/kuitang/fwmatch-public**
 
 
 Please read about [git branches](Git Branches -- http://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging) if you are not yet familiar with this.
