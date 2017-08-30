@@ -15,7 +15,7 @@ This code is intended for parallel processings on linux servers. The following i
 
 ## CRF codebase
 The original version from Kui Tang in Jebara’s group is at https://github.com/kuitang/fwmatch-public. This repo has a modified version. After downloading the codebase to your yeti directory, compile the dependencies as described in the readme file.
-The codebase is organized as following: all experiments should be under expt/ directory; mvc/ has my matlab code to process the results; src/ has all source code needed to run the model; thirdparty/ has some third-party packages needed for the model.
+The codebase is organized as following: all experiments should be under `expt/ directory`; `mvc/` has my matlab code to process the results; `src/` has all source code needed to run the model; `thirdparty/` has some third-party packages needed for the model.
 
 ## Working with Yeti
 See documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti+HPC+Cluster+User+Documentation. 
@@ -102,3 +102,6 @@ exit;
 ```
 Again, please change the save path in `save_shuffled_model.m` to your desired path before running it for the first time.
 
+## References
+* [This paper - to be cited]
+* Tang, K., Ruozzi, N., Belanger, D., and Jebara, T. (2016). Bethe Learning of Graphical Models via MAP Decoding. Artificial Intelligence and Statistics (AISTATS).
