@@ -11,8 +11,9 @@ fwMatch-darpa/results/
 fwMatch-darpa/tex/
 fwMatch-darpa/YETI_scripts/
 Kate_loopy/
-pa/data/
-pa/boc/
+pa/
 tmp/
 paper/
 mnms/perf/
+scripts/figure_scripts/
+scripts/OUT_DATED/

@@ -27,6 +27,13 @@ thr = zeros(num_expt,num_tf,1);
 LL_pred = cell(num_expt,num_tf);
 true_label = cell(num_expt,num_tf,4);
 core_sel = cell(num_expt,1);
+core_roc_xx = cell(num_expt,num_tf);
+core_roc_yy = cell(num_expt,num_tf);
+core_auc = cell(num_expt,1);
+
+whole_cos_roc_xx = cell(num_expt,num_tf);
+whole_cos_roc_yy = cell(num_expt,num_tf);
+whole_cos_auc = cell(num_expt,1);
 
 % cos_sim = {};
 % cos_sim_avg = [];
@@ -46,18 +53,19 @@ for n = 1:num_expt
     load([result_path_base '\' expt_name{n} '\core\' expt_ee '_crf_core.mat']);
     
     % plot model
-    if n==1
-        coords = Coord_active;
-        coords(end+1,:) = [0 max(coords(:,2))];
-        coords(end+1,:) = [0 0];
-        coords(end+1,:) = [max(coords(:,1)) 0];
-        coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
-        figure; set(gcf,'color','w','position',[2084 521 299 270])
-        plotGraphModel(best_model.graph,coords,best_model.edge_pot,[],gray(64))
-        print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
-            expt_ee '_' ge_type '_model.pdf'])
-    end
+%     if n==1
+%         coords = Coord_active;
+%         coords(end+1,:) = [0 max(coords(:,2))];
+%         coords(end+1,:) = [0 0];
+%         coords(end+1,:) = [max(coords(:,1)) 0];
+%         coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
+%         figure; set(gcf,'color','w','position',[2084 521 299 270])
+%         plotGraphModel(best_model.graph,coords,best_model.edge_pot,[],gray(64))
+%         print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_' ...
+%             expt_ee '_' ge_type '_model.pdf'])
+%     end
     
+    % with each experiment, predict other TFs
     for m = 1:num_tf
         
         load([data_path expt_name{n} '\' test_ee{n}{m} '.mat']);
@@ -66,7 +74,7 @@ for n = 1:num_expt
         vis_stim = vis_stim';
         num_frame = size(data,2);
 
-        % calculate likelihood
+        % calculate likelihood with whole model
         LL_frame = zeros(num_frame,num_stim);
         for ii = 1:num_frame
             for jj = 1:num_stim
@@ -120,15 +128,32 @@ for n = 1:num_expt
         end
 
         % plot prediction
-        if n==1
-            plot_pred_raster(pred_mat,vis_stim',cmap);
-            title(['TF = ' num2str(tf_seq(m))]);
-            print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
-                expt_ee '_' ge_type '_pred_TF' num2str(tf_seq(m)) '.pdf'])
+%         if n==1
+%             plot_pred_raster(pred_mat,vis_stim',cmap);
+%             title(['TF = ' num2str(tf_seq(m))]);
+%             print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_' ...
+%                 expt_ee '_' ge_type '_pred_TF' num2str(tf_seq(m)) '.pdf'])
+%         end
+    
+        % ensembles
+        for ii = 1:num_stim
+            core_vec = zeros(size(data,1),1);
+            core_vec(core_crf{ii}) = 1;
+            sim_core = 1-pdist2(data',core_vec','cosine')';
+            [core_roc_xx{n,m}{ii},core_roc_yy{n,m}{ii},~,core_auc{n}(m,ii)] = ...
+                perfcurve(double(vis_stim==ii),sim_core,1);
         end
 
+        % whole model with cosine
+        for ii = 1:num_stim
+            core_vec = ones(size(data,1),1);
+            sim_core = 1-pdist2(data',core_vec','cosine')';
+            [whole_cos_roc_xx{n,m}{ii},whole_cos_roc_yy{n,m}{ii},~,whole_cos_auc{n}(m,ii)] = ...
+                perfcurve(double(vis_stim==ii),sim_core,1);
+        end
+        
     end
-    
+        
     % ensemble selectivity for TF=1
     load([data_path expt_name{n} '\' test_ee{n}{1} '.mat']);
     num_stim = length(setdiff(unique(vis_stim),0));
@@ -140,25 +165,25 @@ for n = 1:num_expt
         core_vec(core_crf{ii}) = 1;
         sim_core = 1-pdist2(data',core_vec','cosine')';
         for jj = 1:num_stim
-            [~,~,~,ens_auc(ii,jj)] = perfcurve(double(vis_stim==jj),sim_core,1);
+            [~,~,~,ens_auc(ii,jj)] = ...
+                perfcurve(double(vis_stim==jj),sim_core,1);
         end
     end
-    
     core_sel{n} = ens_auc;
     
 end
 
-%% ROC
+%% ROC - whole model
 figure; set(gcf,'color','w','position',[2055 378 1126 238])
 cc = {mycc.black,mycc.purple,mycc.red,mycc.green,mycc.blue};
-cc_light = {mycc.gray,mycc.purple_light,mycc.red_light,mycc.green_light,mycc.blue_light};
+% cc_light = {mycc.gray,mycc.purple_light,mycc.red_light,mycc.green_light,mycc.blue_light};
 
 num_stim = 4;
 auc = zeros(num_expt,num_tf,num_stim);
 
 for n = 1:num_stim
     
-    subplot(1,num_stim,n); hold on
+    subplot(1,num_stim+1,n); hold on
     plot([0 1],[0 1],'k--','linewidth',linew);
     xx = cell(num_expt,num_tf);
     yy = cell(num_expt,num_tf);
@@ -190,7 +215,143 @@ for n = 1:num_stim
 end
 legend(h)
 
+% plot AUC
+subplot(1,num_stim+1,num_stim+1);hold on
+ww = 0.4;
+stepsz = 0;
+for m = 1:num_tf
+    h = boxplot(reshape(auc(:,m,:),[],1),'positions',m-stepsz,...
+        'width',ww,'colors','k');
+    setBoxStyle(h,linew)
+end
+xlim([0 m+1]); ylim([0 1])
+set(gca,'xtick',1:m,'xticklabel',tf_seq);
+xlabel('TF (Hz)'); ylabel('AUC')
+box off
+% significance test
+pval = zeros(1,num_tf);
+for m = 2:num_tf
+    pval(m) = ranksum(reshape(auc(:,1,:),[],1),reshape(auc(:,m,:),[],1));
+end
+title(num2str(pval(2:end)));
+
 print(gcf,'-dpdf','-painters','-bestfit',[fig_path ge_type '_tf_pred_ROC.pdf'])
+
+%% ROC - core
+figure; set(gcf,'color','w','position',[1965 450 1346 238])
+
+num_stim = 4;
+for n = 1:num_stim
+    
+    subplot(1,num_stim+1,n); hold on
+    plot([0 1],[0 1],'k--','linewidth',linew);
+
+    % plot calculate mean curve
+    xvec = 0:0.02:1;
+    ymat = zeros(num_expt,length(xvec),num_tf);
+    h = zeros(num_tf,1);
+    for ii = 1:num_tf
+        for jj = 1:num_expt
+            [~,uid] = unique(core_roc_xx{jj,ii}{n});
+            ymat(jj,:,ii) = interp1(core_roc_xx{jj,ii}{n}(uid),...
+                core_roc_yy{jj,ii}{n}(uid),xvec);
+        end
+        h(ii) = plot(xvec,squeeze(mean(ymat(:,:,ii),1)),'color',cc{ii},'linewidth',2*linew);
+    end
+    xlim([0 1]); ylim([0 1])
+    xlabel('FPR'); ylabel('TPR')
+    set(gca,'xtick',0:0.5:1,'ytick',0:0.5:1,'linewidth',linew)
+
+end
+legend(h)
+
+% plot AUC
+subplot(1,num_stim+1,num_stim+1);hold on
+ww = 0.4;
+stepsz = 0;
+auc = zeros(num_expt,num_tf,num_stim);
+for n = 1:num_expt
+    for m = 1:num_tf
+        for ii = 1:num_stim
+            auc(n,m,ii) = core_auc{n}(m,ii);
+        end
+    end
+end
+for m = 1:num_tf
+    h = boxplot(reshape(auc(:,m,:),[],1),'positions',m-stepsz,...
+        'width',ww,'colors','k');
+    setBoxStyle(h,linew)
+end
+xlim([0 m+1]); ylim([0 1])
+set(gca,'xtick',1:m,'xticklabel',tf_seq);
+xlabel('TF (Hz)'); ylabel('AUC')
+box off
+% significance test
+pval = zeros(1,num_tf);
+for m = 2:num_tf
+    pval(m) = ranksum(reshape(auc(:,1,:),[],1),reshape(auc(:,m,:),[],1));
+end
+title(num2str(pval(2:end)));
+
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path ge_type '_tf_pred_ROC_core.pdf'])
+
+%% ROC - whole model cosine
+figure; set(gcf,'color','w','position',[1965 450 1346 238])
+
+num_stim = 4;
+for n = 1:num_stim
+    
+    subplot(1,num_stim+1,n); hold on
+    plot([0 1],[0 1],'k--','linewidth',linew);
+
+    % plot calculate mean curve
+    xvec = 0:0.02:1;
+    ymat = zeros(num_expt,length(xvec),num_tf);
+    h = zeros(num_tf,1);
+    for ii = 1:num_tf
+        for jj = 1:num_expt
+            [~,uid] = unique(whole_cos_roc_xx{jj,ii}{n});
+            ymat(jj,:,ii) = interp1(whole_cos_roc_xx{jj,ii}{n}(uid),...
+                whole_cos_roc_yy{jj,ii}{n}(uid),xvec);
+        end
+        h(ii) = plot(xvec,squeeze(mean(ymat(:,:,ii),1)),'color',cc{ii},'linewidth',2*linew);
+    end
+    xlim([0 1]); ylim([0 1])
+    xlabel('FPR'); ylabel('TPR')
+    set(gca,'xtick',0:0.5:1,'ytick',0:0.5:1,'linewidth',linew)
+
+end
+legend(h)
+
+% plot AUC
+subplot(1,num_stim+1,num_stim+1);hold on
+ww = 0.4;
+stepsz = 0;
+auc = zeros(num_expt,num_tf,num_stim);
+for n = 1:num_expt
+    for m = 1:num_tf
+        for ii = 1:num_stim
+            auc(n,m,ii) = whole_cos_auc{n}(m,ii);
+        end
+    end
+end
+for m = 1:num_tf
+    h = boxplot(reshape(auc(:,m,:),[],1),'positions',m-stepsz,...
+        'width',ww,'colors','k');
+    setBoxStyle(h,linew)
+end
+xlim([0 m+1]); ylim([0 1])
+set(gca,'xtick',1:m,'xticklabel',tf_seq);
+xlabel('TF (Hz)'); ylabel('AUC')
+box off
+% significance test
+pval = zeros(1,num_tf);
+for m = 2:num_tf
+    pval(m) = ranksum(reshape(auc(:,1,:),[],1),reshape(auc(:,m,:),[],1));
+end
+title(num2str(pval(2:end)));
+
+print(gcf,'-dpdf','-painters','-bestfit',[fig_path ge_type '_tf_pred_ROC_whole_cos.pdf'])
 
 %% ensemble selectivity
 cc = {mycc.red,mycc.green,mycc.blue,mycc.gray};
@@ -227,87 +388,87 @@ end
 print(gcf,'-dpdf','-painters',[fig_path ge_type '_core_selectivity.pdf'])
 
 %% plot stats
-figure;
-set(gcf,'color','w','position',[2041 533 993 235]);
-set(gcf,'paperpositionmode','auto')
-
-ww = 0.4;
-stepsz = 0;
-
-% ROC
-subplot(1,4,1); hold on
-for m = 1:num_tf
-    h = boxplot(reshape(auc(:,m,:),[],1),'positions',m-stepsz,...
-        'width',ww,'colors','k');
-    setBoxStyle(h,linew)
-end
-xlim([0 m+1]); ylim([0 1])
-set(gca,'xtick',1:m,'xticklabel',tf_seq);
-xlabel('TF (Hz)'); ylabel('AUC')
-box off
-% significance test
-pval = zeros(1,num_tf);
-for m = 2:num_tf
-    pval(m) = ranksum(reshape(auc(:,1,:),[],1),reshape(auc(:,m,:),[],1));
-end
-title(num2str(pval(2:end)));
-
-% accuracy
-subplot(1,4,2); hold on
-for m = 1:num_tf
-    h = boxplot(reshape(pred_stats(:,:,m,1),[],1),'positions',m-stepsz,...
-        'width',ww,'colors','k');
-    setBoxStyle(h,linew)
-end
-xlim([0 m+1]); ylim([0 1])
-set(gca,'xtick',1:m,'xticklabel',tf_seq);
-xlabel('TF (Hz)'); ylabel('accuracy')
-box off
-% significance test
-pval = zeros(1,num_tf);
-for m = 2:num_tf
-    pval(m) = ranksum(reshape(pred_stats(:,:,1,1),[],1),reshape(pred_stats(:,:,m,1),[],1));
-end
-title(num2str(pval(2:end)));
-
-% precision
-subplot(1,4,3); hold on
-for m = 1:num_tf
-    h = boxplot(reshape(pred_stats(:,:,m,2),[],1),'positions',m-stepsz,...
-        'width',ww,'colors','k');
-    setBoxStyle(h,linew)
-end
-xlim([0 m+1]); ylim([0 1])
-set(gca,'xtick',1:m,'xticklabel',tf_seq);
-xlabel('TF (Hz)'); ylabel('precision')
-box off
-% significance test
-pval = zeros(1,num_tf);
-for m = 2:num_tf
-    pval(m) = ranksum(reshape(pred_stats(:,:,1,2),[],1),reshape(pred_stats(:,:,m,2),[],1));
-end
-title(num2str(pval(2:end)));
-
-% recall
-subplot(1,4,4); hold on
-for m = 1:num_tf
-    h = boxplot(reshape(pred_stats(:,:,m,3),[],1),'positions',m-stepsz,...
-        'width',ww,'colors','k');
-    setBoxStyle(h,linew)
-end
-xlim([0 m+1]); ylim([0 1])
-set(gca,'xtick',1:m,'xticklabel',tf_seq);
-xlabel('TF (Hz)'); ylabel('recall')
-box off
-% significance test
-pval = zeros(1,num_tf);
-for m = 2:num_tf
-    pval(m) = ranksum(reshape(pred_stats(:,:,1,3),[],1),reshape(pred_stats(:,:,m,3),[],1));
-end
-title(num2str(pval(2:end)));
-
-print(gcf,'-dpdf','-painters','-bestfit',[fig_path ge_type ...
-    '_tf_pred_stats.pdf'])
+% figure;
+% set(gcf,'color','w','position',[2041 533 993 235]);
+% set(gcf,'paperpositionmode','auto')
+% 
+% ww = 0.4;
+% stepsz = 0;
+% 
+% % ROC
+% subplot(1,4,1); hold on
+% for m = 1:num_tf
+%     h = boxplot(reshape(auc(:,m,:),[],1),'positions',m-stepsz,...
+%         'width',ww,'colors','k');
+%     setBoxStyle(h,linew)
+% end
+% xlim([0 m+1]); ylim([0 1])
+% set(gca,'xtick',1:m,'xticklabel',tf_seq);
+% xlabel('TF (Hz)'); ylabel('AUC')
+% box off
+% % significance test
+% pval = zeros(1,num_tf);
+% for m = 2:num_tf
+%     pval(m) = ranksum(reshape(auc(:,1,:),[],1),reshape(auc(:,m,:),[],1));
+% end
+% title(num2str(pval(2:end)));
+% 
+% % accuracy
+% subplot(1,4,2); hold on
+% for m = 1:num_tf
+%     h = boxplot(reshape(pred_stats(:,:,m,1),[],1),'positions',m-stepsz,...
+%         'width',ww,'colors','k');
+%     setBoxStyle(h,linew)
+% end
+% xlim([0 m+1]); ylim([0 1])
+% set(gca,'xtick',1:m,'xticklabel',tf_seq);
+% xlabel('TF (Hz)'); ylabel('accuracy')
+% box off
+% % significance test
+% pval = zeros(1,num_tf);
+% for m = 2:num_tf
+%     pval(m) = ranksum(reshape(pred_stats(:,:,1,1),[],1),reshape(pred_stats(:,:,m,1),[],1));
+% end
+% title(num2str(pval(2:end)));
+% 
+% % precision
+% subplot(1,4,3); hold on
+% for m = 1:num_tf
+%     h = boxplot(reshape(pred_stats(:,:,m,2),[],1),'positions',m-stepsz,...
+%         'width',ww,'colors','k');
+%     setBoxStyle(h,linew)
+% end
+% xlim([0 m+1]); ylim([0 1])
+% set(gca,'xtick',1:m,'xticklabel',tf_seq);
+% xlabel('TF (Hz)'); ylabel('precision')
+% box off
+% % significance test
+% pval = zeros(1,num_tf);
+% for m = 2:num_tf
+%     pval(m) = ranksum(reshape(pred_stats(:,:,1,2),[],1),reshape(pred_stats(:,:,m,2),[],1));
+% end
+% title(num2str(pval(2:end)));
+% 
+% % recall
+% subplot(1,4,4); hold on
+% for m = 1:num_tf
+%     h = boxplot(reshape(pred_stats(:,:,m,3),[],1),'positions',m-stepsz,...
+%         'width',ww,'colors','k');
+%     setBoxStyle(h,linew)
+% end
+% xlim([0 m+1]); ylim([0 1])
+% set(gca,'xtick',1:m,'xticklabel',tf_seq);
+% xlabel('TF (Hz)'); ylabel('recall')
+% box off
+% % significance test
+% pval = zeros(1,num_tf);
+% for m = 2:num_tf
+%     pval(m) = ranksum(reshape(pred_stats(:,:,1,3),[],1),reshape(pred_stats(:,:,m,3),[],1));
+% end
+% title(num2str(pval(2:end)));
+% 
+% print(gcf,'-dpdf','-painters','-bestfit',[fig_path ge_type ...
+%     '_tf_pred_stats.pdf'])
 
 
 end
