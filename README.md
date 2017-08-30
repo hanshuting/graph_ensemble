@@ -102,6 +102,9 @@ exit;
 ```
 Again, please change the save path in `save_shuffled_model.m` to your desired path before running it for the first time.
 
+## Finding core ensembles in the model
+Assuming the CRF model has been trained, use `crf_core_demo.m` with the example data and model to find the ensembles correspondong to each stimulus.
+
 ## References
 * [This paper - to be cited]
 * Tang, K., Ruozzi, N., Belanger, D., and Jebara, T. (2016). Bethe Learning of Graphical Models via MAP Decoding. Artificial Intelligence and Statistics (AISTATS).
