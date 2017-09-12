@@ -39,6 +39,9 @@ classdef LoopyModelCollection
         % boolean indicator to know whether to use hidden model (for real values)
         % or use binary model
         hidden_model;
+        
+        % Max number of sequential time frames to consider simultaneously
+        time_span;
     end
     
     methods
@@ -56,6 +59,7 @@ classdef LoopyModelCollection
             %   p_lambda_count: number of parameter learning regularizers to try
             %   p_lambda_min: minimum lambda value to try
             %   p_lambda_max: maximum lambda value to try
+            %   time_span: number of frames to incorporate per sample
             % Inputs (Optional: others)
             %   variable_names: names of the variables (columns of samples)
             
@@ -67,6 +71,14 @@ classdef LoopyModelCollection
             self.x_test = parser.Results.x_test;
             self.variable_names = parser.Results.variable_names;
             
+            % extend training and test sets for time_span > 1, with
+            % variable_names extended accordingly
+            self.time_span = parser.Results.time_span;
+            if self.time_span > 1
+                self = self.add_lookback_nodes();
+            end
+                
+                        
             % structure lambdas are samples in a logspace
             s_lambda_count = parser.Results.s_lambda_count;
             s_lambda_min_exp = log10(parser.Results.s_lambda_min);
@@ -93,10 +105,69 @@ classdef LoopyModelCollection
         function self = do_loopy_structure_learning(self)
             fprintf('Structure learning using Lasso Logistic Regression\n');
             
+            % define allowed edges via variable groups
+            if self.time_span > 1
+                % TODO
+                assert(self.time_span == 2, 'Look back greater than 1 not implemented.');
+
+                variable_groups = cell(1, size(self.x_train,2));
+                base_node_count = size(self.x_train,2) / self.time_span;
+                origidx = 1:base_node_count;
+                dupidx = base_node_count+1:length(variable_groups);
+                
+                % Always consider fully connected graph at current timestep
+%                 variable_groups = repmat(1:base_node_count, base_node_count, 1)';
+%                 variable_groups = variable_groups(~eye(size(variable_groups)));
+%                 variable_groups = reshape(variable_groups,base_node_count - 1, base_node_count)';
+%                 variable_groups = [num2cell(variable_groups, 2)' cell(1, base_node_count * (self.time_span - 1))];
+                variable_groups(origidx) = all_but_me(1, base_node_count);
+                
+                % TODO use string matching in self.variable_names to find
+                % groupings
+                
+                lookback_method = 4;    % DEBUG
+                fprintf('lookback_method = %d;\n', lookback_method);
+                if lookback_method == 1
+                    % Only add edges connecting nodes to their previous
+                    % states
+%                     prev_nodes = [1:(self.time_span - 1)] * base_node_count;
+                    for i = 1:base_node_count
+%                         for k = 1:(self.time_span - 1)
+%                             prev_nodes = [prev_nodes (i + k * base_node_count)];
+%                         end
+                        variable_groups{i} = [variable_groups{i} (i + base_node_count)];
+%                         variable_groups{i + base_node_count} = [variable_groups{i + base_node_count} i];
+                    end
+                elseif lookback_method == 2
+                    % Fully connect every timestep's nodes to each other.
+                    % Only edges between time steps are same node at
+                    % adjacent times.
+                    variable_groups(base_node_count + 1:2 * base_node_count) = all_but_me(base_node_count + 1, 2 * base_node_count);
+                    for i = origidx
+                        variable_groups{i} = [variable_groups{i} (i + base_node_count)];
+                        variable_groups{i + base_node_count} = [variable_groups{i + base_node_count} i];
+                    end                    
+                elseif lookback_method ==3
+                    % Fully connect all nodes.
+%                     variable_groups = all_but_me(1, k * base_node_count);
+                    variable_groups = uint16(1:size(self.x_train, 2));
+                elseif lookback_method == 4
+                    % Add edge from every current timestep node to every
+                    % added previous timestep node.
+                    
+                    % Add half edges from orig nodes to every dup node.
+                    variable_groups(origidx) = cellfun(@(x) [x dupidx], ...
+                        variable_groups(origidx),'UniformOutput',false);
+                    
+                    % Set half edge from every dup edge to every orig node.
+                    variable_groups(dupidx) = {origidx};
+                end
+            end
+            
             % for every s_lambda and density let's learn a structure
             for i = 1:numel(self.s_lambda_sequence)
                 % a single call learns structures for all densities
-                learned_structures = learn_structures_by_density(self.x_train, self.s_lambda_sequence(i), self.density_sequence);
+                learned_structures = learn_structures_by_density(self.x_train, self.s_lambda_sequence(i), self.density_sequence, 'variable_groups', variable_groups, 'lookback', self.time_span);
                 
                 % we will initialize structures for all combination of
                 % s_lambda, density and p_lambda now. This means we will
@@ -586,6 +657,29 @@ classdef LoopyModelCollection
             end
         end
         
+        % TODO Comment, clean-up
+        function self = add_lookback_nodes(self)
+            base_x_train = self.x_train;
+            base_x_test = self.x_test;
+            base_variable_names = self.variable_names;
+            node_count = size(base_x_train, 2);
+            
+            for k = 1:(self.time_span - 1)
+                test_block = [zeros(1, node_count); base_x_test(k:end-k, :)];
+                self.x_test = [self.x_test test_block];
+                train_block = [zeros(1, node_count); base_x_train(k:end-k, :)];
+                self.x_train = [self.x_train train_block];
+                
+                make_k_name = @(n) ['(' n ',' int2str(k+1) ')'];
+%                 new_names = cell(size(base_variable_names));
+%                 for i = 1:node_count
+                    %new_names = cellfun(make_k_name, base_variable_names);
+%                     new_names(i) = make_k_name(char(base_variable_names(i)));
+                new_names = cellfun(make_k_name, base_variable_names, 'UniformOutput', 0);
+                self.variable_names = [self.variable_names new_names];
+            end
+        end
+        
     end
     
     methods(Static)
@@ -606,6 +700,7 @@ classdef LoopyModelCollection
             parser.addParamValue('p_lambda_count', 20, is_positive); 
             parser.addParamValue('p_lambda_min', 1e-03, is_positive);
             parser.addParamValue('p_lambda_max', 1e09, is_positive);
+            parser.addParameter('time_span', 1, is_positive);
             
             % default value for variable names are just sequential numbers
             sequential_number_strings = regexp(num2str(1:(size(x_train,2))),'\s+','split');
@@ -618,3 +713,12 @@ classdef LoopyModelCollection
     
 end
 
+function [indices] = all_but_me(low, high)
+%ALL_BUT_ME Cell array of all sets that omit one integer from [low, high].
+
+    N = high - low + 1;
+    tmp = repmat((low:high)', 1, N);
+    tmp = tmp(~eye(size(tmp)));
+    tmp = reshape(tmp,N - 1, N)';
+    indices = num2cell(tmp, 2)';
+end

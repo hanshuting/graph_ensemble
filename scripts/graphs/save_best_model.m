@@ -1,6 +1,6 @@
 
 [~,savename,~] = fileparts(pwd);
-savepath = '/vega/brain/users/sh3276/results/luis/models/';
+savepath = './results/';
 
 load('./results/model_collection.mat');
 best_model = getBestModel(model_collection);
