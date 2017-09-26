@@ -10,8 +10,8 @@ function [coefficients] = lasso_node_by_node_group(samples, relative_lambda, var
 %   option 'variable_groups': cell array containing (integer) indices of
 %       predictor variables for each node. Variables only predicted by
 %       variables indicated. Default predicts using all other variables.
-%       Note: Does not require symmetric groupings. An empty group
-%       indicates no regression to be solved.
+%       Does not require symmetric groupings. An empty group indicates no
+%       regression to be solved.
 %   
 %
 % Return
@@ -41,9 +41,10 @@ function [coefficients] = lasso_node_by_node_group(samples, relative_lambda, var
         variable_groups = reshape(variable_groups,node_count - 1,node_count)';
         variable_groups = num2cell(variable_groups, 2)';
     elseif length(variable_groups) ~= node_count
-        error('variable_group variable must have one element per node');
+        error('variable_group cell array must have one element per node');
     end
     valid_indices = @(x) all(x <= node_count);
+    % TODO: Validate no self-reference?
     assert(all(cellfun(valid_indices, variable_groups)), ...
         'Invalid indices found in variable_groups.');
     

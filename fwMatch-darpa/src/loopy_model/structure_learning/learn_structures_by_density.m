@@ -30,7 +30,7 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
     lookback = parser.Results.lookback;
 
     % TODO: real trigger -- currently, iscell(variable_groups) implies
-    % loopback_method \in {1,2}, and constraints are imposed on the
+    % loopback_method \in {1,2,4}, and constraints are imposed on the
     % possible structure
     if iscell(variable_groups)
         coefficients = lasso_node_by_node_group(samples, relative_lambda, 'variable_groups', variable_groups);
@@ -57,13 +57,18 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
         % very well become an actual edge if greater than threshold.
         fprintf('Found %d/%d edges that had contradicting weight signs in both lassos. Zero these coefficients\n',...
             length(negative_values_indexes), length(find(multiplied_coefficients ~= 0)));
+        summed_negative_values = coefficients + coefficients';
+        summed_negative_values = summed_negative_values(negative_values_indexes);
+        fprintf('The mean of the contradicting pairs after summing is %d, with the max pair at %d.\n', ...
+            mean(summed_negative_values(:)), max(summed_negative_values(:)));
+        fprintf('Compare with %d, the mean of all coefficient pairs.\n', 2*mean(coefficients(:)));
         coefficients(negative_values_indexes) = 0;
     end
 
     % numeric graph structure
     numeric_graph_structure = (coefficients + coefficients');
     % TODO: real trigger -- currently, iscell(variable_groups) implies
-    % loopback_method \in {1,2}, and constraints are imposed on the
+    % loopback_method \in {1,2,4}, and constraints are imposed on the
     % possible structure
     if iscell(variable_groups)
         % DEBUG if lookback_method == 2

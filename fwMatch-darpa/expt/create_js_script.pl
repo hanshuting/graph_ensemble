@@ -1,17 +1,19 @@
 #!/usr/bin/perl
+if (not @ARGV){
+    die "No experiment name(s) listed on command line\n";
+}
 use Cwd;
-$EXPT_NAME = "js_walkthru";
-@EE = ("1");
-#@EE = ("all_high_add_neuron_100", "all_high_add_neuron_200", "all_high_add_neuron_300", "all_high_add_neuron_400", "all_high_add_neuron_500", "all_high_add_neuron_600", "all_high_add_neuron_700", "all_high_add_neuron_800", "all_high_add_neuron_900", "all_high_add_neuron_1000", "all_high_add_neuron_1100", "all_high_add_neuron_1200", "all_high_add_neuron_1300", "all_high_add_neuron_1400", "all_high_add_neuron_1500", "all_high_add_neuron_1600", "all_high_add_neuron_1700", "all_high_add_neuron_1800", "all_high_add_neuron_1900", "all_high_add_neuron_2000");
+$EXPT_NAME = "validation";
+@EE = @ARGV;
 $MODEL_TYPE = "loopy";
-$DATA_DIR = "~/GitHub/graph_ensemble/data";
+$DATA_DIR = "~/GitHub/graph_ensemble/data/validation";
 
 for( $i = 0; $i <= $#EE; $i++){
     $DATA_FILE = sprintf("%s_%s", $EXPT_NAME, $EE[$i]);
     $EXPERIMENT = sprintf("%s_%s_%s", $EXPT_NAME, $EE[$i], $MODEL_TYPE);
     mkdir($EXPERIMENT);
     #$scommand = sprintf("cp %s_%s_template/* %s/", $EXPT_NAME, $EE[$i],$EXPERIMENT);
-    $scommand = sprintf("cp %s_template/* %s/", $EXPT_NAME, $EXPERIMENT);
+    $scommand = sprintf("cp -R %s_template/ %s/", $EXPT_NAME, $EXPERIMENT);
     print "Running: ".$scommand."\n";
     ($status, $result) = system($scommand);
 
@@ -46,15 +48,15 @@ for( $i = 0; $i <= $#EE; $i++){
     print $FID "    'compute_true_logZ', false, ...\n";
     print $FID "    'reweight_denominator', 'mean_degree', ...\n";
     print $FID "    's_lambda_splits', 1, ...\n";
-    print $FID "    's_lambdas_per_split', 1, ...\n";
+    print $FID "    's_lambdas_per_split', 2, ...\n";
     print $FID "    's_lambda_min', 2e-05, ...\n";
     print $FID "    's_lambda_max', 5e-03, ...\n";
     print $FID "    'density_splits', 1, ...\n";
-    print $FID "    'densities_per_split', 6, ...\n";
+    print $FID "    'densities_per_split', 4, ...\n";
     print $FID "    'density_min', 0.25, ...\n";
     print $FID "    'density_max', 0.3, ...\n";
     print $FID "    'p_lambda_splits', 1, ...\n";
-    print $FID "    'p_lambdas_per_split', 1, ...\n";
+    print $FID "    'p_lambdas_per_split', 2, ...\n";
     print $FID "    'p_lambda_min', 1e+01, ...\n";
     print $FID "    'p_lambda_max', 1e+04, ...\n";
     print $FID "    'time_span', 2);\n";

@@ -106,6 +106,8 @@ classdef LoopyModelCollection
             fprintf('Structure learning using Lasso Logistic Regression\n');
             
             % define allowed edges via variable groups
+            % One variable group entry per node. Each group entry a
+            % (possibly empty) list of other node indexes.
             if self.time_span > 1
                 % TODO
                 assert(self.time_span == 2, 'Look back greater than 1 not implemented.');
@@ -116,10 +118,6 @@ classdef LoopyModelCollection
                 dupidx = base_node_count+1:length(variable_groups);
                 
                 % Always consider fully connected graph at current timestep
-%                 variable_groups = repmat(1:base_node_count, base_node_count, 1)';
-%                 variable_groups = variable_groups(~eye(size(variable_groups)));
-%                 variable_groups = reshape(variable_groups,base_node_count - 1, base_node_count)';
-%                 variable_groups = [num2cell(variable_groups, 2)' cell(1, base_node_count * (self.time_span - 1))];
                 variable_groups(origidx) = all_but_me(1, base_node_count);
                 
                 % TODO use string matching in self.variable_names to find
@@ -162,12 +160,16 @@ classdef LoopyModelCollection
                     % Set half edge from every dup edge to every orig node.
                     variable_groups(dupidx) = {origidx};
                 end
+            else
+                variable_groups = uint16(1:size(self.x_train, 2));
             end
             
             % for every s_lambda and density let's learn a structure
             for i = 1:numel(self.s_lambda_sequence)
                 % a single call learns structures for all densities
-                learned_structures = learn_structures_by_density(self.x_train, self.s_lambda_sequence(i), self.density_sequence, 'variable_groups', variable_groups, 'lookback', self.time_span);
+                learned_structures = learn_structures_by_density(self.x_train, ...
+                    self.s_lambda_sequence(i), self.density_sequence, ...
+                    'variable_groups', variable_groups, 'lookback', self.time_span);
                 
                 % we will initialize structures for all combination of
                 % s_lambda, density and p_lambda now. This means we will
@@ -657,7 +659,12 @@ classdef LoopyModelCollection
             end
         end
         
-        % TODO Comment, clean-up
+        % TODO Clean-up
+        % Adds (time_span - 1) sets of duplicate nodes to x_train and
+        % x_test, where the ith set is the activity i timesteps later. For
+        % input data of size (T, N) and time_span = K, output data of size
+        % (T, KN), where (t, i) = (t + floor((i-1)/N), mod(i-1, N) + 1).
+        % Updates variable_names accordingly.
         function self = add_lookback_nodes(self)
             base_x_train = self.x_train;
             base_x_test = self.x_test;
@@ -665,16 +672,12 @@ classdef LoopyModelCollection
             node_count = size(base_x_train, 2);
             
             for k = 1:(self.time_span - 1)
-                test_block = [zeros(1, node_count); base_x_test(k:end-k, :)];
+                test_block = [base_x_test(1+k:end, :); zeros(k, node_count)];
                 self.x_test = [self.x_test test_block];
-                train_block = [zeros(1, node_count); base_x_train(k:end-k, :)];
+                train_block = [base_x_train(1+k:end, :); zeros(k, node_count)];
                 self.x_train = [self.x_train train_block];
                 
                 make_k_name = @(n) ['(' n ',' int2str(k+1) ')'];
-%                 new_names = cell(size(base_variable_names));
-%                 for i = 1:node_count
-                    %new_names = cellfun(make_k_name, base_variable_names);
-%                     new_names(i) = make_k_name(char(base_variable_names(i)));
                 new_names = cellfun(make_k_name, base_variable_names, 'UniformOutput', 0);
                 self.variable_names = [self.variable_names new_names];
             end
@@ -714,7 +717,7 @@ classdef LoopyModelCollection
 end
 
 function [indices] = all_but_me(low, high)
-%ALL_BUT_ME Cell array of all sets that omit one integer from [low, high].
+%ALL_BUT_ME Cell array of all sets that omit one integer from range [low, high].
 
     N = high - low + 1;
     tmp = repmat((low:high)', 1, N);
