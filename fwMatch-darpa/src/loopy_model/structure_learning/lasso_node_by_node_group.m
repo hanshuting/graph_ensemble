@@ -68,6 +68,7 @@ function [coefficients] = lasso_node_by_node_group(samples, relative_lambda, var
         X = samples(:,feature_nodes);
         Y = samples(:,label_node);
         
+        % ***!! DEBUG B(:,1)' fails to pick up high index edges !!***
         B = lassoglm(X,Y, 'binomial', 'LambdaRatio', relative_lambda, 'NumLambda', 2);
         % B = lassoglm(X,Y, 'poisson', 'LambdaRatio', relative_lambda, 'NumLambda', 2); %SH 20160329
         lasso_coefficients(label_node, feature_nodes) = B(:,1)';

@@ -29,9 +29,6 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
     variable_groups = parser.Results.variable_groups;
     lookback = parser.Results.lookback;
 
-    % TODO: real trigger -- currently, iscell(variable_groups) implies
-    % loopback_method \in {1,2,4}, and constraints are imposed on the
-    % possible structure
     if iscell(variable_groups)
         coefficients = lasso_node_by_node_group(samples, relative_lambda, 'variable_groups', variable_groups);
     else
@@ -67,15 +64,17 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
 
     % numeric graph structure
     numeric_graph_structure = (coefficients + coefficients');
-    % TODO: real trigger -- currently, iscell(variable_groups) implies
-    % loopback_method \in {1,2,4}, and constraints are imposed on the
-    % possible structure
     if iscell(variable_groups)
-        % DEBUG if lookback_method == 2
-        base_node_count = node_count / lookback;
-        edge_vector = [vecUT(numeric_graph_structure(1:base_node_count, 1:base_node_count)); ...
-            diag(numeric_graph_structure(1:base_node_count, (base_node_count + 1):(2 * base_node_count))); ...
-            vecUT(numeric_graph_structure((base_node_count + 1):(2 * base_node_count), (base_node_count + 1):(2 * base_node_count)))];
+        % Convert variable_groups to logical matrix
+        eligible_edges = zeros(node_count, node_count);
+        for ii = 1:node_count
+            eligible_edges(ii, variable_groups{ii}) = 1;
+        end
+        eligible_edges = logical(eligible_edges);
+        assert(all(all(eligible_edges == eligible_edges')), ...
+            'variable_groups must be symmetric.');
+
+        edge_vector = numeric_graph_structure(triu(eligible_edges, 1));
     else
         edge_vector = vecUT(numeric_graph_structure);
     end

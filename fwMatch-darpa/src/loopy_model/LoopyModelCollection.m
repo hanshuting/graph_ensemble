@@ -110,7 +110,10 @@ classdef LoopyModelCollection
             % (possibly empty) list of other node indexes.
             if self.time_span > 1
                 % TODO
-                assert(self.time_span == 2, 'Look back greater than 1 not implemented.');
+                assert(self.time_span <= 3, 'Time span greater than 3 not implemented.');
+                if self.time_span > 3
+                    fprintf('Time span greater than 3 is experimental.');
+                end
 
                 variable_groups = cell(1, size(self.x_train,2));
                 base_node_count = size(self.x_train,2) / self.time_span;
@@ -125,31 +128,7 @@ classdef LoopyModelCollection
                 
                 lookback_method = 4;    % DEBUG
                 fprintf('lookback_method = %d;\n', lookback_method);
-                if lookback_method == 1
-                    % Only add edges connecting nodes to their previous
-                    % states
-%                     prev_nodes = [1:(self.time_span - 1)] * base_node_count;
-                    for i = 1:base_node_count
-%                         for k = 1:(self.time_span - 1)
-%                             prev_nodes = [prev_nodes (i + k * base_node_count)];
-%                         end
-                        variable_groups{i} = [variable_groups{i} (i + base_node_count)];
-%                         variable_groups{i + base_node_count} = [variable_groups{i + base_node_count} i];
-                    end
-                elseif lookback_method == 2
-                    % Fully connect every timestep's nodes to each other.
-                    % Only edges between time steps are same node at
-                    % adjacent times.
-                    variable_groups(base_node_count + 1:2 * base_node_count) = all_but_me(base_node_count + 1, 2 * base_node_count);
-                    for i = origidx
-                        variable_groups{i} = [variable_groups{i} (i + base_node_count)];
-                        variable_groups{i + base_node_count} = [variable_groups{i + base_node_count} i];
-                    end                    
-                elseif lookback_method ==3
-                    % Fully connect all nodes.
-%                     variable_groups = all_but_me(1, k * base_node_count);
-                    variable_groups = uint16(1:size(self.x_train, 2));
-                elseif lookback_method == 4
+                if lookback_method == 4
                     % Add edge from every current timestep node to every
                     % added previous timestep node.
                     
@@ -159,6 +138,10 @@ classdef LoopyModelCollection
                     
                     % Set half edge from every dup edge to every orig node.
                     variable_groups(dupidx) = {origidx};
+                else % lookback_method == 3
+                    % Fully connect all nodes.
+%                     variable_groups = all_but_me(1, k * base_node_count);
+                    variable_groups = uint16(1:size(self.x_train, 2));
                 end
             else
                 variable_groups = uint16(1:size(self.x_train, 2));
