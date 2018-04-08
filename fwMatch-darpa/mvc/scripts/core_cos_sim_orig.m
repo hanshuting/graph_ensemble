@@ -1,4 +1,4 @@
-function [pred,sim_core,sim_thresh,sim_avg,acc,prc,rec] = core_cos_sim(core,data,true_label)
+function [pred,sim_core,sim_thresh,sim_avg,acc,prc,rec] = core_cos_sim_orig(core,data,true_label)
 % calculate cosine similarity using ensembles
 % data is num_frame-by-num_neuron
 
