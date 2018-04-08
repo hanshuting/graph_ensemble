@@ -81,7 +81,12 @@ for ii = 1:num_stim
     % AUC - node strength plot
     subplot(2,num_stim,ii); hold on
     scatter(epsum,auc(:,ii),nodesz,0.5*[1 1 1],'filled')
+    % Core nodes red
     scatter(epsum(core_crf{ii}),auc(core_crf{ii},ii),nodesz,[1 0 0],'filled')
+    % Stimuli nodes blue
+    scatter(epsum(end - num_stim + 1:end),auc(end - num_stim + 1:end,ii),nodesz,[0 0 1],'filled')
+    % Active stimulus node green
+    scatter(epsum(num_node - num_stim + ii),auc(num_node - num_stim + ii,ii),nodesz,[0 1 0],'filled')
     plot([nsmi nsma],mean(auc_ens{ii})*[1 1],'k--');
     plot([nsmi nsma],(mean(auc_ens{ii})+std(auc_ens{ii}))*[1 1],'--',...
         'color',0.7*[1 1 1]);
