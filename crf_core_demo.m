@@ -21,7 +21,7 @@ epsum(sum(best_model.graph,2)==0) = NaN;
 % shuffled models
 for ii = 1:length(shuffle_model.graphs)
     shuffle_model.ep_on{ii} = getOnEdgePot(shuffle_model.graphs{ii},...
-        shuffle_model.G{ii})';
+        shuffle_model.G{ii});
     shuffle_model.epsum{ii} = sum(shuffle_model.ep_on{ii},2);
     shuffle_model.epsum{ii}(sum(shuffle_model.graphs{ii},2)==0) = NaN;
 end
@@ -45,11 +45,12 @@ end
 LL_on = squeeze(LL_frame(:,:,2)-LL_frame(:,:,1));
 
 % calculate AUC
+true_label = zeros(num_stim, num_frame);
 auc = zeros(num_node,num_stim);
 for ii = 1:num_stim
-    true_label = double(vis_stim==ii)';
+    true_label(ii, :) = double(vis_stim==ii)';
     for jj = 1:num_node
-        [~,~,~,auc(jj,ii)] = perfcurve(true_label,LL_on(jj,:),1);
+        [~,~,~,auc(jj,ii)] = perfcurve(true_label(ii, :), LL_on(jj,:), 1);
     end
 end
 
@@ -60,9 +61,8 @@ for ii = 1:num_stim
     num_ens = sum(best_model.graph(num_node-num_stim+ii,:));
     for jj = 1:100
         rd_ens = randperm(num_node,num_ens);
-        [~,sim_core] = core_cos_sim(rd_ens,data',...
-            true_label);
-        [~,~,~,auc_ens{ii}(jj)] = perfcurve(true_label,sim_core,1);
+        [~,sim_core] = core_cos_sim(rd_ens,data', true_label(ii, :));
+        [~,~,~,auc_ens{ii}(jj)] = perfcurve(true_label(ii, :), sim_core, 1);
     end
     core_crf{ii} = find(auc(:,ii)>(mean(auc_ens{ii})+std(auc_ens{ii}))&...
         (epsum>(shuffle_model.mepsum+shuffle_model.sdepsum)));
@@ -81,7 +81,12 @@ for ii = 1:num_stim
     % AUC - node strength plot
     subplot(2,num_stim,ii); hold on
     scatter(epsum,auc(:,ii),nodesz,0.5*[1 1 1],'filled')
+    % Core nodes red
     scatter(epsum(core_crf{ii}),auc(core_crf{ii},ii),nodesz,[1 0 0],'filled')
+    % Stimuli nodes blue
+    scatter(epsum(end - num_stim + 1:end),auc(end - num_stim + 1:end,ii),nodesz,[0 0 1],'filled')
+    % Active stimulus node green
+    scatter(epsum(num_node - num_stim + ii),auc(num_node - num_stim + ii,ii),nodesz,[0 1 0],'filled')
     plot([nsmi nsma],mean(auc_ens{ii})*[1 1],'k--');
     plot([nsmi nsma],(mean(auc_ens{ii})+std(auc_ens{ii}))*[1 1],'--',...
         'color',0.7*[1 1 1]);
