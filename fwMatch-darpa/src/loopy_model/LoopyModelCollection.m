@@ -91,20 +91,20 @@ classdef LoopyModelCollection
         % runs the structure learning algorithm with all regularization
         % parameters in s_lambda_sequence and density_sequence
         function self = do_loopy_structure_learning(self)
-            fprintf('Structure learning using Lasso Logistic Regression\n');
-            
-            % for every s_lambda and density let's learn a structure
-            for i = 1:numel(self.s_lambda_sequence)
+            fprintf('Structure learning using positive correlation\n');
+
                 % a single call learns structures for all densities
-                learned_structures = learn_structures_by_density(self.x_train, self.s_lambda_sequence(i), self.density_sequence);
-                
+                learned_structures = learn_structures_by_similarity(self.x_train, ...
+                    self.density_sequence);
+
                 % we will initialize structures for all combination of
-                % s_lambda, density and p_lambda now. This means we will
+                % density and p_lambda now. This means we will
                 % replicate the same structure |p_lambda_sequence| times
                 for j = 1:numel(self.density_sequence)
                     for k = 1:numel(self.p_lambda_sequence)
                         model = struct();
-                        model.s_lambda = self.s_lambda_sequence(i);
+                        % s_lambda is not used, so just "assign" any
+                        model.s_lambda = self.s_lambda_sequence(1);
                         model.density = self.density_sequence(j);
                         model.p_lambda = self.p_lambda_sequence(k);
                         model.structure = learned_structures{j};
@@ -117,7 +117,6 @@ classdef LoopyModelCollection
                         self.models{end+1} = model;
                     end
                 end
-            end
         end
         
         % runs the structure learning algorithm using chowliu. This means
@@ -585,7 +584,6 @@ classdef LoopyModelCollection
                 end
             end
         end
-        
     end
     
     methods(Static)
