@@ -641,31 +641,6 @@ classdef LoopyModelCollection
                 end
             end
         end
-        
-        % TODO Clean-up
-        % Adds (time_span - 1) sets of duplicate nodes to x_train and
-        % x_test, where the ith set is the activity i timesteps later. For
-        % input data of size (T, N) and time_span = K, output data of size
-        % (T, KN), where (t, i) = (t + floor((i-1)/N), mod(i-1, N) + 1).
-        % Updates variable_names accordingly.
-        function self = add_lookback_nodes(self)
-            base_x_train = self.x_train;
-            base_x_test = self.x_test;
-            base_variable_names = self.variable_names;
-            node_count = size(base_x_train, 2);
-            
-            for k = 1:(self.time_span - 1)
-                test_block = [base_x_test(1+k:end, :); zeros(k, node_count)];
-                self.x_test = [self.x_test test_block];
-                train_block = [base_x_train(1+k:end, :); zeros(k, node_count)];
-                self.x_train = [self.x_train train_block];
-                
-                make_k_name = @(n) ['(' n ',' int2str(k+1) ')'];
-                new_names = cellfun(make_k_name, base_variable_names, 'UniformOutput', 0);
-                self.variable_names = [self.variable_names new_names];
-            end
-        end
-        
     end
     
     methods(Static)
