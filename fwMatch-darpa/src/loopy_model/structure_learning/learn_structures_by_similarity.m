@@ -20,11 +20,17 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_simil
     parser.addRequired('densities', @isnumeric);
     variable_groups_chk = @(x)validateattributes(x, {'cell'}, {'vector'});
     parser.addOptional('variable_groups', [], variable_groups_chk);
-    parser.parse(samples, densities, variable_groups);
+    if nargin < 3
+        parser.parse(samples, densities);
+        variable_groups = parser.Results.variable_groups;
+    else
+        parser.parse(samples, densities, variable_groups);
+    end
     
     node_count = size(samples,2);
     if isempty(variable_groups)
         % Create default variable_groups (fully connected) if none provided.
+        variable_groups = cell(1, node_count);
         for ii = 1:node_count
             variable_groups{ii} = [1:(ii-1) (ii+1):node_count];
         end
