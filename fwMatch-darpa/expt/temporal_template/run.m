@@ -59,6 +59,52 @@ function run(params)
        x_train = X(1:floor(params.split*sample_count),:);
        x_test = X((floor(params.split*sample_count)+1):sample_count,:);
 
+       %% Prep data
+       [x_train, x_test, ~] = add_lookback_nodes(x_train, x_test, params.time_span);
+
+        % define allowed edges via variable groups
+        % One variable group entry per node. Each group entry a (possibly
+        % empty) list of other node indexes.
+        if params.time_span > 1
+            % TODO
+            if params.time_span > 3
+                fprintf('Time span greater than 3 is experimental.');
+            end
+
+            variable_groups = cell(1, size(x_train,2));
+            base_node_count = size(x_train,2) / params.time_span;
+            origidx = 1:base_node_count;
+            dupidx = base_node_count+1:length(variable_groups);
+
+            % Always consider fully connected graph at current timestep
+            variable_groups(origidx) = all_but_me(1, base_node_count);
+
+            % TODO use string matching in self.variable_names to find
+            % groupings
+
+            lookback_method = 4;    % DEBUG
+            fprintf('lookback_method = %d;\n', lookback_method);
+            if lookback_method == 4
+                % Add edge from every current timestep node to every
+                % added previous timestep node.
+
+                % Add half edges from orig nodes to every dup node.
+                variable_groups(origidx) = cellfun(@(x) [x dupidx], ...
+                    variable_groups(origidx),'UniformOutput',false);
+
+                % Set half edge from every dup edge to every orig node.
+                variable_groups(dupidx) = {origidx};
+            else % lookback_method == 3
+                % Fully connect all nodes.
+                variable_groups = all_but_me(1, params.time_span * base_node_count);
+%                     variable_groups = uint16(1:size(x_train, 2));
+            end
+        else
+%                 variable_groups = uint16(1:size(x_train, 2));
+            variable_groups = all_but_me(1, size(x_train, 2));
+        end
+
+
        %% Instantiate object that runs the algorithm
        if strcmp(params.structure_type, 'loopy')
          model_collection = LoopyModelCollection(x_train, x_test, ...
@@ -72,7 +118,7 @@ function run(params)
                                                  'p_lambda_min',params.p_lambda_min, ...
                                                  'p_lambda_max',params.p_lambda_max, ...
                                                  'time_span', params.time_span);
-         %model_collection.variable_groups = [ones(1, ];
+         model_collection.variable_groups = variable_groups;
        else
          % when training a tree there is no need for density and structure
          % lambda
@@ -132,3 +178,12 @@ function run(params)
     save(sprintf('%s/results/%s', params.exptDir, params.saveFileName), 'model_collection');
 end
 
+function [indices] = all_but_me(low, high)
+%ALL_BUT_ME Cell array of all sets that omit one integer from range [low, high].
+
+    N = high - low + 1;
+    tmp = repmat((low:high)', 1, N);
+    tmp = tmp(~eye(size(tmp)));
+    tmp = reshape(tmp,N - 1, N)';
+    indices = num2cell(tmp, 2)';
+end
