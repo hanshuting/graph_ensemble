@@ -56,14 +56,25 @@ function run(params)
         %% Get the data
         X = params.data;
         sample_count = size(X,1);
-        x_train = X(1:floor(params.split*sample_count),:);
-        x_test = X((floor(params.split*sample_count)+1):sample_count,:);
+        x_train_base = X(1:floor(params.split*sample_count),:);
+        x_test_base = X((floor(params.split*sample_count)+1):sample_count,:);
+
 
         %% Prep data
-       [x_train, x_test, ~] = add_lookback_nodes(x_train, x_test, params.time_span);
+
+        [x_train, x_test, ~] = add_lookback_nodes(x_train_base, x_test_base, params.time_span);
+        stim_count = size(params.stimuli, 2);
+        % Append any stimulus nodes
+        if stim_count > 0
+            assert(sample_count == size(params.stimuli, 1), ...
+                   'Stimuli and neuron data must have same number of samples.')
+            x_train = [x_train params.stimuli(1:floor(params.split*sample_count),:)];
+            x_test = [x_test params.stimuli((floor(params.split*sample_count)+1):sample_count,:)];
+        end
+
 
         % define allowed edges via variable groups
-        % One variable group entry per node. Each group entry a (possibly
+        % One variable group entry per node. Each group entry is a (possibly
         % empty) list of other node indexes.
         if params.time_span > 1
             % TODO
@@ -71,16 +82,16 @@ function run(params)
                 fprintf('Time span greater than 3 is experimental.');
             end
 
-            variable_groups = cell(1, size(x_train,2));
-            base_node_count = size(x_train,2) / params.time_span;
+            num_groups = size(x_train,2);
+            variable_groups = cell(1, num_groups);
+            base_node_count = size(params.data, 2);
+            % Indexes of current timestep nodes
             origidx = 1:base_node_count;
-            dupidx = base_node_count+1:length(variable_groups);
+            % Indexes of prev timestep nodes
+            dupidx = base_node_count+1:(num_groups - stim_count);
 
             % Always consider fully connected graph at current timestep
             variable_groups(origidx) = all_but_me(1, base_node_count);
-
-            % TODO use string matching in self.variable_names to find
-            % groupings
 
             lookback_method = 4;    % DEBUG
             fprintf('lookback_method = %d;\n', lookback_method);
@@ -95,11 +106,24 @@ function run(params)
                 % Set half edge from every dup edge to every orig node.
                 variable_groups(dupidx) = {origidx};
             else % lookback_method == 3
-                % Fully connect all nodes.
+                % Fully connect all neuron nodes.
                 variable_groups = all_but_me(1, params.time_span * base_node_count);
 %                     variable_groups = uint16(1:size(x_train, 2));
             end
+
+            % Always connect stimulus nodes to all non-stimulus nodes
+            % NOTE: Does NOT connect stimulus nodes to each other
+            stimidx = (num_groups - stim_count + 1):num_groups;
+            % Half edges from neuron nodes to stimulus nodes
+            for ii = [origidx dupidx]
+                variable_groups{ii} = [variable_groups{ii} stimidx];
+            end
+            % Half edges from stimulus nodes to neuron nodes
+            for ii = stimidx
+                variable_groups{ii} = [origidx dupidx];
+            end
         else
+            % Fully connect ALL nodes (including stimulus)
 %                 variable_groups = uint16(1:size(x_train, 2));
             variable_groups = all_but_me(1, size(x_train, 2));
         end
@@ -116,8 +140,8 @@ function run(params)
                                                     'density_max',params.density_max, ...
                                                     'p_lambda_count',params.p_lambda_count, ...
                                                     'p_lambda_min',params.p_lambda_min, ...
-                                                    'p_lambda_max',params.p_lambda_max, ...
-                                                    'time_span', params.time_span);
+                                                    'p_lambda_max',params.p_lambda_max);
+                                                    % 'time_span', params.time_span);
             model_collection.variable_groups = variable_groups;
         else
             % when training a tree there is no need for density and structure

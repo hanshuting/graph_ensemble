@@ -88,7 +88,7 @@ function create_config_files(varargin)
                 end
 
                 % get real data (params.data)
-                fprintf(fid,'[params.data, params.variable_names] = get_real_data();\n');
+                fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data();\n');
 
                 if strcmp(structure_type, 'loopy')
                     % slambda
