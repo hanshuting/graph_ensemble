@@ -1,19 +1,22 @@
 classdef LoopyModelCollection
-    
-    properties        
+
+    properties
         % training and test samples
         x_train, x_test;
-        
+
         % cell array with strings for each node
         variable_names;
-        
+
+        % TODO
+        variable_groups;
+
         % configuration for training
         s_lambda_sequence, p_lambda_sequence, density_sequence;
-        
+
         % Struct array of estimated parameters of each model
-        % Fields:  
-        %   theta: struct with 
-        %       F, G (see paper to understand), 
+        % Fields:
+        %   theta: struct with
+        %       F, G (see paper to understand),
         %       node_potentials (column vector),
         %       edge_potentials (symmetric matrix),
         %       true_logZ (computed with JTA)
@@ -30,20 +33,17 @@ classdef LoopyModelCollection
         %       true_logZ. These marginals are used to mix the loopy model
         %       with the temporal models
         models;
-        
+
         % boolean indicator to know if true logZ is to be computed in this
         % run (sometimes we can't because the model is too dense and it
         % would take too long)
         computed_true_logZ;
-        
+
         % boolean indicator to know whether to use hidden model (for real values)
         % or use binary model
         hidden_model;
-        
-        % Max number of sequential time frames to consider simultaneously
-        time_span;
     end
-    
+
     methods
         function self = LoopyModelCollection(x_train, x_test, varargin)
             % Inputs (Required):
@@ -59,101 +59,50 @@ classdef LoopyModelCollection
             %   p_lambda_count: number of parameter learning regularizers to try
             %   p_lambda_min: minimum lambda value to try
             %   p_lambda_max: maximum lambda value to try
-            %   time_span: number of frames to incorporate per sample
             % Inputs (Optional: others)
             %   variable_names: names of the variables (columns of samples)
-            
+
             % parse input creating an inputParser object
             parser = LoopyModelCollection.parse_and_validate_input(x_train, x_test, varargin{:});
-            
+
             % initialize training and test sets
             self.x_train = parser.Results.x_train;
             self.x_test = parser.Results.x_test;
             self.variable_names = parser.Results.variable_names;
-            
-            % extend training and test sets for time_span > 1, with
-            % variable_names extended accordingly
-            self.time_span = parser.Results.time_span;
-            if self.time_span > 1
-                self = self.add_lookback_nodes();
-            end
-                
-                        
+
             % structure lambdas are samples in a logspace
             s_lambda_count = parser.Results.s_lambda_count;
             s_lambda_min_exp = log10(parser.Results.s_lambda_min);
             s_lambda_max_exp = log10(parser.Results.s_lambda_max);
             self.s_lambda_sequence = logspace(s_lambda_min_exp, s_lambda_max_exp, s_lambda_count);
-            
+
             % parameter lambdas are samples in a logspace
             p_lambda_count = parser.Results.p_lambda_count;
             p_lambda_min_exp = log10(parser.Results.p_lambda_min);
             p_lambda_max_exp = log10(parser.Results.p_lambda_max);
             self.p_lambda_sequence = logspace(p_lambda_min_exp, p_lambda_max_exp, p_lambda_count);
-            
+
             % density are samples in a linear space
             density_count = parser.Results.density_count;
             density_min = parser.Results.density_min;
             density_max = parser.Results.density_max;
             self.density_sequence = linspace(density_min, density_max, density_count);
-            
+
             self.models = {};
         end
-        
+
         % runs the structure learning algorithm with all regularization
         % parameters in s_lambda_sequence and density_sequence
         function self = do_loopy_structure_learning(self)
             fprintf('Structure learning using Lasso Logistic Regression\n');
-            
-            % define allowed edges via variable groups
-            % One variable group entry per node. Each group entry a
-            % (possibly empty) list of other node indexes.
-            if self.time_span > 1
-                % TODO
-                assert(self.time_span <= 3, 'Time span greater than 3 not implemented.');
-                if self.time_span > 3
-                    fprintf('Time span greater than 3 is experimental.');
-                end
 
-                variable_groups = cell(1, size(self.x_train,2));
-                base_node_count = size(self.x_train,2) / self.time_span;
-                origidx = 1:base_node_count;
-                dupidx = base_node_count+1:length(variable_groups);
-                
-                % Always consider fully connected graph at current timestep
-                variable_groups(origidx) = all_but_me(1, base_node_count);
-                
-                % TODO use string matching in self.variable_names to find
-                % groupings
-                
-                lookback_method = 4;    % DEBUG
-                fprintf('lookback_method = %d;\n', lookback_method);
-                if lookback_method == 4
-                    % Add edge from every current timestep node to every
-                    % added previous timestep node.
-                    
-                    % Add half edges from orig nodes to every dup node.
-                    variable_groups(origidx) = cellfun(@(x) [x dupidx], ...
-                        variable_groups(origidx),'UniformOutput',false);
-                    
-                    % Set half edge from every dup edge to every orig node.
-                    variable_groups(dupidx) = {origidx};
-                else % lookback_method == 3
-                    % Fully connect all nodes.
-%                     variable_groups = all_but_me(1, k * base_node_count);
-                    variable_groups = uint16(1:size(self.x_train, 2));
-                end
-            else
-                variable_groups = uint16(1:size(self.x_train, 2));
-            end
-            
             % for every s_lambda and density let's learn a structure
             for i = 1:numel(self.s_lambda_sequence)
                 % a single call learns structures for all densities
                 learned_structures = learn_structures_by_density(self.x_train, ...
                     self.s_lambda_sequence(i), self.density_sequence, ...
-                    'variable_groups', variable_groups, 'lookback', self.time_span);
-                
+                    'variable_groups', variable_groups);
+
                 % we will initialize structures for all combination of
                 % s_lambda, density and p_lambda now. This means we will
                 % replicate the same structure |p_lambda_sequence| times
@@ -169,22 +118,22 @@ classdef LoopyModelCollection
                         model.mean_degree = mean(sum(model.structure));
                         model.rms_degree = rms(sum(model.structure));
                         model.pending_parameter_estimation = true;
-                        
+
                         self.models{end+1} = model;
                     end
                 end
             end
         end
-        
+
         % runs the structure learning algorithm using chowliu. This means
         % there is going to be only one structure
         function self = do_chowliu_structure_learning(self)
             fprintf('Structure learning using Chow-Liu\n');
-            
+
             % run chowliu once to get adjacecy matrix
             chowliu_output = treegmFitBinary(self.x_train, [0, 1]);
             chowliu_structure = chowliu_output.adjmat;
-            
+
             for k = 1:numel(self.p_lambda_sequence)
                 model = struct();
                 model.p_lambda = self.p_lambda_sequence(k);
@@ -195,18 +144,18 @@ classdef LoopyModelCollection
                 model.median_degree = median(sum(model.structure));
                 model.mean_degree = mean(sum(model.structure));
                 model.rms_degree = rms(sum(model.structure));
-                
+
                 self.models{end+1} = model;
             end
         end
-        
+
         % naive bayes structure
         % structure with no edges
         function self = do_naive_bayes_structure_learning(self)
             fprintf('Naive Bayes structure, i.e. structure with no edges');
-            
+
             naive_bayes_structure = zeros(size(self.x_train,2));
-            
+
             for k = 1:numel(self.p_lambda_sequence)
                 model = struct();
                 model.p_lambda = self.p_lambda_sequence(k);
@@ -217,49 +166,49 @@ classdef LoopyModelCollection
                 model.median_degree = median(sum(model.structure));
                 model.mean_degree = mean(sum(model.structure));
                 model.rms_degree = rms(sum(model.structure));
-                
+
                 self.models{end+1} = model;
             end
-            
+
         end
-        
+
         % runs the parameter estimation code using the structures learned
         function self = do_parameter_estimation(self, varargin)
             parser = inputParser;
-            parser.addParamValue('BCFW_max_iterations', 75000, @isnumeric); 
-            parser.addParamValue('BCFW_fval_epsilon', .1, @isnumeric); 
+            parser.addParamValue('BCFW_max_iterations', 75000, @isnumeric);
+            parser.addParamValue('BCFW_fval_epsilon', .1, @isnumeric);
             parser.addParamValue('compute_true_logZ', true, @islogical);
             parser.addParamValue('reweight_denominator', 'max_degree');
-            
+
             if islogical(self.x_train) && islogical(self.x_test)
                 hidden_model = false;
             else
                 hidden_model = true;
             end
             parser.addParamValue('hidden_model', hidden_model, @islogical);
-            
+
             parser.parse(varargin{:});
             BCFW_max_iterations = parser.Results.BCFW_max_iterations;
             BCFW_fval_epsilon = parser.Results.BCFW_fval_epsilon;
             self.computed_true_logZ = parser.Results.compute_true_logZ;
             self.hidden_model = parser.Results.hidden_model;
             reweight_denominator = parser.Results.reweight_denominator;
-            
+
             % for each model, lets estimate its parameters
             for i = 1:numel(self.models)
                 model = self.models{i};
-                
+
                 fprintf('\nParameter Estimation: s_lambda=%e; density=%e; p_lambda = %e\n',...
                     model.s_lambda, model.density, model.p_lambda);
-                
+
                 % Converts structure + training samples in the overcomplete parametrization
-                % necessary to run the parameter estimation code. 
+                % necessary to run the parameter estimation code.
                 % Only recompute overcomplete struct if structure has
                 % changed
                 if i == 1 || any(any(self.models{i-1}.structure ~= model.structure))
                     overcomplete_struct = samples_to_overcomplete(self.x_train, model.structure);
                 end
-                
+
                 % define reweight parameter
                 if ischar(reweight_denominator)
                     if strcmp(reweight_denominator, 'max_degree')
@@ -274,17 +223,17 @@ classdef LoopyModelCollection
                         error('Unknown reweighting denominator ''%s''', reweight_denominator);
                     end
                 else
-                   reweight = 2/reweight_denominator; 
+                   reweight = 2/reweight_denominator;
                 end
-                
+
                 % sanity check
                 if reweight > 1
                     reweight = 1;
                 end
-                
+
                 % saves the reweight for future cross-validation
                 model.reweight = reweight;
-                
+
                 % Create object to do parameter estimation
                 loopy_model_train_object = Ising( ...
                     overcomplete_struct.YN, ...
@@ -296,7 +245,7 @@ classdef LoopyModelCollection
                     model.p_lambda, ...
                     'checkStuck', false, ...
                     'reweight', reweight);
-                
+
                 % Run Batch C Frank-Wolfe
                 bcfw = BCFW(loopy_model_train_object, ...
                     'printInterval', 1000, ...
@@ -305,16 +254,16 @@ classdef LoopyModelCollection
                     'MaxIter', BCFW_max_iterations, ...
                     'fvalEpsilon', BCFW_fval_epsilon);
                 bcfw.run();
-                                
+
                 % get F and G parameters
                 model.theta = bcfw.obj.computeParams();
-                
+
                 % Modify F and G
-                
-                
+
+
                 % compute approximate logZ
                 logZ = bcfw.obj.partition_function(model.theta);
-                
+
                 % compute node, edge potentials and adjusted partition
                 % function
                 fprintf('Converting F and G to node and edge potentials\n');
@@ -323,7 +272,7 @@ classdef LoopyModelCollection
                 model.theta.node_potentials = node_pot;
                 model.theta.edge_potentials = edge_pot;
                 model.theta.logZ = logZ_pot;
-                
+
                 % compute exact true_logZ and true_node_marginals
                 if self.computed_true_logZ
                     fprintf('Starting to run JTA to compute true partition function\n');
@@ -331,7 +280,7 @@ classdef LoopyModelCollection
                     model.theta.true_logZ = true_logZ;
                     model.true_node_marginals = true_node_marginals;
                 end
-                
+
                 % Compute likelihoods
                 if ~self.hidden_model
                     % Compute training likelihood
@@ -341,7 +290,7 @@ classdef LoopyModelCollection
                         model.theta.edge_potentials, ...
                         model.theta.logZ, ...
                         self.x_train);
-                
+
                     % Compute test likelihood
                     fprintf('Computing test likelihood\n');
                     model.test_likelihood = compute_avg_log_likelihood( ...
@@ -358,14 +307,14 @@ classdef LoopyModelCollection
                         model.theta.edge_potentials, ...
                         model.theta.true_logZ, ...
                         self.x_test);
-                elseif self.computed_true_logZ && ~self.hidden_model 
+                elseif self.computed_true_logZ && ~self.hidden_model
                     fprintf('Computing true test likelihood\n');
                     model.true_test_likelihood = compute_avg_log_likelihood( ...
                         model.theta.node_potentials, ...
                         model.theta.edge_potentials, ...
                         model.theta.true_logZ, ...
                         self.x_test);
-                    
+
                     fprintf('Computing true training likelihood\n');
                     model.true_train_likelihood = compute_avg_log_likelihood( ...
                         model.theta.node_potentials, ...
@@ -373,17 +322,17 @@ classdef LoopyModelCollection
                         model.theta.true_logZ, ...
                         self.x_train);
                 end
-                    
+
                 model.pending_parameter_estimation = false;
                 self.models{i} = model;
             end
             fprintf('Finished estimating parameters.\n');
         end
-        
+
 
         % return the model (a SingleLoopyModel object) that has the highest
         % test likelihood
-        function [best_model] = get_best_model(self)    
+        function [best_model] = get_best_model(self)
             % if true likelihood available, use it
             if self.computed_true_logZ
                 [~, best_model_index] = max(cellfun(@(m) m.true_test_likelihood, self.models));
@@ -396,7 +345,7 @@ classdef LoopyModelCollection
                     'test_likelihood',x.test_likelihood,...
                     'density',find(self.density_sequence==x.density)...
                     ), self.models);
-                
+
                 best_by_density = struct([]);
                 for d = 1:numel(self.density_sequence)
                     density_structs = model_structs([model_structs.density] == d);
@@ -404,7 +353,7 @@ classdef LoopyModelCollection
                     likelihood_grid = full(sparse(dimensions_likelihood_matrix(:,1),...
                         dimensions_likelihood_matrix(:,2),...
                         dimensions_likelihood_matrix(:,3)));
-                    
+
                     best_row = 0;
                     best_col = 0;
                     best_like = -inf;
@@ -433,7 +382,7 @@ classdef LoopyModelCollection
                         best_by_density(end).density = self.density_sequence(d);
                     end
                 end
-                
+
                 if length(best_by_density) > 0
                     [~,best_index] = max([best_by_density.like]);
                     best_s_lambda = best_by_density(best_index).s_lambda;
@@ -453,8 +402,8 @@ classdef LoopyModelCollection
                 self.models{best_model_index}, ...
                 self.variable_names);
         end
-        
-      
+
+
         %##################################################################
         % Visualization Functions
         %##################################################################
@@ -462,17 +411,17 @@ classdef LoopyModelCollection
             best_model_object = self.get_best_model();
             best_model_object.plot_graph();
         end
-        
-        function parameter_plots(self)            
+
+        function parameter_plots(self)
             best_model_object = self.get_best_model();
-            
+
             % PLOT 1
-            % surf plot showing true test likelihood for each combination 
+            % surf plot showing true test likelihood for each combination
             % of s_lambda and p_lambda, using density of the best model
             likelihoods = zeros(length(self.p_lambda_sequence), length(self.s_lambda_sequence));
             for i = 1:length(self.models)
                 model = self.models{i};
-                if model.density == best_model_object.density 
+                if model.density == best_model_object.density
                     p_lambda_index = find(self.p_lambda_sequence == model.p_lambda);
                     s_lambda_index = find(self.s_lambda_sequence == model.s_lambda);
                     likelihoods(p_lambda_index, s_lambda_index) = model.true_test_likelihood;
@@ -483,7 +432,7 @@ classdef LoopyModelCollection
             xlabel('Structure learning \lambda');
             ylabel('Parameter estimation \lambda');
             zlabel('True avg. test log-likelihood');
-     
+
             % PLOT 2
             % p_lambda vs test log likelihood
             true_likelihoods = zeros(1,length(self.p_lambda_sequence));
@@ -507,7 +456,7 @@ classdef LoopyModelCollection
             grid on;
             legend('True', 'Approx.');
             hold off;
-            
+
             % PLOT 3
             % s_lambda vs test log likelihood
             true_likelihoods = zeros(1,length(self.s_lambda_sequence));
@@ -531,7 +480,7 @@ classdef LoopyModelCollection
             grid on;
             legend('True', 'Approx.');
             hold off;
-            
+
             % PLOT 4
             % density vs test log likelihood
             true_likelihoods = zeros(1,length(self.density_sequence));
@@ -556,7 +505,7 @@ classdef LoopyModelCollection
             legend('True', 'Approx.');
             hold off;
         end
-        
+
         % Plots the approximate likelihood grid for each density, by
         % regularization parameter combinations.
         function plot_likelihood_grid(self)
@@ -575,7 +524,7 @@ classdef LoopyModelCollection
                 likelihood_grid = full(sparse(dimensions_likelihood_matrix(:,1),...
                     dimensions_likelihood_matrix(:,2),...
                     dimensions_likelihood_matrix(:,3)));
-                
+
                 figure(40+floor(self.density_sequence(d)*100));
                 colormap bone;
                 contourf(self.p_lambda_sequence, self.s_lambda_sequence, likelihood_grid, 40);
@@ -587,7 +536,7 @@ classdef LoopyModelCollection
                 title(sprintf('True Log-likelihood (density: %.2f)', self.density_sequence(d)));
             end
         end
-        
+
         % Merge Models
         % This method exists because instead of training all models in a
         % single machine, we split the models in multiple
@@ -597,21 +546,21 @@ classdef LoopyModelCollection
         function self = merge_model_collections(self, other_collection)
             % concatenate cellarray
             merged_models = [self.models other_collection.models];
-            
+
             % create struct array with fields s_lambda, density and
             % p_lambda. Then convert struct array into a matrix. We end up
             % with a matrix with one model per row, and three columns:
             % s_lambda, density and p_lambda
             models_params = cellfun(@(x) struct('s_lambda',x.s_lambda, 'density',x.density, 'p_lambda',x.p_lambda), merged_models);
             models_params = reshape(struct2cell(models_params), 3, [])';
-            
+
             % now sort model_params by columns 1,2 and 3 respectively, and
             % get back a index vector
             [~, sorting_indexes] = sortrows(models_params, [1 2]);
-            
+
             % sort the models
             self.models = merged_models(sorting_indexes);
-            
+
             % update density_sequence, s_lambda_sequence, p_lambda_sequence
             densities = cellfun(@(x) x.density, self.models);
             densities = sort(unique(densities));
@@ -623,12 +572,12 @@ classdef LoopyModelCollection
             p_lambdas = sort(unique(p_lambdas));
             self.p_lambda_sequence = p_lambdas;
         end
-        
+
         function self = set_p_lambdas(self, p_lambda_count, p_lambda_min, p_lambda_max)
             p_lambda_min_exp = log10(p_lambda_min);
             p_lambda_max_exp = log10(p_lambda_max);
             self.p_lambda_sequence = logspace(p_lambda_min_exp, p_lambda_max_exp, p_lambda_count);
-            
+
             for i = 1:numel(self.s_lambda_sequence)
                 for j = 1:numel(self.density_sequence)
                     for k = 1:numel(self.p_lambda_sequence)
@@ -641,33 +590,8 @@ classdef LoopyModelCollection
                 end
             end
         end
-        
-        % TODO Clean-up
-        % Adds (time_span - 1) sets of duplicate nodes to x_train and
-        % x_test, where the ith set is the activity i timesteps later. For
-        % input data of size (T, N) and time_span = K, output data of size
-        % (T, KN), where (t, i) = (t + floor((i-1)/N), mod(i-1, N) + 1).
-        % Updates variable_names accordingly.
-        function self = add_lookback_nodes(self)
-            base_x_train = self.x_train;
-            base_x_test = self.x_test;
-            base_variable_names = self.variable_names;
-            node_count = size(base_x_train, 2);
-            
-            for k = 1:(self.time_span - 1)
-                test_block = [base_x_test(1+k:end, :); zeros(k, node_count)];
-                self.x_test = [self.x_test test_block];
-                train_block = [base_x_train(1+k:end, :); zeros(k, node_count)];
-                self.x_train = [self.x_train train_block];
-                
-                make_k_name = @(n) ['(' n ',' int2str(k+1) ')'];
-                new_names = cellfun(make_k_name, base_variable_names, 'UniformOutput', 0);
-                self.variable_names = [self.variable_names new_names];
-            end
-        end
-        
     end
-    
+
     methods(Static)
         function parser = parse_and_validate_input(x_train, x_test, varargin)
             parser = inputParser;
@@ -675,36 +599,25 @@ classdef LoopyModelCollection
             is_logical_matrix = @(x) ismatrix(x) && ~isempty(x);
             parser.addRequired('x_train', is_logical_matrix);
             parser.addRequired('x_test', is_logical_matrix);
-            
+
             is_positive = @(x) x >= 0;
-            parser.addParamValue('s_lambda_count', 10, is_positive); 
+            parser.addParamValue('s_lambda_count', 10, is_positive);
             parser.addParamValue('s_lambda_min', 1e-04, is_positive);
             parser.addParamValue('s_lambda_max', 0.9, is_positive);
-            parser.addParamValue('density_count', 2, is_positive); 
+            parser.addParamValue('density_count', 2, is_positive);
             parser.addParamValue('density_min', 0.05, @isscalar);
             parser.addParamValue('density_max', 0.09, @isscalar);
-            parser.addParamValue('p_lambda_count', 20, is_positive); 
+            parser.addParamValue('p_lambda_count', 20, is_positive);
             parser.addParamValue('p_lambda_min', 1e-03, is_positive);
             parser.addParamValue('p_lambda_max', 1e09, is_positive);
-            parser.addParameter('time_span', 1, is_positive);
-            
+
             % default value for variable names are just sequential numbers
             sequential_number_strings = regexp(num2str(1:(size(x_train,2))),'\s+','split');
             parser.addParamValue('variable_names', sequential_number_strings, @iscellstr);
-            
+
             parser.parse(x_train, x_test, varargin{:});
         end
     end
-    
-    
-end
 
-function [indices] = all_but_me(low, high)
-%ALL_BUT_ME Cell array of all sets that omit one integer from range [low, high].
 
-    N = high - low + 1;
-    tmp = repmat((low:high)', 1, N);
-    tmp = tmp(~eye(size(tmp)));
-    tmp = reshape(tmp,N - 1, N)';
-    indices = num2cell(tmp, 2)';
 end
