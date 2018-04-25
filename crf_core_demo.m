@@ -10,11 +10,12 @@ shuffle_model = load('model_shuffled_demo.mat');
 num_stim = length(unique(setdiff(vis_stim,0)));
 num_node = size(best_model.graph,1);
 num_frame = length(vis_stim);
-data = data';
 
 % calculate edge potential sum
 best_model.ep_on = getOnEdgePot(best_model.graph,best_model.G);
-best_model.ep_on = best_model.ep_on - tril(best_model.ep_on);
+% getOnEdgePot returns just upper triangle - need to restore symmetry
+best_model.ep_on = best_model.ep_on + best_model.ep_on';
+% In order to get ep for ALL edges each node is party to
 epsum = sum(best_model.ep_on,2);
 epsum(sum(best_model.graph,2)==0) = NaN;
 
@@ -22,6 +23,7 @@ epsum(sum(best_model.graph,2)==0) = NaN;
 for ii = 1:length(shuffle_model.graphs)
     shuffle_model.ep_on{ii} = getOnEdgePot(shuffle_model.graphs{ii},...
         shuffle_model.G{ii});
+    shuffle_model.ep_on{ii} = shuffle_model.ep_on{ii} + shuffle_model.ep_on{ii}';
     shuffle_model.epsum{ii} = sum(shuffle_model.ep_on{ii},2);
     shuffle_model.epsum{ii}(sum(shuffle_model.graphs{ii},2)==0) = NaN;
 end
@@ -33,7 +35,7 @@ shuffle_model.sdepsum = nanstd(cellfun(@(x) nanmean(x),shuffle_model.epsum));
 LL_frame = zeros(num_node,num_frame,2);
 for ii = 1:num_node
     for jj = 1:num_frame
-        frame_vec = data(:,jj)';
+        frame_vec = data(jj,:);
         frame_vec(ii) = 0;
         LL_frame(ii,jj,1) = compute_avg_log_likelihood(best_model.node_pot,...
             best_model.edge_pot,best_model.logZ,frame_vec);
@@ -61,7 +63,7 @@ for ii = 1:num_stim
     num_ens = sum(best_model.graph(num_node-num_stim+ii,:));
     for jj = 1:100
         rd_ens = randperm(num_node,num_ens);
-        [~,sim_core] = core_cos_sim(rd_ens,data', true_label(ii, :));
+        [~,sim_core] = core_cos_sim(rd_ens,data, true_label(ii, :));
         [~,~,~,auc_ens{ii}(jj)] = perfcurve(true_label(ii, :), sim_core, 1);
     end
     core_crf{ii} = find(auc(:,ii)>(mean(auc_ens{ii})+std(auc_ens{ii}))&...
