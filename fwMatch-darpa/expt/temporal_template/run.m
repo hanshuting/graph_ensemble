@@ -62,7 +62,8 @@ function run(params)
 
         %% Prep data
 
-        [x_train, x_test, ~] = add_lookback_nodes(x_train_base, x_test_base, params.time_span);
+        x_train = add_lookback_nodes(x_train_base, params.time_span);
+        x_test = add_lookback_nodes(x_test_base, params.time_span);
         stim_count = size(params.stimuli, 2);
         % Append any stimulus nodes
         if stim_count > 0
