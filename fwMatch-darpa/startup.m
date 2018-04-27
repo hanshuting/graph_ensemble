@@ -53,6 +53,6 @@ addpath src/DataParsing/;
 % Financial data (added by Liao)
 addpath src/FinMatlabFunctions;
 
-% javaaddpath thirdparty/lingpipe-4.1.0.jar;
+addpath(genpath('../scripts/'));
 
 display(sprintf('PATH is now set!'));
