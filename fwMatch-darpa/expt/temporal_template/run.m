@@ -176,6 +176,7 @@ function run(params)
     for i = 1:numel(model_collection.models)
         fprintf('model %d:\n', i);
         model = model_collection.models{i};
+        model.time_span = params.time_span;
         if(isfield(model, 'test_likelihood'))
             continue;
         end
