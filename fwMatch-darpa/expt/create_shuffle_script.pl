@@ -19,7 +19,7 @@ for( $i = 0; $i <= $#EE; $i++){
     ($status, $result) = system($scommand);
 
     $DATA_FILE = sprintf("%s_%s",$EXPT_NAME,$EE[$i]);
-    $SAVE_DIR = sprintf("%s/shuffled/%s_%s",$DATA_DIR,$EXPERIMENT,$MODEL_TYPE);
+    $SAVE_DIR = sprintf("%s/shuffled/%s",$DATA_DIR,$EXPERIMENT);
     $SAVE_NAME = sprintf("shuffled_%s_%s_%s", $EXPT_NAME, $EE[$i],$MODEL_TYPE);
 
     # make shuffled data directory
