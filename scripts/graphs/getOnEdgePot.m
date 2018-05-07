@@ -4,7 +4,7 @@ function [G_on] = getOnEdgePot(graph,G)
 %   Returns
 %       G_on: NxN matrix, but only upper triangle is populated.
 num_node = size(graph,1);
-trilgraph = tril(graph);
+trilgraph = triu(graph); % SH 5/5/2018
 num_edge = sum(sum(logical(trilgraph)));
 edge_list = zeros(num_edge,2);
 [edge_list(:,2),edge_list(:,1)] = find(trilgraph);
