@@ -1,3 +1,0 @@
-terminate called after throwing an instance of 'settings::core::exception::ErrorReadingSettingsData'
-  what():  Error reading setting's value for various reasons, please refer to detailedInfo for more information.
-/usr/local/bin/matlab: line 1238: 19862 Aborted                 (core dumped) $MATLAB/bin/$ARCH/need_softwareopengl $display

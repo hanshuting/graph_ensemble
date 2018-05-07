@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 use Cwd;
-$EXPT_NAME = "m23_d1_spont";
-@EE = ("high_pre","high_post");
+$EXPT_NAME = "aa_sequential_stim";
+@EE = ("high_add_neuron");
 $MODEL_TYPE = "loopy";
-$DATA_DIR = "/vega/brain/users/sh3276/data/luis";
-@DENSITY = (0.27,0.25);
-@S_LAMBDA = (0.006,0.006);
-@P_LAMBDA = (56.2341,316.2278);
+$DATA_DIR = "/vega/brain/users/sh3276/data/aa";
+@DENSITY = (0.27);
+@S_LAMBDA = (0.0549);
+@P_LAMBDA = (316.2278);
 $NSHUFFLE = 100;
 
 for( $i = 0; $i <= $#EE; $i++){
@@ -14,13 +14,13 @@ for( $i = 0; $i <= $#EE; $i++){
     # create experiment directory
     $EXPERIMENT = sprintf("shuffled_%s_%s_%s", $EXPT_NAME, $EE[$i], $MODEL_TYPE);
     mkdir($EXPERIMENT);
-    $scommand = sprintf("cp shuffled_%s_template/* %s/", $EXPT_NAME, $EXPERIMENT);
+    $scommand = sprintf("cp shuffled_template/* %s/", $EXPERIMENT);
     print "Running: ".$scommand."\n";
     ($status, $result) = system($scommand);
 
     $DATA_FILE = sprintf("%s_%s",$EXPT_NAME,$EE[$i]);
-    $SAVE_DIR = sprintf("%s/shuffled/%s",$DATA_DIR,$EXPERIMENT);
-    $SAVE_NAME = sprintf("shuffled_%s_%s", $EXPT_NAME, $EE[$i]);
+    $SAVE_DIR = sprintf("%s/shuffled/%s_%s",$DATA_DIR,$EXPERIMENT,$MODEL_TYPE);
+    $SAVE_NAME = sprintf("shuffled_%s_%s_%s", $EXPT_NAME, $EE[$i],$MODEL_TYPE);
 
     # make shuffled data directory
     $scommand = sprintf("mkdir %s", $SAVE_DIR);
@@ -51,6 +51,9 @@ for( $i = 0; $i <= $#EE; $i++){
     print "file: gn_shuff_data.m\n";
     open(my $FID, ">", "$EXPERIMENT/gn_shuff_data.m")
         or die "cannot open < $!";
+    print $FID "if exist('".$DATA_DIR."/".$SAVE_NAME."')~=7\n";
+    print $FID "    mkdir('".$DATA_DIR."/".$SAVE_NAME."');\n";
+    print $FID "end\n";
     print $FID "addpath(genpath('/vega/brain/users/sh3276/src/'));\n";
     print $FID "load(['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
     print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
@@ -109,7 +112,7 @@ for( $i = 0; $i <= $#EE; $i++){
 
     # write yeti script
     print "file: shuffle_yeti_config.sh\n";
-    system(sprintf("rm %s/shuffle_yeti_config.sh",$EXPERIMENT));
+    # system(sprintf("rm %s/shuffle_yeti_config.sh",$EXPERIMENT));
     open(my $FID, ">", "$EXPERIMENT/shuffle_yeti_config.sh")
         or die "cannot open < $!";
     print $FID "#!/bin/sh\n";
@@ -129,7 +132,7 @@ for( $i = 0; $i <= $#EE; $i++){
 
     # write submit script
     print "file: shuffle_start_job.sh\n";
-    system(sprintf("rm %s/shuffle_start_job.sh",$EXPERIMENT));
+    # system(sprintf("rm %s/shuffle_start_job.sh",$EXPERIMENT));
     open(my $FID, ">", "$EXPERIMENT/shuffle_start_job.sh")
         or die "cannot open < $!";
     print $FID "qsub shuffle_yeti_config.sh\n";

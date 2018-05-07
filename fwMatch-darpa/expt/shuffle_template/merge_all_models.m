@@ -1,7 +1,7 @@
 
 exptPath = pwd;
-cd('../../');
-startup;
+%cd('../../');
+%startup;
 
 % iterate through all result files merging the model collections
 result_files = dir(sprintf('%s/results/result*.mat', exptPath));
@@ -19,4 +19,4 @@ save(sprintf('%s/results/model_collection.mat', exptPath), 'model_collection', '
 %fsave = exptPath(strfind(exptPath, 'expt/')+length('expt/'):end);
 %save(sprintf('~/data/steph_225_tree/model_collection_%s.mat', fsave), 'model_collection', '-v7.3');
 
-cd(exptPath);
+%cd(exptPath);

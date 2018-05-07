@@ -1,17 +1,17 @@
 #!/usr/bin/perl
 use Cwd;
-$EXPT_NAME = "m21_d2_vis";
-@EE = ("all_high_0.4_28","all_high_0.4_29","all_high_0.4_30","all_high_0.6_1","all_high_0.6_2","all_high_0.6_3","all_high_0.6_4","all_high_0.6_5","all_high_0.6_6","all_high_0.6_7","all_high_0.6_8","all_high_0.6_9","all_high_0.6_10","all_high_0.6_11","all_high_0.6_12","all_high_0.6_13","all_high_0.6_14","all_high_0.6_15","all_high_0.6_16","all_high_0.6_17","all_high_0.6_18","all_high_0.6_19","all_high_0.6_20","all_high_0.6_21","all_high_0.6_22","all_high_0.6_23","all_high_0.6_24","all_high_0.6_25","all_high_0.6_26","all_high_0.6_27","all_high_0.6_28","all_high_0.6_29","all_high_0.6_30","all_high_0.8_1","all_high_0.8_2","all_high_0.8_3","all_high_0.8_4","all_high_0.8_5","all_high_0.8_6","all_high_0.8_7","all_high_0.8_8","all_high_0.8_9","all_high_0.8_10","all_high_0.8_11","all_high_0.8_12","all_high_0.8_13","all_high_0.8_14","all_high_0.8_15","all_high_0.8_16","all_high_0.8_17","all_high_0.8_18","all_high_0.8_19","all_high_0.8_20","all_high_0.8_21","all_high_0.8_22","all_high_0.8_23","all_high_0.8_24","all_high_0.8_25","all_high_0.8_26","all_high_0.8_27","all_high_0.8_28","all_high_0.8_29","all_high_0.8_30");
-#@EE = ("all_high_add_neuron_100", "all_high_add_neuron_200", "all_high_add_neuron_300", "all_high_add_neuron_400", "all_high_add_neuron_500", "all_high_add_neuron_600", "all_high_add_neuron_700", "all_high_add_neuron_800", "all_high_add_neuron_900", "all_high_add_neuron_1000", "all_high_add_neuron_1100", "all_high_add_neuron_1200", "all_high_add_neuron_1300", "all_high_add_neuron_1400", "all_high_add_neuron_1500", "all_high_add_neuron_1600", "all_high_add_neuron_1700", "all_high_add_neuron_1800", "all_high_add_neuron_1900", "all_high_add_neuron_2000");
+$EXPT_NAME = "G4M4_exp1";
+@EE = ("high_add_neuron");
 $MODEL_TYPE = "loopy";
-$DATA_DIR = "/vega/brain/users/sh3276/data/luis";
+$DATA_DIR = "/vega/brain/users/sh3276/data/aa";
 
+# note: s_lambda is now in a small range (for PA dataset)
 for( $i = 0; $i <= $#EE; $i++){
     $DATA_FILE = sprintf("%s_%s", $EXPT_NAME, $EE[$i]);
     $EXPERIMENT = sprintf("%s_%s_%s", $EXPT_NAME, $EE[$i], $MODEL_TYPE);
     mkdir($EXPERIMENT);
     #$scommand = sprintf("cp %s_%s_template/* %s/", $EXPT_NAME, $EE[$i],$EXPERIMENT);
-    $scommand = sprintf("cp %s_template/* %s/", $EXPT_NAME, $EXPERIMENT);
+    $scommand = sprintf("cp experiment_template/* %s/", $EXPERIMENT);
     print "Running: ".$scommand."\n";
     ($status, $result) = system($scommand);
 
@@ -19,10 +19,8 @@ for( $i = 0; $i <= $#EE; $i++){
     open(my $FID, ">", "$EXPERIMENT/get_real_data.m") 
 	or die "cannot open < $!";
     print $FID "function [data,variable_names] = get_real_data()\n";
-    print $FID "load(['".$DATA_DIR."' ...\n";
-    print $FID "          '/".$DATA_FILE.".mat']);\n";
-    print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."' ...\n".
-	"'/".$DATA_FILE.".mat']);\n";
+    print $FID "load(['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
+    print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
     print $FID "%data is time_frames by number_of_neurons\n";
     print $FID "data = full(data);\n";
     print $FID "N = size(data,2);\n";
@@ -47,8 +45,8 @@ for( $i = 0; $i <= $#EE; $i++){
     print $FID "    'reweight_denominator', 'mean_degree', ...\n";
     print $FID "    's_lambda_splits', 6, ...\n";
     print $FID "    's_lambdas_per_split', 1, ...\n";
-    print $FID "    's_lambda_min', 2e-05, ...\n";
-    print $FID "    's_lambda_max', 5e-03, ...\n";
+    print $FID "    's_lambda_min', 2e-03, ...\n"; # default: 2e-03; PA 2e-07
+    print $FID "    's_lambda_max', 5e-01, ...\n"; # default: 5e-01; PA 5e-05
     print $FID "    'density_splits', 1, ...\n";
     print $FID "    'densities_per_split', 6, ...\n";
     print $FID "    'density_min', 0.25, ...\n";
