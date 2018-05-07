@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 use Cwd;
+$USER = "sh3276";
+$SOURCE_DIR = "/vega/brain/users/sh3276/src/";
 $EXPT_NAME = "aa_sequential_stim";
 @EE = ("high_add_neuron");
 $MODEL_TYPE = "loopy";
@@ -10,7 +12,7 @@ $DATA_DIR = "/vega/brain/users/sh3276/data/aa";
 $NSHUFFLE = 100;
 
 for( $i = 0; $i <= $#EE; $i++){
-    
+
     # create experiment directory
     $EXPERIMENT = sprintf("shuffled_%s_%s_%s", $EXPT_NAME, $EE[$i], $MODEL_TYPE);
     mkdir($EXPERIMENT);
@@ -29,7 +31,7 @@ for( $i = 0; $i <= $#EE; $i++){
 
     # script for reading data
     print "file: get_real_data.m\n";
-    open(my $FID, ">", "$EXPERIMENT/get_real_data.m") 
+    open(my $FID, ">", "$EXPERIMENT/get_real_data.m")
 	or die "cannot open < $!";
     print $FID "function [data,variable_names] = get_real_data(id)\n";
     print $FID "load(['".$SAVE_DIR."/".$SAVE_NAME."_' num2str(id) '.mat']);\n";
@@ -44,7 +46,7 @@ for( $i = 0; $i <= $#EE; $i++){
     print $FID "fprintf('data is : %d, %d\\n', size(data,1), size(data,2));\n";
     print $FID "end\n";
     close($FID);
-    
+
     print "done writing get_real_data.m\n";
 
     # script for generate shuffled data
@@ -54,7 +56,7 @@ for( $i = 0; $i <= $#EE; $i++){
     print $FID "if exist('".$DATA_DIR."/".$SAVE_NAME."')~=7\n";
     print $FID "    mkdir('".$DATA_DIR."/".$SAVE_NAME."');\n";
     print $FID "end\n";
-    print $FID "addpath(genpath('/vega/brain/users/sh3276/src/'));\n";
+    print $FID "addpath(genpath('".$SOURCE_DIR."'));\n";
     print $FID "load(['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
     print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
     print $FID "data_raw = data;\n";
@@ -68,12 +70,12 @@ for( $i = 0; $i <= $#EE; $i++){
     print "done writing gn_shuff_data.m\n";
 
     if($MODEL_TYPE eq "loopy"){
-    open(my $FID, ">", "$EXPERIMENT/write_configs_for_loopy.m") 
-	or die "cannot open < $!";    
+    open(my $FID, ">", "$EXPERIMENT/write_configs_for_loopy.m")
+	or die "cannot open < $!";
     print $FID "create_config_files( ...\n";
     print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
-    print $FID "    'email_for_notifications', 'sh3276\@columbia.edu', ...\n";
-    print $FID "    'yeti_user', 'sh3276', ...\n";
+    print $FID "    'email_for_notifications', '".$USER."\@columbia.edu', ...\n";
+    print $FID "    'yeti_user', '".$USER."', ...\n";
     print $FID "    'compute_true_logZ', false, ...\n";
     print $FID "    'reweight_denominator', 'mean_degree', ...\n";
     print $FID "    's_lambda_splits', 1, ...\n";
@@ -89,16 +91,16 @@ for( $i = 0; $i <= $#EE; $i++){
     print $FID "    'p_lambda_min', ".$P_LAMBDA[$i].", ...\n";
     print $FID "    'p_lambda_max', ".$P_LAMBDA[$i].", ...\n";
     print $FID "    'num_shuffle', ".$NSHUFFLE.");\n";
-    close($FID); 
+    close($FID);
     print "done writing write_configs_for_loopy.m\n";
     }else{
 	#model is tree
-    open(my $FID, ">", "$EXPERIMENT/write_configs_for_tree.m") 
-	or die "cannot open < $!";    
+    open(my $FID, ">", "$EXPERIMENT/write_configs_for_tree.m")
+	or die "cannot open < $!";
     print $FID "create_config_files( ...\n";
     print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
-    print $FID "    'email_for_notifications', 'sh3276\@columbia.edu', ...\n";
-    print $FID "    'yeti_user', 'sh3276', ...\n";
+    print $FID "    'email_for_notifications', '".$USER."\@columbia.edu', ...\n";
+    print $FID "    'yeti_user', '".$USER."', ...\n";
     print $FID "    'structure_type', 'tree', ...\n";
     print $FID "    'compute_true_logZ', true, ...\n";
     print $FID "    'p_lambda_splits', 1, ...\n";
@@ -122,11 +124,11 @@ for( $i = 0; $i <= $#EE; $i++){
     print $FID "#PBS -l nodes=1:ppn=1,walltime=02:00:00,mem=4000mb\n";
     print $FID "#PBS -V\n";
     print $FID "#set output and error directories (SSCC example here)\n";
-    print $FID "#PBS -o localhost:/vega/brain/users/sh3276/src/fwMatch-darpa/expt/".$EXPERIMENT."/yeti_logs/\n";
-    print $FID "#PBS -e localhost:/vega/brain/users/sh3276/src/fwMatch-darpa/expt/".$EXPERIMENT."/yeti_logs/\n";
+    print $FID "#PBS -o localhost:".$SOURCE_DIR."fwMatch-darpa/expt/".$EXPERIMENT."/yeti_logs/\n";
+    print $FID "#PBS -e localhost:".$SOURCE_DIR."fwMatch-darpa/expt/".$EXPERIMENT."/yeti_logs/\n";
     print $FID "#Command below is to execute Matlab code for Job Array (Example 4) so that each part writes own output\n";
     print $FID "matlab -nodesktop -nodisplay -r ".
-        "\"dbclear all; addpath('/vega/brain/users/sh3276/src/fwMatch-darpa/expt/".$EXPERIMENT."');gn_shuff_data; exit\"\n";
+        "\"dbclear all; addpath('".$SOURCE_DIR."fwMatch-darpa/expt/".$EXPERIMENT."');gn_shuff_data; exit\"\n";
     print $FID "#End of script\n";
     close($FID);
 
