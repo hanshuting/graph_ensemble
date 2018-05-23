@@ -51,6 +51,23 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
         coefficients(negative_values_indexes) = 0;
     end
     
+    correlations = corrcoef(samples);
+    % 1 SE for random binary vector correlation as threshold
+%     corr_thresh = tanh(1 / sqrt(size(samples,1) - 3));
+    corr_thresh = 0.7;
+    max_coef = max(coefficients(:));
+    % TODO: Really, vectorize this...
+    for ii = 1:node_count
+        for jj = 1:node_count
+            if (correlations(ii, jj) > corr_thresh) && (coefficients(ii,jj) ~= 0)
+                coefficients(ii,jj) = max_coef * correlations(ii,jj);
+                fprintf('High correlation edge %d,%d has no coefficient. Adding back in with %f.', ...
+                    ii, jj, coefficients(ii,jj))
+            end
+        end
+    end
+    
+    
     % numeric graph structure
     numeric_graph_structure = (coefficients + coefficients');
     
