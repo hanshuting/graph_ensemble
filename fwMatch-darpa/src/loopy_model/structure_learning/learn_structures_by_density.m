@@ -59,9 +59,10 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
             length(negative_values_indexes), length(find(multiplied_coefficients ~= 0)));
         summed_negative_values = coefficients + coefficients';
         summed_negative_values = summed_negative_values(negative_values_indexes);
-        fprintf('The mean of the contradicting pairs after summing is %d, with the max pair at %d.\n', ...
+        fprintf('The mean of the contradicting pairs after summing is %d, with the max summed pair at %d.\n', ...
             mean(summed_negative_values(:)), max(summed_negative_values(:)));
-        fprintf('Compare with %d, the mean of all coefficient pairs.\n', 2*mean(coefficients(:)));
+        fprintf('Compare with %d, the mean of all coefficient pairs.\n', ...
+            2*mean(coefficients(coefficients ~= 0)));
         coefficients(negative_values_indexes) = 0;
     end
 
