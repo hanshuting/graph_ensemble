@@ -2,7 +2,8 @@ function shuffled = shuffle(x,method)
 
 %shuffle Shuffles raster data using various different methods
 % Shuffles spike data (0 or 1) using three differnt methods
-% assumes rows are individual cells and columns are time frames
+% Assumes rows are individual cells and columns are time frames, and there
+% are more frames than cells.
 %
 % 'frames' - shuffles the frames in time, maintains activity pattern of
 % each frame
@@ -38,41 +39,39 @@ shuffled=x;
 
 switch method
     case 'frames'
-        randp = randperm(length(x));
-        shuffled = sortrows([randp;x]')';
-        shuffled = shuffled(2:end,:);
-        
+        randp = randperm(size(x,2));
+        shuffled = x(:, randp);
+
     case 'time'
-        n = length(x);
+        n = size(x,2);
         for i = 1:size(x,1)
             randp = randperm(n);
-            temp = sortrows([randp; x(i,:)]')';
-            shuffled(i,:) = temp(2,:);
+            shuffled(i, :) = x(i, randp);
         end
-        
+
     case 'time_shift'
         n = length(x);
         for i = 1:size(x,1)
             randp = randi(n);
-            shuffled(i,:) = [  x(i,n-randp+1:n) x(i,1:n-randp) ]; 
+            shuffled(i,:) = [  x(i,n-randp+1:n) x(i,1:n-randp) ];
         end
-       
+
     case 'isi'
         n = length(x);
         shuffled = zeros(size(x,1),n);
-        
+
         for i = 1:size(x,1)
             % Pull out indices of spikes, get ISIs, buffer at start and end
             isi = diff(find([1 x(i,:) 1]));
             isi = isi(randperm(length(isi))); % Randomize ISIs
-            
+
             temp = cumsum(isi);
             temp = temp(1:end-1); % Removes the end spikes that were added
             % Put the spikes back
             shuffled(i,temp) = true;
         end
-        
-        
+
+
     case 'cell'
         [n,len] = size(x);
         for i = 1:len
@@ -80,27 +79,27 @@ switch method
             temp = sortrows([randp' x(:,i)]);
             shuffled(:,i) = temp(:,2);
         end
-        
+
     case 'exchange'
         n = sum(x(:));
         for i = 1:2*n
             randp = randi(n,1,2);
             [r,c] = find(shuffled);
-            
+
             % Make sure that the swap will actually do something
-            while randp(1)==randp(2) || r(randp(1))==r(randp(2)) || c(randp(1))==c(randp(2)) || shuffled(r(randp(2)),c(randp(1)))==true || shuffled(r(randp(1)),c(randp(2)))==true 
+            while randp(1)==randp(2) || r(randp(1))==r(randp(2)) || c(randp(1))==c(randp(2)) || ...
+                    shuffled(r(randp(2)),c(randp(1)))==true || shuffled(r(randp(1)),c(randp(2)))==true
                 randp = randi(n,1,2);
             end
-            
+
             % Swap
             shuffled(r(randp(2)),c(randp(1))) = true;
             shuffled(r(randp(1)),c(randp(1))) = false;
-            
+
             shuffled(r(randp(1)),c(randp(2))) = true;
             shuffled(r(randp(2)),c(randp(2))) = false;
-            
+
         end
-            
+
 end
-        
-        
+
