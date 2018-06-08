@@ -21,8 +21,12 @@ function runExpt(name, id)
     addpath(exptDir);
 
     % Ingest the params struct by evaluating the config file.
+    % Ensure evaluating correct config file by CD'ing to its folder
+    rootDir = pwd;
+    cd(sprintf('%s/',exptDir))
     config = sprintf('config%d', id);
     feval(config);
+    cd(sprintf('%s/',rootDir))
 
     % Automatically log everything that comes onscreen henceforth.
     %diary(sprintf('%s/diary%d.txt', exptDir, id));

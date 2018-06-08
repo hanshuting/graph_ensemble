@@ -5,15 +5,16 @@
 %   relative_lambda: relative regularization factor (relative to the lambda
 %       that drives all coefficients to zero.
 %   densities: vector of densities to be tried.
-%   option 'variable_groups': array that marks with integers which variable
+%   option variable_groups: array that marks with integers which variable
 %       belongs to each group, so a variable is not predicted by variables of
-%       the same group
+%       the same group. Edges are only possible between variables in the same
+%       group.
 %
 % Return
 %   graph_structures: cell array, each one containing a adjacency matrix to
 %       the respective threshold
 
-function [graph_structures, numeric_graph_structure] = learn_structures_by_density(samples, relative_lambda, densities, varargin)
+function [graph_structures, numeric_graph_structure] = learn_structures_by_density(samples, relative_lambda, densities, variable_groups)
     % parse input arguments
     parser = inputParser;
 %     is_logical_matrix = @(x) ismatrix(x) && islogical(x);
@@ -21,17 +22,16 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
     parser.addRequired('samples', is_logical_matrix);
     parser.addRequired('relative_lambda', @isnumeric);
     parser.addRequired('densities', @isnumeric);
-%     parser.addParamValue('variable_groups', [], @isnumeric);
-    parser.addParameter('variable_groups', []);     % TODO: validation
-    parser.addParameter('lookback', 1, @isscalar);
-    parser.parse(samples, relative_lambda, densities, varargin{:});
+    variable_groups_chk = @(x)validateattributes(x, {'cell'}, {'vector'});
+    parser.addOptional('variable_groups', [], variable_groups_chk);
+    if nargin < 4
+        parser.parse(samples, relative_lambda, densities);
+        variable_groups = parser.Results.variable_groups;
+    else
+        parser.parse(samples, relative_lambda, densities, variable_groups);
+    end
     node_count = size(samples,2);
-    variable_groups = parser.Results.variable_groups;
-    lookback = parser.Results.lookback;
 
-    % TODO: real trigger -- currently, iscell(variable_groups) implies
-    % loopback_method \in {1,2}, and constraints are imposed on the
-    % possible structure
     if iscell(variable_groups)
         coefficients = lasso_node_by_node_group(samples, relative_lambda, 'variable_groups', variable_groups);
     else
@@ -57,20 +57,28 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
         % very well become an actual edge if greater than threshold.
         fprintf('Found %d/%d edges that had contradicting weight signs in both lassos. Zero these coefficients\n',...
             length(negative_values_indexes), length(find(multiplied_coefficients ~= 0)));
+        summed_negative_values = coefficients + coefficients';
+        summed_negative_values = summed_negative_values(negative_values_indexes);
+        fprintf('The mean of the contradicting pairs after summing is %d, with the max summed pair at %d.\n', ...
+            mean(summed_negative_values(:)), max(summed_negative_values(:)));
+        fprintf('Compare with %d, the mean of all coefficient pairs.\n', ...
+            2*mean(coefficients(coefficients ~= 0)));
         coefficients(negative_values_indexes) = 0;
     end
 
     % numeric graph structure
     numeric_graph_structure = (coefficients + coefficients');
-    % TODO: real trigger -- currently, iscell(variable_groups) implies
-    % loopback_method \in {1,2}, and constraints are imposed on the
-    % possible structure
     if iscell(variable_groups)
-        % DEBUG if lookback_method == 2
-        base_node_count = node_count / lookback;
-        edge_vector = [vecUT(numeric_graph_structure(1:base_node_count, 1:base_node_count)); ...
-            diag(numeric_graph_structure(1:base_node_count, (base_node_count + 1):(2 * base_node_count))); ...
-            vecUT(numeric_graph_structure((base_node_count + 1):(2 * base_node_count), (base_node_count + 1):(2 * base_node_count)))];
+        % Convert variable_groups to logical matrix
+        eligible_edges = zeros(node_count, node_count);
+        for ii = 1:node_count
+            eligible_edges(ii, variable_groups{ii}) = 1;
+        end
+        eligible_edges = logical(eligible_edges);
+        assert(all(all(eligible_edges == eligible_edges')), ...
+            'variable_groups must be symmetric.');
+
+        edge_vector = numeric_graph_structure(triu(eligible_edges, 1));
     else
         edge_vector = vecUT(numeric_graph_structure);
     end
@@ -78,8 +86,8 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
 
     % for each given density produce an adjacency matrix
     graph_structures = cell(1,numel(densities));
-    i = 0;
-    for density = densities
+    for ii = 1:numel(densities)
+        density = densities(ii);
         % now let's find what is the threshold we should use to get a certain density
         threshold = quantile(edge_vector, 1 - density);
         if ~threshold
@@ -89,8 +97,7 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
             threshold = 0;
         end
         % now identify the indexes of the edges that will be kept
-        i = i + 1;
-        graph_structures{i} = logical(numeric_graph_structure > threshold);
+        graph_structures{ii} = logical(numeric_graph_structure > threshold);
         fprintf('Report\n');
         fprintf('Total possible edges: %i\n', max_edge_count);
         fprintf('Density wanted: %f%%\n', density * 100);
