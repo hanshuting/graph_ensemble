@@ -45,21 +45,22 @@ for( $i = 0; $i <= $#EE; $i++){
     print "done writing write_configs_for_loopy.m\n";
     }else{
     #model is tree
-    open(my $FID, ">", "$EXPERIMENT/write_configs_for_tree.m")
-        or die "cannot open < $!";
-    print $FID "create_config_files( ...\n";
-    print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
-    print $FID "    'email_for_notifications', '".$EMAIL."', ...\n";
-    print $FID "    'yeti_user', '".$USER."', ...\n";
-    print $FID "    'structure_type', 'tree', ...\n";
-    print $FID "    'compute_true_logZ', true, ...\n";
-    print $FID "    'p_lambda_splits', 20, ...\n";
-    print $FID "    'p_lambdas_per_split', 1, ...\n";
-    print $FID "    'p_lambda_min', 1e+01, ...\n";
-    print $FID "    'p_lambda_max', 1e+07);\n";
-    close($FID);
+    die "Only loopy model is supported.\n"
+    # open(my $FID, ">", "$EXPERIMENT/write_configs_for_tree.m")
+    #     or die "cannot open < $!";
+    # print $FID "create_config_files( ...\n";
+    # print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
+    # print $FID "    'email_for_notifications', '".$EMAIL."', ...\n";
+    # print $FID "    'yeti_user', '".$USER."', ...\n";
+    # print $FID "    'structure_type', 'tree', ...\n";
+    # print $FID "    'compute_true_logZ', true, ...\n";
+    # print $FID "    'p_lambda_splits', 20, ...\n";
+    # print $FID "    'p_lambdas_per_split', 1, ...\n";
+    # print $FID "    'p_lambda_min', 1e+01, ...\n";
+    # print $FID "    'p_lambda_max', 1e+07);\n";
+    # close($FID);
 
-    print "done writing write_configs_for_tree.m\n";
+    # print "done writing write_configs_for_tree.m\n";
     }
 
     print "file: get_real_data.m\n";
