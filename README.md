@@ -21,32 +21,51 @@ The codebase is organized as following: all experiments should be under `fwMatch
 See documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti+HPC+Cluster+User+Documentation.
 
 ## Data format
-A binary spike matrix should be stored in a `.mat` file, under the variable name `data`. `data` needs to be number of frame by number of neuron. The `.mat` file should be named as `experiment_condition.mat`, for example, given the `m21_d2_vis` dataset, the “experiment” is `m21_d2_vis`, the condition could be something like `high_add_neuron`, therefore the `.mat` file should be named as `m21_d2_vis_high_add_neuron.mat`. This allows you to run multiple files that are originated from the same dataset but processed differently (high activity frame vs all frames, visual stimulations only vs all frames, no add neuron vs add neuron model, etc.) at the same time. All of the `.mat` files should be saved in the same directory, for example `~/data/[filename]` for each.
+A binary spike matrix should be stored in a `.mat` file, under the variable name `data`.
+`data` needs to be number of frame by number of neuron.
+The `.mat` file should be named as `experiment_condition.mat`, for example, given the `m21_d2_vis` dataset, the “experiment” is `m21_d2_vis`, the condition could be something like `high_add_neuron`, therefore the `.mat` file should be named as `m21_d2_vis_high_add_neuron.mat`.
+This allows you to run multiple files that are originated from the same dataset but processed differently (high activity frame vs all frames, visual stimulations only vs all frames, no add neuron vs add neuron model, etc.) at the same time.
+In the simple example below, we'll use an experiment `test` and a condition `1`.
+
+All of the `.mat` files should be saved in the same directory, for example `~/data/[filename]` for each. For all runs under the same experiment name, this is required.
 
 ## Running CRF model - An example
 1. Upload a data file `~/data/test_1.mat`
 2. Go to expt directory: `cd fwMatch-darpa/expt`
 3. Make a template dir for your experiment: `cp -r temporal_template/ test_template/`
-4. Modify `create_script.pl` accordingly:
+This is only required once per experiment name.
+
+4. Modify `create_script.pl` to your values:
 ```
 $EXPT_NAME = "test";
-$MODEL_TYPE = "loopy";
 $DATA_DIR = "~/data/";
-$USER = your UNI
-$EMAIL = your email
+$USER = "UNI";
+$EMAIL = "UNI\@columbia.edu";
 ```
-Between line 52 and 70, you can also adjust the model parameter test ranges here. See below for an explanation of the parameters.
+NOTE the backslash preceding the @ in the email address.
+
+Between line 29 and 43, you can also adjust the model parameter test ranges here.
+See below for an explanation of the parameters.
+
 5. Start an interactive job:
 ```
 qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
 ```
-6. Run create_script, passing the condition name to it. In our example:
+6. Run create_script, passing the condition name to it. For our example:
 ```
 ./create_script.pl 1
 ```
-This script will create a working directory based on the experiment template directory; the working directory will be named as `experiment_condition_loopy/` (in this case, `test_1_loopy/`). Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for loopy models), `write_config_for_tree.m` (unused configuration file template for tree models). The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`. The default settings will generate 30 files like config1.m under the directory. Finally, it brings you back to the expt/ dir.
-If you want to modify your YETI submission script settings (for example, letting YETI sending you an email when the job is done), modify `create_config_files.m` in the template directory before running `create_script.pl`. Between line 128 and 148 is where you look for YETI-related information. For Luis’s datasets, 12 hours walltime and 8G memory is enough.
-7. Go to working dir and start job:
+This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `experiment_condition_loopy/` (in this case, `test_1_loopy/`).
+Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for the model).
+The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`.
+The default settings will generate 30 files named config1.m through config30.m under the directory.
+Finally, it brings you back to the `expt/` directory.
+
+If you want to modify your YETI submission script settings (for example, letting YETI send you an email when the job is done), modify `create_config_files.m` in the template directory before running `create_script.pl`; you can safely delete the whole working directory and rerun `create_script.pl` after making edits if needed.
+Between line 128 and 158 is where you look for YETI-related information.
+For Luis’s datasets, 12 hours walltime and 8G memory is enough.
+
+7. Go to working directory and start job:
 ```
 cd test_1_loopy/
 ./start_jobs.sh
