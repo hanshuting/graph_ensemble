@@ -101,7 +101,7 @@ classdef LoopyModelCollection
                 % a single call learns structures for all densities
                 learned_structures = learn_structures_by_density(self.x_train, ...
                     self.s_lambda_sequence(i), self.density_sequence, ...
-                    'variable_groups', variable_groups);
+                    self.variable_groups);
 
                 % we will initialize structures for all combination of
                 % s_lambda, density and p_lambda now. This means we will

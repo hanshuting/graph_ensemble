@@ -134,17 +134,27 @@ function create_config_files(varargin)
     else
       fprintf(fid,'#PBS -l nodes=1:ppn=1,walltime=12:00:00,mem=8000mb\n');
     end
-    %fprintf(fid,'#PBS -m abe\n');
-    %fprintf(fid,'#PBS -M %s\n', email_for_notifications);
+   if(p_lambda_splits*s_lambda_splits*density_splits == 1)
+      fprintf(fid,'#PBS -m abe\n');
+    else
+        if(p_lambda_splits*s_lambda_splits*density_splits <= 10)
+              fprintf(fid,'#PBS -m ae\n');
+        else
+            fprintf(fid, '#PBS -m af\n');
+        end
+    end
+    fprintf(fid,'#PBS -M %s\n', email_for_notifications);
     fprintf(fid,'#PBS -V\n');
     fprintf(fid,'#PBS -t 1-%d\n',p_lambda_splits*s_lambda_splits*density_splits);
 
+    expt_dir = pwd;
+    run_dir = expt_dir(1:regexp(expt_dir, 'fwMatch-darpa/','end'));
     fprintf(fid,'\n#set output and error directories (SSCC example here)\n');
-    fprintf(fid,'#PBS -o localhost:/vega/brain/users/%s/src/fwMatch-darpa/expt/%s/yeti_logs/\n', yeti_user, experiment_name);
-    fprintf(fid,'#PBS -e localhost:/vega/brain/users/%s/src/fwMatch-darpa/expt/%s/yeti_logs/\n', yeti_user, experiment_name);
+    fprintf(fid,'#PBS -o localhost:%s/yeti_logs/\n', expt_dir);
+    fprintf(fid,'#PBS -e localhost:%s/yeti_logs/\n', expt_dir);
 
     fprintf(fid,'\n#Command below is to execute Matlab code for Job Array (Example 4) so that each part writes own output\n');
-    fprintf(fid,'cd /vega/brain/users/sh3276/src/fwMatch-darpa/\n');
+    fprintf(fid,'cd %s\n', run_dir);
     fprintf(fid,'./run.sh %s $PBS_ARRAYID > expt/%s/job_logs/matoutfile.$PBS_ARRAYID\n', experiment_name, experiment_name);
     fprintf(fid,'#End of script\n');
 
