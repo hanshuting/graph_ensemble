@@ -147,12 +147,14 @@ function create_config_files(varargin)
     fprintf(fid,'#PBS -V\n');
     fprintf(fid,'#PBS -t 1-%d\n',p_lambda_splits*s_lambda_splits*density_splits);
 
+    expt_dir = pwd;
+    run_dir = expt_dir(1:regexp(expt_dir, 'fwMatch-darpa/','end'));
     fprintf(fid,'\n#set output and error directories (SSCC example here)\n');
-    fprintf(fid,'#PBS -o localhost:%s/yeti_logs/\n', pwd);
-    fprintf(fid,'#PBS -e localhost:%s/yeti_logs/\n', pwd);
+    fprintf(fid,'#PBS -o localhost:%s/yeti_logs/\n', expt_dir);
+    fprintf(fid,'#PBS -e localhost:%s/yeti_logs/\n', expt_dir);
 
     fprintf(fid,'\n#Command below is to execute Matlab code for Job Array (Example 4) so that each part writes own output\n');
-    fprintf(fid,'cd ../../\n');
+    fprintf(fid,'cd %s\n', run_dir);
     fprintf(fid,'./run.sh %s $PBS_ARRAYID > expt/%s/job_logs/matoutfile.$PBS_ARRAYID\n', experiment_name, experiment_name);
     fprintf(fid,'#End of script\n');
 
