@@ -23,11 +23,11 @@ See documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti
 ## Data format
 A binary spike matrix should be stored in a `.mat` file, under the variable name `data`.
 `data` needs to be number of frame by number of neuron.
-The `.mat` file should be named as `experiment_condition.mat`, for example, given the `m21_d2_vis` dataset, the “experiment” is `m21_d2_vis`, the condition could be something like `high_add_neuron`, therefore the `.mat` file should be named as `m21_d2_vis_high_add_neuron.mat`.
+The `.mat` file should be named as `<experiment>_<condition>.mat`, for example, given the `m21_d2_vis` dataset, the “experiment” is `m21_d2_vis`, the condition could be something like `high_add_neuron`, therefore the `.mat` file should be named as `m21_d2_vis_high_add_neuron.mat`.
 This allows you to run multiple files that are originated from the same dataset but processed differently (high activity frame vs all frames, visual stimulations only vs all frames, no add neuron vs add neuron model, etc.) at the same time.
 In the simple example below, we'll use an experiment `test` and a condition `1`.
 
-All of the `.mat` files should be saved in the same directory, for example `~/data/[filename]` for each. For all runs under the same experiment name, this is required.
+All of the `.mat` files should be saved in the same directory, for example `~/data/<filename>` for each. For all runs under the same experiment name, this is required.
 
 ## Running CRF model - An example
 1. Upload a data file `~/data/test_1.mat`
@@ -55,7 +55,7 @@ qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
 ```
 ./create_script.pl 1
 ```
-This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `experiment_condition_loopy/` (in this case, `test_1_loopy/`).
+This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `<experiment>_<condition>_loopy/` (in this case, `test_1_loopy/`).
 Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for the model).
 The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`.
 The default settings will generate 30 files named config1.m through config30.m under the directory.
@@ -74,13 +74,14 @@ cd test_1_loopy/
 9. Once the job is done running, start an interactive job, and do the following:
 ```
 matlab -nodesktop -nosplash -nodisplay
-addpath(genpath(‘your/path/to/fwMatch-darpa’));
-cd fwMatch-darpa/expt/test_1_loopy/
+addpath(genpath(‘your/path/to/this/repo’));     % For example, '~/graph_ensemble'
+cd fwMatch-darpa/expt/test_1_loopy/     % working directory
 merge_all_models;
 save_best_model;
 ```
-Typing `best_model.theta` should display the model parameters. Take a note of `s_lambda`, `p_lambda` and density if you want to run shuffled controls of this dataset.
-A `model_collection.mat` and `test_1_loopy_best_model_full.mat` file should be saved under results/.
+Typing `best_model`, and then `time_span` should display the model parameters.
+Take a note of `s_lambda`, `p_lambda`, `density`, and `time_span` if you want to run shuffled controls of this dataset.
+A `model_collection.mat` and `<experiment>_<condition>_loopy_best_model_full.mat` file should be saved under `results/`.
 Finally, exit matlab and finish the interactive job:
 ```
 exit;
