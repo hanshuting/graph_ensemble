@@ -89,20 +89,22 @@ logout
 ```
 
 ## Running shuffled controls - An example
-1. Go to expt directory: `cd ~/src/fwMatch-darpa/expt`
-2. Make a template dir: `cp -r shuffled_m21_d2_vis_template/ shuffled_test_template/`
-3. Modify `create_shuffle_script.pl` accordingly:
+This produces 100 shuffled versions of the data file, and then trains a model on each, all using the specified parameters.
+
+1. Go to expt directory: `cd fwMatch-darpa/expt`
+2. Make a template directory for your experiment name. With our example: `cp -r shuffled_template/ shuffled_test_template/`
+3. Modify `create_shuffle_script.pl` to your values:
 ```
 $EXPT_NAME = "test";
-@EE = ("1");
-$MODEL_TYPE = "loopy";
-$DATA_DIR = "/vega/brain/users/sh3276/data/luis";
+@EE = ("1");    # condition name
+$DATA_DIR = "~/data";
 @DENSITY = (0.29);  # put your best density value here
 @S_LAMBDA = (1.8206e-04); # put your best s_lambda here
 @P_LAMBDA = (56.2341); # put your best p_lambda here
-$NSHUFFLE = 100;
+@TIME_SPAN = (2);
 ```
 4. Start an interactive job, and run: `./create_shuffle_script.pl`
+This will produce the working directory named as `shuffled_<experiment>_<condition>_loopy/` (in this case, `shuffled_test_1_loopy/`).
 After this step, you can finish the interactive job by typing logout.
 5. Go to your working directory, and run the job that generates shuffled dataset first:
 ```
@@ -119,10 +121,20 @@ matlab -nodesktop -nosplash -nodisplay
 addpath(genpath(‘~/src/fwMatch-darpa’));
 cd ~/expt/shuffled_test_1_loopy/
 merge_all_models;
-save_shuffled_model;
+save_shuffled_models;
 exit;
 ```
-Again, please change the save path in `save_shuffled_model.m` to your desired path before running it for the first time.
+
+NOTE: If you have multiple conditions to assess, each with their own best parameters, you can process all at once by taking advantage of Perl's array notation in the following way:
+```
+@EE = ("1", "2", "3");    # condition names
+@DENSITY = (0.29, 0.15, 0.2);  # put your best density values here
+@S_LAMBDA = (1.8206e-04, 0.1, 3.5e-05); # put your best s_lambda here
+@P_LAMBDA = (56.2341, 10, 1.0e2); # put your best p_lambda here
+@TIME_SPAN = (2, 3, 2);
+```
+Notice that variables prefixed by `$` must be identical for all conditions.
+Otherwise, a new script will need to be created.
 
 ## Finding core ensembles in the model
 Assuming the CRF model has been trained, use `crf_core_demo.m` with the example data and model to find the ensembles correspondong to each stimulus.
