@@ -42,10 +42,10 @@ $DATA_DIR = "~/data/";
 $USER = "UNI";
 $EMAIL = "UNI\@columbia.edu";
 ```
-NOTE the backslash preceding the @ in the email address.
+   NOTE the required backslash preceding the @ in the email address.
 
-Between line 29 and 43, you can also adjust the model parameter test ranges here.
-See below for an explanation of the parameters.
+   Between line 29 and 43, you can also adjust the model parameter test ranges here.
+   See below for an explanation of the parameters.
 
 5. Start an interactive job:
 ```
@@ -55,15 +55,15 @@ qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
 ```
 ./create_script.pl 1
 ```
-This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `<experiment>_<condition>_loopy/` (in this case, `test_1_loopy/`).
-Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for the model).
-The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`.
-The default settings will generate 30 files named config1.m through config30.m under the directory.
-Finally, it brings you back to the `expt/` directory.
+   This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `<experiment>_<condition>_loopy/` (in this case, `test_1_loopy/`).
+   Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for the model).
+   The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`.
+   The default settings will generate 30 files named config1.m through config30.m under the directory.
+   Finally, it brings you back to the `expt/` directory.
 
-If you want to modify your YETI submission script settings (for example, letting YETI send you an email when the job is done), modify `create_config_files.m` in the template directory before running `create_script.pl`; you can safely delete the whole working directory and rerun `create_script.pl` after making edits if needed.
-Between line 128 and 158 is where you look for YETI-related information.
-For Luis’s datasets, 12 hours walltime and 8G memory is enough.
+   If you want to modify your YETI submission script settings (for example, letting YETI send you an email when the job is done), modify `create_config_files.m` in the template directory before running `create_script.pl`; you can safely delete the whole working directory and rerun `create_script.pl` after making edits if needed.
+   Between line 128 and 158 is where you look for YETI-related information.  
+   For Luis’s datasets, 12 hours walltime and 8G memory is enough.
 
 7. Go to working directory and start job:
 ```
@@ -75,7 +75,7 @@ cd test_1_loopy/
 ```
 matlab -nodesktop -nosplash -nodisplay
 addpath(genpath(‘your/path/to/this/repo’));     % For example, '~/graph_ensemble'
-cd fwMatch-darpa/expt/test_1_loopy/     % working directory
+cd fwMatch-darpa/expt/test_1_loopy/             % working directory
 merge_all_models;
 save_best_model;
 ```
