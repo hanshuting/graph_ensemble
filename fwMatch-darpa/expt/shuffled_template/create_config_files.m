@@ -2,42 +2,44 @@ function create_config_files(varargin)
     % Remove old config files
     system('rm -f config*.m');
     system('rm -f yeti_config.sh');
-    
+
     % guarantees folders exist
     system('mkdir -p job_logs');
     system('mkdir -p results');
     system('mkdir -p yeti_logs');
 
     parser = inputParser;
-    
-    parser.addParamValue('training_test_split', .8, @isscalar); 
-    parser.addParamValue('BCFW_max_iterations', 75000, @isscalar); 
-    parser.addParamValue('structure_type', 'loopy', @ischar); 
-    parser.addParamValue('experiment_name', 'spikes_opto_on', @ischar); 
-    parser.addParamValue('email_for_notifications', 'sh3276@columbia.edu', @ischar); 
-    parser.addParamValue('yeti_user', 'sh3276', @ischar); 
-    parser.addParamValue('compute_true_logZ', false, @islogical); 
-    parser.addParamValue('reweight_denominator', 'max_degree'); 
-    
-    parser.addParamValue('s_lambda_splits', 1, @isscalar); 
-    parser.addParamValue('s_lambdas_per_split', 1, @isscalar); 
+
+    parser.addParamValue('training_test_split', .8, @isscalar);
+    parser.addParamValue('BCFW_max_iterations', 75000, @isscalar);
+    parser.addParamValue('structure_type', 'loopy', @ischar);
+    parser.addParamValue('experiment_name', 'spikes_opto_on', @ischar);
+    parser.addParamValue('email_for_notifications', 'jds2270@columbia.edu', @ischar);
+    parser.addParamValue('yeti_user', 'jds2270', @ischar);
+    parser.addParamValue('compute_true_logZ', false, @islogical);
+    parser.addParamValue('reweight_denominator', 'max_degree');
+
+    parser.addParamValue('s_lambda_splits', 1, @isscalar);
+    parser.addParamValue('s_lambdas_per_split', 1, @isscalar);
     parser.addParamValue('s_lambda_min', 1e-01, @isscalar);
     parser.addParamValue('s_lambda_max', 1e-01, @isscalar);
-    
-    parser.addParamValue('density_splits', 1, @isscalar); 
-    parser.addParamValue('densities_per_split', 1, @isscalar); 
+
+    parser.addParamValue('density_splits', 1, @isscalar);
+    parser.addParamValue('densities_per_split', 1, @isscalar);
     parser.addParamValue('density_min', 0.05, @isscalar);
     parser.addParamValue('density_max', 0.05, @isscalar);
-    
-    parser.addParamValue('p_lambda_splits', 1, @isscalar); 
-    parser.addParamValue('p_lambdas_per_split', 1, @isscalar); 
+
+    parser.addParamValue('p_lambda_splits', 1, @isscalar);
+    parser.addParamValue('p_lambdas_per_split', 1, @isscalar);
     parser.addParamValue('p_lambda_min', 1e+01, @isscalar);
     parser.addParamValue('p_lambda_max', 1e+01, @isscalar);
+
+    parser.addParameter('time_span', 1, @isscalar);
 
     parser.addParamValue('num_shuffle', 100, @isscalar);
 
     parser.parse(varargin{:})
-    
+
     training_test_split = parser.Results.training_test_split;
     BCFW_max_iterations = parser.Results.BCFW_max_iterations;
     structure_type = parser.Results.structure_type;
@@ -47,30 +49,32 @@ function create_config_files(varargin)
     compute_true_logZ = parser.Results.compute_true_logZ;
     if (compute_true_logZ); compute_true_logZ_str='true'; else;  compute_true_logZ_str='false'; end
     reweight_denominator = parser.Results.reweight_denominator;
-    
+
     s_lambda_splits = parser.Results.s_lambda_splits;
     s_lambdas_per_split = parser.Results.s_lambdas_per_split;
     s_lambda_min = parser.Results.s_lambda_min;
     s_lambda_max = parser.Results.s_lambda_max;
-    
+
     density_splits = parser.Results.density_splits;
     densities_per_split = parser.Results.densities_per_split;
     density_min = parser.Results.density_min;
     density_max = parser.Results.density_max;
-    
+
     p_lambda_splits = parser.Results.p_lambda_splits;
     p_lambdas_per_split = parser.Results.p_lambdas_per_split;
     p_lambda_min = parser.Results.p_lambda_min;
     p_lambda_max = parser.Results.p_lambda_max;
-    
+
+    time_span = parser.Results.time_span;
+
     num_shuffle = parser.Results.num_shuffle;
 
      display('CHECK INFO BELOW');
     display(sprintf('Writing config files for yeti user %s', yeti_user));
     display(sprintf('Experiment name: %s', experiment_name));
     display(sprintf('Total jobs to be submitted: %d', num_shuffle));
-    
-    % Write config files    
+
+    % Write config files
     config_file_count = 0;
     for i=1:num_shuffle
         config_file_count = config_file_count + 1;
@@ -84,9 +88,9 @@ function create_config_files(varargin)
         else
             fprintf(fid,'params.reweight_denominator = %d;\n', reweight_denominator);
         end
-        
+
         % get real data (params.data)
-        fprintf(fid,'[params.data, params.variable_names] = get_real_data(%d);\n',config_file_count);
+        fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data(%d);\n',config_file_count);
 
         if strcmp(structure_type, 'loopy')
             % slambda
@@ -99,6 +103,9 @@ function create_config_files(varargin)
             fprintf(fid,'params.density_count = %d;\n', densities_per_split);
             fprintf(fid,'params.density_min = densities(%d);\n', 1);
             fprintf(fid,'params.density_max = densities(%d);\n', densities_per_split);
+
+            % lookback time span
+            fprintf(fid,'params.time_span = %d;\n', time_span);
         end
 
         % plambda
@@ -106,7 +113,7 @@ function create_config_files(varargin)
         fprintf(fid,'params.p_lambda_count = %d;\n', p_lambdas_per_split);
         fprintf(fid,'params.p_lambda_min = p_lambdas(%d);\n', 1);
         fprintf(fid,'params.p_lambda_max = p_lambdas(%d);\n', p_lambdas_per_split);
-                
+
         fclose(fid);
     end
 
@@ -125,17 +132,19 @@ function create_config_files(varargin)
     else
       fprintf(fid,'#PBS -l nodes=1:ppn=1,walltime=2:00:00,mem=8000mb\n');
     end
-    %fprintf(fid,'#PBS -m abe\n');
-    %fprintf(fid,'#PBS -M %s\n', email_for_notifications);
+    fprintf(fid,'#PBS -m af\n');
+    fprintf(fid,'#PBS -M %s\n', email_for_notifications);
     fprintf(fid,'#PBS -V\n');
     fprintf(fid,'#PBS -t 1-%d\n',num_shuffle);
 
+    expt_dir = pwd;
+    run_dir = expt_dir(1:regexp(expt_dir, 'fwMatch-darpa/','end'));
     fprintf(fid,'\n#set output and error directories (SSCC example here)\n');
-    fprintf(fid,'#PBS -o localhost:/vega/brain/users/%s/src/fwMatch-darpa/expt/%s/yeti_logs/\n', yeti_user, experiment_name);
-    fprintf(fid,'#PBS -e localhost:/vega/brain/users/%s/src/fwMatch-darpa/expt/%s/yeti_logs/\n', yeti_user, experiment_name);
+    fprintf(fid,'#PBS -o localhost:%s/yeti_logs/\n', expt_dir);
+    fprintf(fid,'#PBS -e localhost:%s/yeti_logs/\n', expt_dir);
 
     fprintf(fid,'\n#Command below is to execute Matlab code for Job Array (Example 4) so that each part writes own output\n');
-    fprintf(fid,'cd /vega/brain/users/sh3276/src/fwMatch-darpa/\n');
+    fprintf(fid,'cd %s\n', run_dir);
     fprintf(fid,'./run.sh %s $PBS_ARRAYID > expt/%s/job_logs/matoutfile.$PBS_ARRAYID\n', experiment_name, experiment_name);
     fprintf(fid,'#End of script\n');
 
