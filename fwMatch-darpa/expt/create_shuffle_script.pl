@@ -1,11 +1,12 @@
 #!/usr/bin/perl
 use Cwd;
-$USER = "UNI";
+$USER = "jds2270";
+$EMAIL = "jds2270\@columbia.edu";
 $SOURCE_DIR = "~/graph_ensemble/";
 $EXPT_NAME = "temporal";
 @EE = ("high_add_neuron");
 $MODEL_TYPE = "loopy";
-$DATA_DIR = "~/data";
+$DATA_DIR = "~/data/";
 @DENSITY = (0.27);
 @S_LAMBDA = (0.0549);
 @P_LAMBDA = (316.2278);
@@ -22,7 +23,7 @@ for( $i = 0; $i <= $#EE; $i++){
     ($status, $result) = system($scommand);
 
     $DATA_FILE = sprintf("%s_%s",$EXPT_NAME,$EE[$i]);
-    $SAVE_DIR = sprintf("%s/shuffled/%s",$DATA_DIR,$EXPERIMENT);
+    $SAVE_DIR = sprintf("%sshuffled/%s",$DATA_DIR,$EXPERIMENT);
     $SAVE_NAME = sprintf("shuffled_%s_%s", $EXPT_NAME, $EE[$i]);
 
     # make shuffled data directory
@@ -60,12 +61,12 @@ for( $i = 0; $i <= $#EE; $i++){
     print "file: gn_shuff_data.m\n";
     open(my $FID, ">", "$EXPERIMENT/gn_shuff_data.m")
         or die "cannot open < $!";
-    print $FID "if exist('".$DATA_DIR."/".$SAVE_NAME."')~=7\n";
-    print $FID "    mkdir('".$DATA_DIR."/".$SAVE_NAME."');\n";
+    print $FID "if exist('".$DATA_DIR."".$SAVE_NAME."')~=7\n";
+    print $FID "    mkdir('".$DATA_DIR."".$SAVE_NAME."');\n";
     print $FID "end\n";
     print $FID "addpath(genpath('".$SOURCE_DIR."'));\n";
-    print $FID "load(['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
-    print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."/".$DATA_FILE.".mat']);\n";
+    print $FID "load(['".$DATA_DIR."".$DATA_FILE.".mat']);\n";
+    print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."".$DATA_FILE.".mat']);\n";
     print $FID "if exist('stimuli', 'var') ~= 1\n";
     print $FID "    stimuli = [];\n";
     print $FID "end\n";
@@ -87,7 +88,7 @@ for( $i = 0; $i <= $#EE; $i++){
 	or die "cannot open < $!";
     print $FID "create_config_files( ...\n";
     print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
-    print $FID "    'email_for_notifications', '".$USER."\@columbia.edu', ...\n";
+    print $FID "    'email_for_notifications', '".$EMAIL."', ...\n";
     print $FID "    'yeti_user', '".$USER."', ...\n";
     print $FID "    'compute_true_logZ', false, ...\n";
     print $FID "    'reweight_denominator', 'mean_degree', ...\n";
@@ -108,22 +109,23 @@ for( $i = 0; $i <= $#EE; $i++){
     close($FID);
     print "done writing $EXPERIMENT/write_configs_for_loopy.m\n";
     }else{
-	#model is tree
-    open(my $FID, ">", "$EXPERIMENT/write_configs_for_tree.m")
-	or die "cannot open < $!";
-    print $FID "create_config_files( ...\n";
-    print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
-    print $FID "    'email_for_notifications', '".$USER."\@columbia.edu', ...\n";
-    print $FID "    'yeti_user', '".$USER."', ...\n";
-    print $FID "    'structure_type', 'tree', ...\n";
-    print $FID "    'compute_true_logZ', true, ...\n";
-    print $FID "    'p_lambda_splits', 1, ...\n";
-    print $FID "    'p_lambdas_per_split', 1, ...\n";
-    print $FID "    'p_lambda_min', ".$P_LAMBDA.", ...\n";
-    print $FID "    'p_lambda_max', ".$P_LAMBDA.");\n";
-    close($FID);
+    #model is tree
+    die "Only loopy model is supported.\n"
+    # open(my $FID, ">", "$EXPERIMENT/write_configs_for_tree.m")
+    # or die "cannot open < $!";
+    # print $FID "create_config_files( ...\n";
+    # print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
+    # print $FID "    'email_for_notifications', '".$EMAIL."', ...\n";
+    # print $FID "    'yeti_user', '".$USER."', ...\n";
+    # print $FID "    'structure_type', 'tree', ...\n";
+    # print $FID "    'compute_true_logZ', true, ...\n";
+    # print $FID "    'p_lambda_splits', 1, ...\n";
+    # print $FID "    'p_lambdas_per_split', 1, ...\n";
+    # print $FID "    'p_lambda_min', ".$P_LAMBDA.", ...\n";
+    # print $FID "    'p_lambda_max', ".$P_LAMBDA.");\n";
+    # close($FID);
 
-    print "done writing $EXPERIMENT/write_configs_for_tree.m\n";
+    # print "done writing $EXPERIMENT/write_configs_for_tree.m\n";
     }
 
     # write yeti script

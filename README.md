@@ -89,23 +89,32 @@ logout
 ```
 
 ## Running shuffled controls - An example
-This produces 100 shuffled versions of the data file, and then trains a model on each, all using the specified parameters.
+This produces 100 shuffled versions of the data file, and then trains a model on each using a single set of specified parameters.
 
 1. Go to expt directory: `cd fwMatch-darpa/expt`
-2. Make a template directory for your experiment name. With our example: `cp -r shuffled_template/ shuffled_test_template/`
+2. Make a template directory for your experiment name. With our example:
+```
+cp -r shuffled_template/ shuffled_test_template/
+```
 3. Modify `create_shuffle_script.pl` to your values:
 ```
+$USER = "UNI";
+$EMAIL = "UNI\@columbia.edu";
+$SOURCE_DIR = "~/graph_ensemble/";
 $EXPT_NAME = "test";
-@EE = ("1");    # condition name
-$DATA_DIR = "~/data";
-@DENSITY = (0.29);  # put your best density value here
-@S_LAMBDA = (1.8206e-04); # put your best s_lambda here
-@P_LAMBDA = (56.2341); # put your best p_lambda here
-@TIME_SPAN = (2);
+@EE = ("1");                        # condition name
+$DATA_DIR = "~/data/";
+@DENSITY = (0.29);                  # put your best density value here
+@S_LAMBDA = (1.8206e-04);           # put your best s_lambda here
+@P_LAMBDA = (56.2341);              # put your best p_lambda here
+@TIME_SPAN = (2);                   # put your best time_span here
 ```
+   NOTE the required backslash preceding the @ in the email address.
+
 4. Start an interactive job, and run: `./create_shuffle_script.pl`
 This will produce the working directory named as `shuffled_<experiment>_<condition>_loopy/` (in this case, `shuffled_test_1_loopy/`).
 After this step, you can finish the interactive job by typing logout.
+
 5. Go to your working directory, and run the job that generates shuffled dataset first:
 ```
 cd shuffled_test_1_loopy/
