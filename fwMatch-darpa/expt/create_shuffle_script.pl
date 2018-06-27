@@ -134,7 +134,7 @@ for( $i = 0; $i <= $#EE; $i++){
     open(my $FID, ">", "$EXPERIMENT/shuffle_yeti_config.sh")
         or die "cannot open < $!";
     print $FID "#!/bin/sh\n";
-    print $FID "#yeti_config.sh\n";
+    print $FID "#shuffle_yeti_config.sh\n";
     print $FID "#PBS -N ".$EXPERIMENT."\n";
     print $FID "#PBS -W group_list=yetibrain\n";
     print $FID "#PBS -l nodes=1:ppn=1,walltime=02:00:00,mem=4000mb\n";

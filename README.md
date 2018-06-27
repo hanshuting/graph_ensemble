@@ -120,29 +120,44 @@ After this step, you can finish the interactive job by typing logout.
 cd shuffled_test_1_loopy/
 ./shuffle_start_job.sh
 ```
-6. Monitor this job (usually it’s done within an hour), once it’s finished, go to working directory, and start running CRF models on shuffled data:
+
+   This produces 100 shuffled versions of the dataset.
+   Where this occurs is defined by `create_shuffle_script.pl`, mostly the section that writes `gn_shuff_data.m` as this is the matlab script that does the actual shuffling and saving.
+   The location they are saved is defined by `<data dir>/shuffled/shuffled_<experiment>_<condition>_loopy/`, so in this example it would be `~/data/shuffled/shuffled_test_1_loopy/`.  
+    Settings for the yeti scheduler can be found in the section that writes `shuffle_yeti_config.sh`.
+
+    NOTE: generated files will overwrite any existing files with identical names.
+
+6. Monitor this job (usually it’s done within an hour).
+Once it’s finished, go to working directory, and start training CRF models on the shuffled datasets:
 ```
 ./start_job.sh
 ```
 7. When all jobs are done, start an interactive job, and start matlab:
 ```
 matlab -nodesktop -nosplash -nodisplay
-addpath(genpath(‘~/src/fwMatch-darpa’));
-cd ~/expt/shuffled_test_1_loopy/
+addpath(genpath(‘your/path/to/this/repo’));              % For example, '~/graph_ensemble'
+cd fwMatch-darpa/expt/shuffled_test_1_loopy/             % working directory
 merge_all_models;
 save_shuffled_models;
 exit;
 ```
 
-NOTE: If you have multiple conditions to assess, each with their own best parameters, you can process all at once by taking advantage of Perl's array notation in the following way:
+   This will compile the trained models into two files: `model_collection.mat` and `shuffled_<experiment>_<condition>_loopy_fulldata.mat`, both in the `results/` folder in the working directory.
+
+NOTE: You can simultaneously process multiple conditions, each with their own best parameters, by taking advantage of Perl's array notation when editing `create_shuffle_script.pl` in step 3.
+Each condition will have its own working directory, config files, etc., as normal.
+Here is an example for three conditions named "1", "2", and "3":
 ```
-@EE = ("1", "2", "3");    # condition names
-@DENSITY = (0.29, 0.15, 0.2);  # put your best density values here
-@S_LAMBDA = (1.8206e-04, 0.1, 3.5e-05); # put your best s_lambda here
-@P_LAMBDA = (56.2341, 10, 1.0e2); # put your best p_lambda here
-@TIME_SPAN = (2, 3, 2);
+@EE = ("1", "2", "3");                  # condition names
+@DENSITY = (0.29, 0.15, 0.2);           # put your best density values here
+@S_LAMBDA = (1.8206e-04, 0.1, 3.5e-05); # put your best s_lambdas here
+@P_LAMBDA = (56.2341, 10, 1.0e2);       # put your best p_lambdas here
+@TIME_SPAN = (2, 3, 2);                 # put your best time_spans here
 ```
-Notice that variables prefixed by `$` must be identical for all conditions.
+
+Parameters should be ordered by condition consistently for each array variable assignment.  
+Variables prefixed by `$` must be identical for all conditions, unlike `@` prefixed array variables.
 Otherwise, a new script will need to be created.
 
 ## Finding core ensembles in the model
