@@ -42,10 +42,10 @@ $DATA_DIR = "~/data/";
 $USER = "UNI";
 $EMAIL = "UNI\@columbia.edu";
 ```
-NOTE the backslash preceding the @ in the email address.
+   NOTE the required backslash preceding the @ in the email address.
 
-Between line 29 and 43, you can also adjust the model parameter test ranges here.
-See below for an explanation of the parameters.
+   Between line 29 and 43, you can also adjust the model parameter test ranges here.
+   See below for an explanation of the parameters.
 
 5. Start an interactive job:
 ```
@@ -55,15 +55,15 @@ qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
 ```
 ./create_script.pl 1
 ```
-This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `<experiment>_<condition>_loopy/` (in this case, `test_1_loopy/`).
-Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for the model).
-The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`.
-The default settings will generate 30 files named config1.m through config30.m under the directory.
-Finally, it brings you back to the `expt/` directory.
+   This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `<experiment>_<condition>_loopy/` (in this case, `test_1_loopy/`).
+   Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for the model).
+   The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`.
+   The default settings will generate 30 files named config1.m through config30.m under the directory.
+   Finally, it brings you back to the `expt/` directory.
 
-If you want to modify your YETI submission script settings (for example, letting YETI send you an email when the job is done), modify `create_config_files.m` in the template directory before running `create_script.pl`; you can safely delete the whole working directory and rerun `create_script.pl` after making edits if needed.
-Between line 128 and 158 is where you look for YETI-related information.
-For Luis’s datasets, 12 hours walltime and 8G memory is enough.
+   If you want to modify your YETI submission script settings (for example, letting YETI send you an email when the job is done), modify `create_config_files.m` in the template directory before running `create_script.pl`; you can safely delete the whole working directory and rerun `create_script.pl` after making edits if needed.
+   Between line 128 and 158 is where you look for YETI-related information.  
+   For Luis’s datasets, 12 hours walltime and 8G memory is enough.
 
 7. Go to working directory and start job:
 ```
@@ -75,7 +75,7 @@ cd test_1_loopy/
 ```
 matlab -nodesktop -nosplash -nodisplay
 addpath(genpath(‘your/path/to/this/repo’));     % For example, '~/graph_ensemble'
-cd fwMatch-darpa/expt/test_1_loopy/     % working directory
+cd fwMatch-darpa/expt/test_1_loopy/             % working directory
 merge_all_models;
 save_best_model;
 ```
@@ -89,40 +89,76 @@ logout
 ```
 
 ## Running shuffled controls - An example
-1. Go to expt directory: `cd ~/src/fwMatch-darpa/expt`
-2. Make a template dir: `cp -r shuffled_m21_d2_vis_template/ shuffled_test_template/`
-3. Modify `create_shuffle_script.pl` accordingly:
+This produces 100 shuffled versions of the data file, and then trains a model on each using a single set of specified parameters.
+
+1. Go to expt directory: `cd fwMatch-darpa/expt`
+2. Make a template directory for your experiment name. With our example:
 ```
+cp -r shuffled_template/ shuffled_test_template/
+```
+3. Modify `create_shuffle_script.pl` to your values:
+```
+$USER = "UNI";
+$EMAIL = "UNI\@columbia.edu";
+$SOURCE_DIR = "~/graph_ensemble/";
 $EXPT_NAME = "test";
-@EE = ("1");
-$MODEL_TYPE = "loopy";
-$DATA_DIR = "/vega/brain/users/sh3276/data/luis";
-@DENSITY = (0.29);  # put your best density value here
-@S_LAMBDA = (1.8206e-04); # put your best s_lambda here
-@P_LAMBDA = (56.2341); # put your best p_lambda here
-$NSHUFFLE = 100;
+@EE = ("1");                        # condition name
+$DATA_DIR = "~/data/";
+@DENSITY = (0.29);                  # put your best density value here
+@S_LAMBDA = (1.8206e-04);           # put your best s_lambda here
+@P_LAMBDA = (56.2341);              # put your best p_lambda here
+@TIME_SPAN = (2);                   # put your best time_span here
 ```
+   NOTE the required backslash preceding the @ in the email address.
+
 4. Start an interactive job, and run: `./create_shuffle_script.pl`
+This will produce the working directory named as `shuffled_<experiment>_<condition>_loopy/` (in this case, `shuffled_test_1_loopy/`).
 After this step, you can finish the interactive job by typing logout.
+
 5. Go to your working directory, and run the job that generates shuffled dataset first:
 ```
 cd shuffled_test_1_loopy/
 ./shuffle_start_job.sh
 ```
-6. Monitor this job (usually it’s done within an hour), once it’s finished, go to working directory, and start running CRF models on shuffled data:
+
+   This produces 100 shuffled versions of the dataset.
+   Where this occurs is defined by `create_shuffle_script.pl`, mostly the section that writes `gn_shuff_data.m` as this is the matlab script that does the actual shuffling and saving.
+   The location they are saved is defined by `<data dir>/shuffled/shuffled_<experiment>_<condition>_loopy/`, so in this example it would be `~/data/shuffled/shuffled_test_1_loopy/`.  
+    Settings for the yeti scheduler can be found in the section that writes `shuffle_yeti_config.sh`.
+
+    NOTE: generated files will overwrite any existing files with identical names.
+
+6. Monitor this job (usually it’s done within an hour).
+Once it’s finished, go to working directory, and start training CRF models on the shuffled datasets:
 ```
 ./start_job.sh
 ```
 7. When all jobs are done, start an interactive job, and start matlab:
 ```
 matlab -nodesktop -nosplash -nodisplay
-addpath(genpath(‘~/src/fwMatch-darpa’));
-cd ~/expt/shuffled_test_1_loopy/
+addpath(genpath(‘your/path/to/this/repo’));              % For example, '~/graph_ensemble'
+cd fwMatch-darpa/expt/shuffled_test_1_loopy/             % working directory
 merge_all_models;
-save_shuffled_model;
+save_shuffled_models;
 exit;
 ```
-Again, please change the save path in `save_shuffled_model.m` to your desired path before running it for the first time.
+
+   This will compile the trained models into two files: `model_collection.mat` and `shuffled_<experiment>_<condition>_loopy_fulldata.mat`, both in the `results/` folder in the working directory.
+
+NOTE: You can simultaneously process multiple conditions, each with their own best parameters, by taking advantage of Perl's array notation when editing `create_shuffle_script.pl` in step 3.
+Each condition will have its own working directory, config files, etc., as normal.
+Here is an example for three conditions named "1", "2", and "3":
+```
+@EE = ("1", "2", "3");                  # condition names
+@DENSITY = (0.29, 0.15, 0.2);           # put your best density values here
+@S_LAMBDA = (1.8206e-04, 0.1, 3.5e-05); # put your best s_lambdas here
+@P_LAMBDA = (56.2341, 10, 1.0e2);       # put your best p_lambdas here
+@TIME_SPAN = (2, 3, 2);                 # put your best time_spans here
+```
+
+Parameters should be ordered by condition consistently for each array variable assignment.  
+Variables prefixed by `$` must be identical for all conditions, unlike `@` prefixed array variables.
+Otherwise, a new script will need to be created.
 
 ## Finding core ensembles in the model
 Assuming the CRF model has been trained, use `crf_core_demo.m` with the example data and model to find the ensembles correspondong to each stimulus.
