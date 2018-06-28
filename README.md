@@ -14,8 +14,11 @@ This project applies conditional random field models in _in vivo_ two-photon cal
 This code is intended for parallel processings on linux servers. The following instructions are designed for Columbia Yeti HPC usage.
 
 ## CRF codebase
-The original version from Kui Tang in Jebara’s group is at https://github.com/kuitang/fwmatch-public. This repo has a modified version. After downloading the codebase to your yeti directory, compile the dependencies as described in the readme file.
-The codebase is organized as following: all experiments should be under `fwMatch-darpa/expt/` directory; `scripts/` has my matlab code to process the results; `fwMatch-darpa/src/` has all source code needed to run the model; `fwMatch-darpa/thirdparty/` has some third-party packages needed for the model.
+The original version from Kui Tang in Jebara’s group is at https://github.com/kuitang/fwmatch-public.
+This repo has a modified version.
+After downloading the codebase to your yeti directory, compile the dependencies as described in `fwMatch-darpa/README.md`.
+
+The codebase is organized as following: all experiments should be under `fwMatch-darpa/expt/` directory; `scripts/` has matlab code to process the results; `fwMatch-darpa/src/` has all source code needed to run the model; `fwMatch-darpa/thirdparty/` has some third-party packages needed for the model.
 
 ## Working with Yeti
 See documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti+HPC+Cluster+User+Documentation.

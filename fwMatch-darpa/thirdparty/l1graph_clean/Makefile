@@ -18,6 +18,7 @@ all: gibbs_mex.$(MEX_EXT)
 
 gibbs_mex.$(MEX_EXT): gibbs_mex.cpp
 	mex -largeArrayDims -v -O $< -output $@
+#	mex -largeArrayDims -v CXXFLAGS="\$$CFLAGS -O3 -fPIC" -O $< -output $@
 
 clean:
 	rm -f *.$(MEX_EXT)
