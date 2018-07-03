@@ -1,104 +1,68 @@
-function [results] = temporal_crf_analysis(params)
+function [results] = find_temporal_crf_core(best_model,shuffle_model,data,stimuli, Coord_active)
 % TEMPORAL_CRF_ANALYSIS Find multi-timeframe neuron ensembles with CRF models.
 %
 % Input
-%   Params: A struct that contains the following fields
-%       data_fname: Filepath to the data .mat file; expect variable named
-%           'data', `stimuli`, `Coord_active`.
-%       best_fname: Filepath to the trained CRF model to analyze; expect
-%           variable named 'best_model'.
-%       shuffle_fname: Filepath to the shuffled dataset CRFs; expect
-%           variable named 'shuffle_model'.
-%       time_span: Optional. Used if no best_model.time_span does not
-%           exist.
-%       num_controls: Optional. Number of random ensembles used to generate
-%           control statistics for each stimulus.
-if nargin < 1
-    params.time_span = 2;
-    params.data_fname = "/Users/jonathanshor/GitHub/graph_ensemble/data/alejandro/" + ...
-        "highActivityAnalysis.mat";
-    params.best_fname = "/Users/jonathanshor/GitHub/graph_ensemble/data/alejandro/" + ...
-        "alejandro_highActivityData-thresh-" + int2str(params.time_span) + "_loopy/results" +  ...
-        "/alejandro_highActivityData-thresh-" + int2str(params.time_span) + "_loopy_best_model_full.mat";
-%         "alejandro_highActivityData-stim_loopy/results-k" + int2str(params.time_span) + ...
-    params.shuffle_fname = "/Users/jonathanshor/GitHub/graph_ensemble/data/alejandro/" + ...
-        "shuffled_alejandro_highActivityData-thresh-" + int2str(params.time_span) + "_loopy/results/" + ...
-        "/shuffled_alejandro_highActivityData-thresh-" + int2str(params.time_span) + "_loopy_fulldata.mat";
-%     params.data_fname = "/Users/jonathanshor/GitHub/graph_ensemble/data/alejandro/" + ...
-%         "fullAnalysis.mat";
-%     params.best_fname = "/Users/jonathanshor/GitHub/graph_ensemble/data/alejandro/" + ...
-%         "alejandro_fullData-thresh-" + int2str(params.time_span) + "_loopy/results" +  ...
-%         "/alejandro_fullData-thresh-" + int2str(params.time_span) + "_loopy_best_model_full.mat";
-% %         "alejandro_highActivityData-stim_loopy/results-k" + int2str(params.time_span) + ...
-%     params.shuffle_fname = "/Users/jonathanshor/GitHub/graph_ensemble/data/alejandro/" + ...
-%         "shuffled_alejandro_fullData-thresh-" + int2str(params.time_span) + "_loopy/results/" + ...
-%         "/shuffled_alejandro_fullData-thresh-" + int2str(params.time_span) + "_loopy_fulldata.mat";
-end
-    %% load data, pre-process
-    % load data
-    load(params.data_fname);
-    best_model = load(params.best_fname);
-    shuffle_model = load(params.shuffle_fname);
+%   best_model: Trained CRF model to analyze.
+%   shuffle_model: Shuffled dataset CRFs.
+%   data: Expected to be a timeframes by neurons binary matrix.
+%   stimuli: Expected to be a timeframes by stimuli binary matrix.
+%   Coord_active: Optional. 2D spatial coordinates to display each neuron.
+%       Neurons by coordinates.
+    if nargin < 5
+        Coord_active = [];
+        num_subplots = 1;
+    else
+        num_subplots = 2;
+    end
+    % Set number of random ensembles used to generate control statistics for
+    % each stimulus
+    num_controls = 100;
 
-    % extract some parameters
-    if exist('params.num_controls', 'var') == 1
-        num_controls = params.num_controls;
-    else
-        num_controls = 100;
+    [num_frame, num_stim] = size(stimuli);
+    if all(all(data(:, end-num_stim+1:end) == stimuli))
+        warning('Last %d neurons in data perfectly match stimuli. Be sure data contains only neuron recordings.', ...
+                num_stim)
     end
-    if exist('stimuli', 'var') ~= 1
-        stimuli = zeros(length(vis_stim), length(unique(setdiff(vis_stim,0))));
-        for ii = 1:size(stimuli, 2)
-            stimuli(:, ii) = double(vis_stim == ii);
-        end
-        assert(all(all(data(:, end-size(stimuli,2)+1:end) == stimuli)))
-        data = data(:, 1:end-size(stimuli,2));
-    end
-    num_stim = size(stimuli, 2);
     num_node = size(best_model.graph,1);
-    num_orig_node = size(Coord_active, 1);
-    num_frame = size(stimuli, 1);
-    if exist('best_model.time_span', 'var') == 1
-        time_span = best_model.time_span;
-    else
-        time_span = params.time_span;
-    end
+    num_orig_neuron = size(data, 1);
+    time_span = best_model.time_span;
 
     % expand for additional time_span
     if time_span > 1
         orig_data = data;
-        data = add_lookback_nodes(orig_data, orig_data, time_span);
+        data = add_lookback_nodes(orig_data, time_span);
         Coord_active = repmat(Coord_active, time_span, 1);
     end
     data = [data stimuli];
     assert(size(data,1) == num_frame, "data frames do not match stimuli frames")
     assert(size(data,2) == num_node, "data nodes do not match best_model.graph")
 
-    % calculate edge potential sum
+    % Ensure graph is symmetric
     if nnz(best_model.graph - logical(best_model.edge_pot)) ~= 0
         [~, best_name] = fileparts(params.best_fname);
         fprintf("Forcing graph equal to logical(edge_pot) for best_model, %s.\n", ...
             best_name);
         best_model.graph = logical(best_model.edge_pot);
     end
+
+    % calculate edge potential sum
     best_model.ep_on = getOnEdgePot(best_model.graph,best_model.G);
-    % getOnEdgePot returns just upper triangle - need to restore symmetry
+    % getOnEdgePot returns just upper triangle - copy to lower triangle to make symmetric
     best_model.ep_on = best_model.ep_on + best_model.ep_on';
-    % In order to sum potential  for ALL edges each node is party to
+    % Sum potential for ALL edges each node is party to
     epsum = sum(best_model.ep_on,2);
     epsum(sum(best_model.graph,2)==0) = NaN;
 
     % shuffled models
     for ii = 1:length(shuffle_model.graphs)
         if nnz(shuffle_model.graphs{ii} - logical(shuffle_model.edge_pot{ii})) ~= 0
-            [~, shuffle_name] = fileparts(params.shuffle_fname);
-            fprintf("Forcing graph equal to logical(edge_pot) for shuffle_model %d, %s.\n", ...
-                ii, shuffle_name);
+            fprintf("Forcing graph equal to logical(edge_pot) for shuffle_model %d.\n", ii);
             shuffle_model.graphs{ii} = logical(shuffle_model.edge_pot{ii});
         end
         shuffle_model.ep_on{ii} = getOnEdgePot(shuffle_model.graphs{ii},...
             shuffle_model.G{ii});
         shuffle_model.ep_on{ii} = shuffle_model.ep_on{ii} + shuffle_model.ep_on{ii}';
+        % getOnEdgePot returns just upper triangle - copy to lower triangle to make symmetric
         shuffle_model.epsum{ii} = sum(shuffle_model.ep_on{ii},2);
         shuffle_model.epsum{ii}(sum(shuffle_model.graphs{ii},2)==0) = NaN;
     end
@@ -170,13 +134,12 @@ end
     aucmi = 0;
     aucma = 1;
     f = figure; set(gcf,'color','w')
-    [~, data_title] = fileparts(params.data_fname);
-    f.Name = data_title + " K=" + time_span;
-    color_by_offset = @(x) floor((x-1)/num_orig_node) / max(1, time_span-1);
+    f.Name = "K=" + time_span;
+    color_by_offset = @(x) floor((x-1)/num_orig_neuron) / max(1, time_span-1);
     for ii = 1:num_stim
 
         % AUC - node strength plot
-        cur_axes = subplot(2,num_stim,ii); hold on
+        cur_axes = subplot(num_subplots,num_stim,ii); hold on
         colormap(cur_axes, autumn)
         scatter(epsum,auc(:,ii),nodesz,0.5*[1 1 1],'filled')
         % Stimuli nodes blue
@@ -200,8 +163,10 @@ end
         title(['core #' num2str(ii)])
 
         % plot coordinates
-        subplot(2,num_stim,ii+num_stim);
-        plotGraphHighlight(Coord_active,mod(core_crf{ii}-1, num_orig_node)+1,'red',1 / time_span)
+        if num_subplots > 1
+            subplot(num_subplots,num_stim,ii+num_stim);
+            plotGraphHighlight(Coord_active,mod(core_crf{ii}-1, num_orig_neuron)+1,'red',1 / time_span)
+        end
 
     end
 end
