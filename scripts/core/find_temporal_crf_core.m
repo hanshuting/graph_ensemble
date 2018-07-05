@@ -34,13 +34,13 @@ function [results] = find_temporal_crf_core(best_model,shuffle_model,data,stimul
         Coord_active = repmat(Coord_active, time_span, 1);
     end
     data = [data stimuli];
-    assert(size(data,1) == num_frame, "data frames do not match stimuli frames")
-    assert(size(data,2) == num_node, "data nodes do not match best_model.graph")
+    assert(size(data,1) == num_frame, 'data frames do not match stimuli frames')
+    assert(size(data,2) == num_node, 'data nodes do not match best_model.graph')
 
     % Ensure graph is symmetric
     if nnz(best_model.graph - logical(best_model.edge_pot)) ~= 0
         [~, best_name] = fileparts(params.best_fname);
-        fprintf("Forcing graph equal to logical(edge_pot) for best_model, %s.\n", ...
+        fprintf('Forcing graph equal to logical(edge_pot) for best_model, %s.\n', ...
             best_name);
         best_model.graph = logical(best_model.edge_pot);
     end
@@ -56,7 +56,7 @@ function [results] = find_temporal_crf_core(best_model,shuffle_model,data,stimul
     % shuffled models
     for ii = 1:length(shuffle_model.graphs)
         if nnz(shuffle_model.graphs{ii} - logical(shuffle_model.edge_pot{ii})) ~= 0
-            fprintf("Forcing graph equal to logical(edge_pot) for shuffle_model %d.\n", ii);
+            fprintf('Forcing graph equal to logical(edge_pot) for shuffle_model %d.\n', ii);
             shuffle_model.graphs{ii} = logical(shuffle_model.edge_pot{ii});
         end
         shuffle_model.ep_on{ii} = getOnEdgePot(shuffle_model.graphs{ii},...
@@ -134,7 +134,7 @@ function [results] = find_temporal_crf_core(best_model,shuffle_model,data,stimul
     aucmi = 0;
     aucma = 1;
     f = figure; set(gcf,'color','w')
-    f.Name = "K=" + time_span;
+    f.Name = sprintf('K=%d', time_span);
     color_by_offset = @(x) floor((x-1)/num_orig_neuron) / max(1, time_span-1);
     for ii = 1:num_stim
 
