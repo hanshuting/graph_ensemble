@@ -164,7 +164,28 @@ Variables prefixed by `$` must be identical for all conditions, unlike `@` prefi
 Otherwise, a new script will need to be created.
 
 ## Finding core ensembles in the model
-Assuming the CRF model has been trained, use `crf_core_demo.m` with the example data and model to find the ensembles correspondong to each stimulus.
+With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `scripts/core/find_temporal_crf_core.m` to find the ensembles corresponding to each stimulus.
+We will continue our previous example:
+
+1. Start an interactive job:
+```
+qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
+```
+2. Start matlab and load the models and data:
+```
+matlab -nodesktop -nosplash -nodisplay
+addpath(genpath(‘your/path/to/this/repo’));             % For example, '~/graph_ensemble'
+cd fwMatch-darpa/expt/
+best_model = load('<experiment>_<condition>_loopy/results/<experiment>_<condition>_loopy_best_model_full.mat');
+shuffle_model = load('shuffled_<experiment>_<condition>_loopy/results/shuffled_<experiment>_<condition>_loopy_fulldata.mat');
+load('~/data/<experiment>_<condition>.mat');            % Loads variables `data` and `stimuli`
+```
+3. Find ensemble nodes:
+```
+results = find_temporal_crf_core(best_model, shuffle_model, data, stimuli)
+ens_nodes = results.core_crf;
+```
+`ens_nodes` is a cell vector containing the ensemble nodes found for each stimuli.
 
 ## References
 * [This paper - to be cited]
