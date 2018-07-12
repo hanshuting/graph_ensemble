@@ -1,4 +1,4 @@
-function [core_crf, results] = find_temporal_ens_nodes(best_model,shuffle_model,data,stimuli, num_controls)
+function [ens_nodes, results] = find_temporal_ens_nodes(best_model,shuffle_model,data,stimuli, num_controls)
 % FIND_TEMPORAL_ENS_NODES Find multi-timeframe neuron ensembles with CRF models.
 %
 % Input
@@ -8,6 +8,11 @@ function [core_crf, results] = find_temporal_ens_nodes(best_model,shuffle_model,
 %   stimuli: Expected to be a timeframes by stimuli binary matrix.
 %   num_controls: Optional. Number of random ensembles used to generate control
 %       statistics for each stimulus.
+% Output
+%   ens_nodes: Cell vector containing the ensemble nodes found for each stimuli.
+%       Each cell is a cell vector of length time_span containing the ensemble
+%       detected at each offset frame of the time_span window.
+%   results: Details used to identify the ensembles.
     if nargin < 5
         num_controls = 100;
     end
@@ -105,11 +110,22 @@ function [core_crf, results] = find_temporal_ens_nodes(best_model,shuffle_model,
         core_crf{ii} = setdiff(core_crf{ii},num_node-num_stim+1:num_node);
     end
 
+    %% Convert nodes to neurons
+    ens_nodes = cell(num_stim, 1);
+    for ii = 1:num_stim
+        ens_nodes{ii} = cell(time_span, 1);
+        for jj = 1:time_span
+            current_nodes = (core_crf{ii} > ((jj-1) * num_orig_neuron)) & ...
+                            (core_crf{ii} <= (jj * num_orig_neuron ));
+            ens_nodes{ii}{jj} = core_crf{ii}(current_nodes) - (jj-1) * num_orig_neuron;
+        end
+    end
+
     %% package results
     results.auc = auc;
     results.auc_ens = auc_ens;
     results.best_model = best_model;
-    results.core_crf = core_crf;
+    results.core_crf = ens_nodes;
     results.data = logical(data);
     results.epsum = epsum;
     results.LL_frame = LL_frame;

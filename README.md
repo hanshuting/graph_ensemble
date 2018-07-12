@@ -181,11 +181,11 @@ shuffle_model = load('shuffled_<experiment>_<condition>_loopy/results/shuffled_<
 load('~/data/<experiment>_<condition>.mat');            % Loads variables `data` and `stimuli`
 ```
 3. Find ensemble nodes:
-```
-results = find_temporal_crf_core(best_model, shuffle_model, data, stimuli)
-ens_nodes = results.core_crf;
-```
-`ens_nodes` is a cell vector containing the ensemble nodes found for each stimuli.
+   ```
+   ens_nodes = find_temporal_ens_nodes(best_model, shuffle_model, data, stimuli)
+   ```
+   `ens_nodes` is a cell vector where each cell contains the ensemble neurons found for each stimuli.
+   Each such stimuli cell contains a further cell vector where each cell contains the ensemble neurons found for each offset frame of the `time_span` window.
 
 ## References
 * [This paper - to be cited]
