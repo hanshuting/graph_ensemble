@@ -39,25 +39,25 @@ All of the `.mat` files should be saved in the same directory, for example `~/da
 This is only required once per experiment name.
 
 4. Modify `create_script.pl` to your values:
-```
-$EXPT_NAME = "test";
-$DATA_DIR = "~/data/";
-$USER = "UNI";
-$EMAIL = "UNI\@columbia.edu";
-```
+   ```
+   $EXPT_NAME = "test";
+   $DATA_DIR = "~/data/";
+   $USER = "UNI";
+   $EMAIL = "UNI\@columbia.edu";
+   ```
    NOTE the required backslash preceding the @ in the email address.
 
    Between line 29 and 43, you can also adjust the model parameter test ranges here.
    See below for an explanation of the parameters.
 
 5. Start an interactive job:
-```
-qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
-```
+   ```
+   qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
+   ```
 6. Run create_script, passing the condition name to it. For our example:
-```
-./create_script.pl 1
-```
+   ```
+   ./create_script.pl 1
+   ```
    This script will create a working directory for this run based on the experiment template directory; the working directory will be named as `<experiment>_<condition>_loopy/` (in this case, `test_1_loopy/`).
    Then, it will write the following files to your experiment directory: `get_real_data.m` (for loading data), `write_config_for_loopy.m` (configuration file template for the model).
    The next thing it does is to start matlab, and write configuration files for each parameter combination by executing the function `create_config_files.m`.
@@ -69,82 +69,82 @@ qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
    For Luis’s datasets, 12 hours walltime and 8G memory is enough.
 
 7. Go to working directory and start job:
-```
-cd test_1_loopy/
-./start_jobs.sh
-```
+   ```
+   cd test_1_loopy/
+   ./start_jobs.sh
+   ```
 8. Check your job status by: `qstat -t -u [your_UNI]`
-9. Once the job is done running, start an interactive job, and do the following:
-```
-matlab -nodesktop -nosplash -nodisplay
-addpath(genpath(‘your/path/to/this/repo’));     % For example, '~/graph_ensemble'
-cd fwMatch-darpa/expt/test_1_loopy/             % working directory
-merge_all_models;
-save_best_model;
-```
-Typing `best_model`, and then `time_span` should display the model parameters.
-Take a note of `s_lambda`, `p_lambda`, `density`, and `time_span` if you want to run shuffled controls of this dataset.
-A `model_collection.mat` and `<experiment>_<condition>_loopy_best_model_full.mat` file should be saved under `results/`.
-Finally, exit matlab and finish the interactive job:
-```
-exit;
-logout
-```
+9. Once the job is done running, do the following from an **interactive job** (see step 5):
+   ```
+   matlab -nodesktop -nosplash -nodisplay
+   addpath(genpath(‘your/path/to/this/repo’));     % For example, '~/graph_ensemble'
+   cd fwMatch-darpa/expt/test_1_loopy/             % working directory
+   merge_all_models;
+   save_best_model;
+   ```
+   Typing `best_model`, and then `time_span` should display the model parameters.
+   Take a note of `s_lambda`, `p_lambda`, `density`, and `time_span` if you want to run shuffled controls of this dataset.
+   A `model_collection.mat` and `<experiment>_<condition>_loopy_best_model_full.mat` file should be saved under `results/`.
+   Finally, exit matlab and finish the interactive job:
+   ```
+   exit;
+   logout
+   ```
 
 ## Running shuffled controls - An example
 This produces 100 shuffled versions of the data file, and then trains a model on each using a single set of specified parameters.
 
 1. Go to expt directory: `cd fwMatch-darpa/expt`
 2. Make a template directory for your experiment name. With our example:
-```
-cp -r shuffled_template/ shuffled_test_template/
-```
+   ```
+   cp -r shuffled_template/ shuffled_test_template/
+   ```
 3. Modify `create_shuffle_script.pl` to your values:
-```
-$USER = "UNI";
-$EMAIL = "UNI\@columbia.edu";
-$SOURCE_DIR = "~/graph_ensemble/";
-$EXPT_NAME = "test";
-@EE = ("1");                        # condition name
-$DATA_DIR = "~/data/";
-@DENSITY = (0.29);                  # put your best density value here
-@S_LAMBDA = (1.8206e-04);           # put your best s_lambda here
-@P_LAMBDA = (56.2341);              # put your best p_lambda here
-@TIME_SPAN = (2);                   # put your best time_span here
-```
+   ```
+   $USER = "UNI";
+   $EMAIL = "UNI\@columbia.edu";
+   $SOURCE_DIR = "~/graph_ensemble/";
+   $EXPT_NAME = "test";
+   @EE = ("1");                        # condition name
+   $DATA_DIR = "~/data/";
+   @DENSITY = (0.29);                  # put your best density value here
+   @S_LAMBDA = (1.8206e-04);           # put your best s_lambda here
+   @P_LAMBDA = (56.2341);              # put your best p_lambda here
+   @TIME_SPAN = (2);                   # put your best time_span here
+   ```
    NOTE the required backslash preceding the @ in the email address.
 
-4. Start an interactive job, and run: `./create_shuffle_script.pl`
+4. Start an **interactive job**, and run: `./create_shuffle_script.pl`
 This will produce the working directory named as `shuffled_<experiment>_<condition>_loopy/` (in this case, `shuffled_test_1_loopy/`).
 After this step, you can finish the interactive job by typing logout.
 
 5. Go to your working directory, and run the job that generates shuffled dataset first:
-```
-cd shuffled_test_1_loopy/
-./shuffle_start_job.sh
-```
+   ```
+   cd shuffled_test_1_loopy/
+   ./shuffle_start_job.sh
+   ```
 
    This produces 100 shuffled versions of the dataset.
    Where this occurs is defined by `create_shuffle_script.pl`, mostly the section that writes `gn_shuff_data.m` as this is the matlab script that does the actual shuffling and saving.
    The location they are saved is defined by `<data dir>/shuffled/shuffled_<experiment>_<condition>_loopy/`, so in this example it would be `~/data/shuffled/shuffled_test_1_loopy/`.  
     Settings for the yeti scheduler can be found in the section that writes `shuffle_yeti_config.sh`.
 
-    NOTE: generated files will overwrite any existing files with identical names.
+   NOTE: generated files will overwrite any existing files with identical names.
 
 6. Monitor this job (usually it’s done within an hour).
 Once it’s finished, go to working directory, and start training CRF models on the shuffled datasets:
-```
-./start_job.sh
-```
-7. When all jobs are done, start an interactive job, and start matlab:
-```
-matlab -nodesktop -nosplash -nodisplay
-addpath(genpath(‘your/path/to/this/repo’));              % For example, '~/graph_ensemble'
-cd fwMatch-darpa/expt/shuffled_test_1_loopy/             % working directory
-merge_all_models;
-save_shuffled_models;
-exit;
-```
+   ```
+   ./start_job.sh
+   ```
+7. When all jobs are done, start an **interactive job**, and start matlab:
+   ```
+   matlab -nodesktop -nosplash -nodisplay
+   addpath(genpath(‘your/path/to/this/repo’));              % For example, '~/graph_ensemble'
+   cd fwMatch-darpa/expt/shuffled_test_1_loopy/             % working directory
+   merge_all_models;
+   save_shuffled_models;
+   exit;
+   ```
 
    This will compile the trained models into two files: `model_collection.mat` and `shuffled_<experiment>_<condition>_loopy_fulldata.mat`, both in the `results/` folder in the working directory.
 
@@ -164,28 +164,30 @@ Variables prefixed by `$` must be identical for all conditions, unlike `@` prefi
 Otherwise, a new script will need to be created.
 
 ## Finding core ensembles in the model
-With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `scripts/core/find_temporal_crf_core.m` to find the ensembles corresponding to each stimulus.
+With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `scripts/core/find_temporal_ens_nodes.m` to find the ensembles corresponding to each stimulus.
 We will continue our previous example:
 
 1. Start an interactive job:
-```
-qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
-```
+   ```
+   qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
+   ```
 2. Start matlab and load the models and data:
-```
-matlab -nodesktop -nosplash -nodisplay
-addpath(genpath(‘your/path/to/this/repo’));             % For example, '~/graph_ensemble'
-cd fwMatch-darpa/expt/
-best_model = load('<experiment>_<condition>_loopy/results/<experiment>_<condition>_loopy_best_model_full.mat');
-shuffle_model = load('shuffled_<experiment>_<condition>_loopy/results/shuffled_<experiment>_<condition>_loopy_fulldata.mat');
-load('~/data/<experiment>_<condition>.mat');            % Loads variables `data` and `stimuli`
-```
+   ```
+   matlab -nodesktop -nosplash -nodisplay
+   addpath(genpath(‘your/path/to/this/repo’));             % For example, '~/graph_ensemble'
+   cd fwMatch-darpa/expt/
+   best_model = load('<experiment>_<condition>_loopy/results/<experiment>_<condition>_loopy_best_model_full.mat');
+   shuffle_model = load('shuffled_<experiment>_<condition>_loopy/results/shuffled_<experiment>_<condition>_loopy_fulldata.mat');
+   load('~/data/<experiment>_<condition>.mat');            % Loads variables `data` and `stimuli`
+   ```
 3. Find ensemble nodes:
-```
-results = find_temporal_crf_core(best_model, shuffle_model, data, stimuli)
-ens_nodes = results.core_crf;
-```
-`ens_nodes` is a cell vector containing the ensemble nodes found for each stimuli.
+   ```
+   ens_nodes = find_temporal_ens_nodes(best_model, shuffle_model, data, stimuli)
+   ```
+   `ens_nodes` is a cell vector where each cell contains the ensemble neurons found for each stimuli.
+   Each such stimuli cell contains a further cell vector where each cell contains the ensemble neurons found for each offset frame of the `time_span` window.
+
+Another script, `scripts/core/find_temporal_crf_core.m`, can also be used to find ensemble neurons and plot some features, including spatial arrangement if coordinates are provided.
 
 ## References
 * [This paper - to be cited]
