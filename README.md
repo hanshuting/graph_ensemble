@@ -164,7 +164,7 @@ Variables prefixed by `$` must be identical for all conditions, unlike `@` prefi
 Otherwise, a new script will need to be created.
 
 ## Finding core ensembles in the model
-With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `scripts/core/find_temporal_crf_core.m` to find the ensembles corresponding to each stimulus.
+With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `scripts/core/find_temporal_ens_nodes.m` to find the ensembles corresponding to each stimulus.
 We will continue our previous example:
 
 1. Start an interactive job:
@@ -186,6 +186,8 @@ We will continue our previous example:
    ```
    `ens_nodes` is a cell vector where each cell contains the ensemble neurons found for each stimuli.
    Each such stimuli cell contains a further cell vector where each cell contains the ensemble neurons found for each offset frame of the `time_span` window.
+
+Another script, `scripts/core/find_temporal_crf_core.m`, can also be used to find ensemble neurons and plot some features, including spatial arrangement if coordinates are provided.
 
 ## References
 * [This paper - to be cited]
