@@ -23,7 +23,7 @@ function [ens_nodes, results] = find_temporal_ens_nodes(best_model,shuffle_model
                 num_stim)
     end
     num_node = size(best_model.graph,1);
-    num_orig_neuron = size(data, 1);
+    num_orig_neuron = size(data, 2);
     time_span = best_model.time_span;
 
     % expand for additional time_span
@@ -125,7 +125,7 @@ function [ens_nodes, results] = find_temporal_ens_nodes(best_model,shuffle_model
     results.auc = auc;
     results.auc_ens = auc_ens;
     results.best_model = best_model;
-    results.core_crf = ens_nodes;
+    results.core_crf = core_crf;
     results.data = logical(data);
     results.epsum = epsum;
     results.LL_frame = LL_frame;
