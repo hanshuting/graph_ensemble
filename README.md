@@ -31,17 +31,20 @@ module load matlab/2017a
 will ensure the R2017a version is used until you logout.
 
 ## Data format
-A binary spike matrix should be stored in a `.mat` file, under the variable name `data`.
-`data` needs to be number of frame by number of neuron.
+Two binary spike matrices should be stored in a `.mat` file, under the variable names `data` and `stimuli`.
+`data` needs to be number of frame by number of neuron, corresponding to the neuron recording.
+`stimuli` needs to be number of frame by number of stimuli, corresponding to the when each stimuli was present.
+
 The `.mat` file should be named as `<experiment>_<condition>.mat`, for example, given the `m21_d2_vis` dataset, the “experiment” is `m21_d2_vis`, the condition could be something like `high_add_neuron`, therefore the `.mat` file should be named as `m21_d2_vis_high_add_neuron.mat`.
 This allows you to run multiple files that are originated from the same dataset but processed differently (high activity frame vs all frames, visual stimulations only vs all frames, no add neuron vs add neuron model, etc.) at the same time.
 In the simple example below, we'll use an experiment `test` and a condition `1`.
 
-All of the `.mat` files should be saved in the same directory, for example `~/data/<filename>` for each. For all runs under the same experiment name, this is required.
+All of the `.mat` files should be saved in the same directory, for example `~/data/<filename>` for each.
+For all runs under the same experiment name, this is required.
 
 ## Running CRF model - An example
-1. Upload a data file `~/data/test_1.mat`
-2. Go to expt directory: `cd fwMatch-darpa/expt`
+1. Upload a data file. Using an experiment name of "test" and a condition name of "1" as an example, we might upload to `~/data/test_1.mat`.
+2. Go to expt directory. From the root directory of this repo: `cd fwMatch-darpa/expt`
 3. Make a template dir for your experiment: `cp -r temporal_template/ test_template/`
 This is only required once per experiment name.
 
