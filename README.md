@@ -134,7 +134,7 @@ After this step, you can finish the interactive job by typing logout.
 6. Monitor this job (usually it’s done within an hour).
 Once it’s finished, go to working directory, and start training CRF models on the shuffled datasets:
    ```
-   ./start_job.sh
+   ./start_jobs.sh
    ```
 7. When all jobs are done, start an **interactive job**, and start matlab:
    ```
