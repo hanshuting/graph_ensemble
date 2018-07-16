@@ -61,6 +61,16 @@ def setup_train_working_dir(condition_names):
         print("done writing write_configs_for_loopy.m\n")
 
         curr_dir = os.curdir()
+        print("curr_dir = {}.\n".format(curr_dir))
+        os.chdir(experiment)
+        print("changed into dir: {}\n".format(os.curdir()))
+        scommand = "matlab -nodesktop -nodisplay -r \"try, write_configs_for_{}, catch, end, exit\"".format(MODEL_TYPE)
+        print("About to run:\n{}\n".format(scommand))
+        # system($scommand);
+        # print "Done running system command\n";
+        # chdir($curr_dir);
+        # print "changed into dir: ".cwd()."\n";
+
 
 if __name__ == '__main__':
     start_time = time.time()
