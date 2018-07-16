@@ -31,7 +31,7 @@ def check_templates():
     # TODO: Check stuffle
 
 
-def setup_train_working_dir(condition_names):
+def setup_exec_train_model(condition_names):
     """Mostly follows old create_script.pl.
 
     Args:
@@ -51,7 +51,7 @@ def setup_train_working_dir(condition_names):
             f.write("    'yeti_user', '{}', ...\n".format(USER))
             f.write("    'compute_true_logZ', false, ...\n")
             f.write("    'reweight_denominator', 'mean_degree', ...\n")
-            f.write("    's_lambda_splits', 6, ...\n")
+            f.write("    's_lambda_splits', 3, ...\n")
             f.write("    's_lambdas_per_split', 1, ...\n")
             f.write("    's_lambda_min', 2e-03, ...\n")
             f.write("    's_lambda_max', 5e-01, ...\n")
@@ -59,7 +59,7 @@ def setup_train_working_dir(condition_names):
             f.write("    'densities_per_split', 6, ...\n")
             f.write("    'density_min', 0.1, ...\n")
             f.write("    'density_max', 0.3, ...\n")
-            f.write("    'p_lambda_splits', 5, ...\n")
+            f.write("    'p_lambda_splits', 2, ...\n")
             f.write("    'p_lambdas_per_split', 1, ...\n")
             f.write("    'p_lambda_min', 1e+01, ...\n")
             f.write("    'p_lambda_max', 1e+04, ...\n")
@@ -78,9 +78,14 @@ def setup_train_working_dir(condition_names):
         process_results = subprocess.run(sargs)
         if process_results.returncode:
             raise RuntimeError("Received non-zero return code: {}".format(process_results))
-        print("Done running system command")
+
+        process_results = subprocess.run("./start_jobs.sh", shell=True)
+        if process_results.returncode:
+            print("Are you on the yeti cluster?")
+            raise RuntimeError("Received non-zero return code: {}".format(process_results))
+
         os.chdir(curr_dir)
-        print("changed into dir: {}".format(os.getcwd()))
+        print("changed back to dir: {}".format(os.getcwd()))
 
 
 if __name__ == '__main__':
@@ -88,7 +93,16 @@ if __name__ == '__main__':
     conditions = sys.argv[1:]
     if conditions:
         check_templates()
-        setup_train_working_dir(conditions)
+        setup_exec_train_model(conditions)
+        # Create bare-bones shuffle folder
+        # run shuffle dataset creation, if needed
+        # Wait for train CRF to be done
+        # Run merge and save_best, grabbing best params
+        # create shuffle configs with best params
+        # Run shuffle/start_jobs.sh
+        # Wait for shuffle CRFs to be done
+        # Run merge and save_shuffle
+        # Extract ensemble neuron IDs. Write to disk?
     else:
         raise TypeError("At least one condition name must be passed on the command line.")
 
