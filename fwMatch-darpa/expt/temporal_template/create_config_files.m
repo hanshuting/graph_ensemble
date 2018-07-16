@@ -10,12 +10,14 @@ function create_config_files(varargin)
 
     parser = inputParser;
 
-    parser.addParameter('training_test_split', .8, @isscalar);
-    parser.addParameter('BCFW_max_iterations', 75000, @isscalar);
-    parser.addParameter('structure_type', 'loopy', @ischar);
+    parser.addParameter('datapath', [], @ischar);
     parser.addParameter('experiment_name', 'spikes_opto_on', @ischar);
     parser.addParameter('email_for_notifications', 'jds2270@columbia.edu', @ischar);
     parser.addParameter('yeti_user', 'jds2270', @ischar);
+
+    parser.addParameter('training_test_split', .8, @isscalar);
+    parser.addParameter('BCFW_max_iterations', 75000, @isscalar);
+    parser.addParameter('structure_type', 'loopy', @ischar);
     parser.addParameter('compute_true_logZ', false, @islogical);
     parser.addParameter('reweight_denominator', 'max_degree');
 
@@ -38,12 +40,14 @@ function create_config_files(varargin)
 
     parser.parse(varargin{:})
 
-    training_test_split = parser.Results.training_test_split;
-    BCFW_max_iterations = parser.Results.BCFW_max_iterations;
-    structure_type = parser.Results.structure_type;
+    datapath = parser.Results.datapath;
     experiment_name = parser.Results.experiment_name;
     email_for_notifications = parser.Results.email_for_notifications;
     yeti_user = parser.Results.yeti_user;
+
+    training_test_split = parser.Results.training_test_split;
+    BCFW_max_iterations = parser.Results.BCFW_max_iterations;
+    structure_type = parser.Results.structure_type;
     compute_true_logZ = parser.Results.compute_true_logZ;
     if (compute_true_logZ); compute_true_logZ_str='true'; else;  compute_true_logZ_str='false'; end
     reweight_denominator = parser.Results.reweight_denominator;
@@ -88,7 +92,11 @@ function create_config_files(varargin)
                 end
 
                 % get real data (params.data)
-                fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data();\n');
+                if isempty(datapath)
+                    fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data();\n');
+                else
+                    fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_dataset(''%s'');\n', datapath);
+                end
 
                 if strcmp(structure_type, 'loopy')
                     % slambda
