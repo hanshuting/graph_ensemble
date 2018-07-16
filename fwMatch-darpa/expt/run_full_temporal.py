@@ -4,6 +4,7 @@ import time
 import sys
 import os
 import shutil
+import shlex
 import subprocess
 
 # *** START USER EDITABLE VARIABLES ***
@@ -13,14 +14,15 @@ USER = "jds2270"
 EMAIL = "jds2270@columbia.edu"
 # *** END USER EDITABLE VARIABLES ***
 
-
+# *** start constants ***
 MODEL_TYPE = "loopy"
 TRAIN_TEMPLATE_FOLDER_NAME = "{}_template".format(EXPT_NAME)
 #SHUFFLE_TEMPLATE_FOLDER_NAME = # TODO
+# *** end constants ***
 
 
 def check_templates():
-    """Make template folders from master templates if they do not exist already
+    """Make template folders from master templates if they do not exist already.
     """
     # Check train
     if not os.path.exists(TRAIN_TEMPLATE_FOLDER_NAME):
@@ -30,6 +32,11 @@ def check_templates():
 
 
 def setup_train_working_dir(condition_names):
+    """Mostly follows old create_script.pl.
+
+    Args:
+        condition_names ([str]): List of condition names to setup.
+    """
     for condition in condition_names:
         data_file = "{}_{}.mat".format(EXPT_NAME, condition)
         experiment = "{}_{}_{}".format(EXPT_NAME, condition, MODEL_TYPE)
@@ -58,18 +65,22 @@ def setup_train_working_dir(condition_names):
             f.write("    'p_lambda_max', 1e+04, ...\n")
             f.write("    'time_span', 2);\n")
         f.closed
-        print("done writing write_configs_for_loopy.m\n")
+        print("done writing write_configs_for_loopy.m")
 
-        curr_dir = os.curdir()
-        print("curr_dir = {}.\n".format(curr_dir))
+        curr_dir = os.getcwd()
+        print("curr_dir = {}.".format(curr_dir))
         os.chdir(experiment)
-        print("changed into dir: {}\n".format(os.curdir()))
-        scommand = "matlab -nodesktop -nodisplay -r \"try, write_configs_for_{}, catch, end, exit\"".format(MODEL_TYPE)
-        print("About to run:\n{}\n".format(scommand))
-        # system($scommand);
-        # print "Done running system command\n";
-        # chdir($curr_dir);
-        # print "changed into dir: ".cwd()."\n";
+        print("changed into dir: {}".format(os.getcwd()))
+        scommand = ("matlab -nodesktop -nodisplay -r \"try, write_configs_for_" +
+                    "{}, catch, end, exit\"".format(MODEL_TYPE))
+        print("About to run:\n{}".format(scommand))
+        sargs = shlex.split(scommand)
+        process_results = subprocess.run(sargs)
+        if process_results.returncode:
+            raise RuntimeError("Received non-zero return code: {}".format(process_results))
+        print("Done running system command")
+        os.chdir(curr_dir)
+        print("changed into dir: {}".format(os.getcwd()))
 
 
 if __name__ == '__main__':
@@ -79,6 +90,6 @@ if __name__ == '__main__':
         check_templates()
         setup_train_working_dir(conditions)
     else:
-        raise TypeError("At least one condition name must be passed on the command line.\n")
+        raise TypeError("At least one condition name must be passed on the command line.")
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
