@@ -7,7 +7,12 @@ import shutil
 import shlex
 import subprocess
 
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+
 # *** START USER EDITABLE VARIABLES ***
+logger.setLevel(logging.DEBUG)
 EXPT_NAME = "temporal"
 DATA_DIR = "~/data/"
 USER = "jds2270"
@@ -53,7 +58,7 @@ def setup_exec_train_model(condition_names):
     for condition in condition_names:
         data_file = "{}_{}.mat".format(EXPT_NAME, condition)
         experiment = "{}_{}_{}".format(EXPT_NAME, condition, MODEL_TYPE)
-        print("Copying {} to {}".format(TRAIN_TEMPLATE_FOLDER_NAME, experiment))
+        logger.info("Copying {} to {}".format(TRAIN_TEMPLATE_FOLDER_NAME, experiment))
         shutil.copytree(TRAIN_TEMPLATE_FOLDER_NAME, experiment)
 
         with open("{}{}write_configs_for_loopy.m".format(experiment, os.sep), 'w') as f:
@@ -84,27 +89,29 @@ def setup_exec_train_model(condition_names):
             f.write("    'p_lambda_max', {}, ...\n".format(P_LAMBDAS['max']))
             f.write("    'time_span', {});\n".format(TIME_SPAN))
         f.closed
-        print("done writing write_configs_for_loopy.m")
+        logger.info("done writing write_configs_for_loopy.m")
 
         curr_dir = os.getcwd()
-        print("curr_dir = {}.".format(curr_dir))
+        logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(experiment)
-        print("changed into dir: {}".format(os.getcwd()))
+        logger.debug("changed into dir: {}".format(os.getcwd()))
         scommand = ("matlab -nodesktop -nodisplay -r \"try, write_configs_for_" +
                     "{}, catch, end, exit\"".format(MODEL_TYPE))
-        print("About to run:\n{}".format(scommand))
+        logger.debug("About to run:\n{}".format(scommand))
         sargs = shlex.split(scommand)
         process_results = subprocess.run(sargs)
         if process_results.returncode:
             raise RuntimeError("Received non-zero return code: {}".format(process_results))
+        logger.info("\nTraining configs generated.")
 
         process_results = subprocess.run("./start_jobs.sh", shell=True)
         if process_results.returncode:
-            print("Are you on the yeti cluster?")
+            logger.critical("\nAre you on the yeti cluster? Job submission failed.")
             raise RuntimeError("Received non-zero return code: {}".format(process_results))
+        logger.info("Training job(s) submitted.")
 
         os.chdir(curr_dir)
-        print("changed back to dir: {}".format(os.getcwd()))
+        logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
 if __name__ == '__main__':
