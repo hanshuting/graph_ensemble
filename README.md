@@ -23,6 +23,13 @@ The codebase is organized as following: all experiments should be under `fwMatch
 ## Working with Yeti
 See documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti+HPC+Cluster+User+Documentation.
 
+Ensure you are using a current version of MATLAB; version R2016b and later are known to work.
+Executing
+```
+module load matlab/2017a
+```
+will ensure the R2017a version is used until you logout.
+
 ## Data format
 A binary spike matrix should be stored in a `.mat` file, under the variable name `data`.
 `data` needs to be number of frame by number of neuron.
