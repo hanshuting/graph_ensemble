@@ -10,6 +10,7 @@ function create_config_files(varargin)
 
     parser = inputParser;
 
+    parser.addParameter('datapath', [], @ischar);
     parser.addParameter('experiment_name', 'spikes_opto_on', @ischar);
     parser.addParameter('email_for_notifications', 'jds2270@columbia.edu', @ischar);
     parser.addParameter('yeti_user', 'jds2270', @ischar);
@@ -41,6 +42,7 @@ function create_config_files(varargin)
 
     parser.parse(varargin{:})
 
+    datapath = parser.Results.datapath;
     experiment_name = parser.Results.experiment_name;
     email_for_notifications = parser.Results.email_for_notifications;
     yeti_user = parser.Results.yeti_user;
@@ -77,9 +79,7 @@ function create_config_files(varargin)
     display(sprintf('Total jobs to be submitted: %d', num_shuffle));
 
     % Write config files
-    config_file_count = 0;
-    for i=1:num_shuffle
-        config_file_count = config_file_count + 1;
+    for config_file_count=1:num_shuffle
         fid = fopen(sprintf('config%d.m',config_file_count),'w');
         fprintf(fid,'params.split = %f;\n', training_test_split);
         fprintf(fid,'params.BCFW_max_iterations = %d;\n', BCFW_max_iterations);
@@ -92,7 +92,12 @@ function create_config_files(varargin)
         end
 
         % get real data (params.data)
-        fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data(%d);\n',config_file_count);
+        if isempty(datapath)
+            fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data(%d);\n',config_file_count);
+        else
+            fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_dataset(''%s%d%s'');\n', ...
+                    datapath(1:end-4), int2str(config_file_count), datapath(end-3:end));
+        end
 
         if strcmp(structure_type, 'loopy')
             % slambda
