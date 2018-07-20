@@ -10,40 +10,44 @@ function create_config_files(varargin)
 
     parser = inputParser;
 
-    parser.addParamValue('training_test_split', .8, @isscalar);
-    parser.addParamValue('BCFW_max_iterations', 75000, @isscalar);
-    parser.addParamValue('structure_type', 'loopy', @ischar);
-    parser.addParamValue('experiment_name', 'spikes_opto_on', @ischar);
-    parser.addParamValue('email_for_notifications', 'jds2270@columbia.edu', @ischar);
-    parser.addParamValue('yeti_user', 'jds2270', @ischar);
-    parser.addParamValue('compute_true_logZ', false, @islogical);
-    parser.addParamValue('reweight_denominator', 'max_degree');
+    parser.addParameter('datapath', [], @ischar);
+    parser.addParameter('experiment_name', 'spikes_opto_on', @ischar);
+    parser.addParameter('email_for_notifications', 'jds2270@columbia.edu', @ischar);
+    parser.addParameter('yeti_user', 'jds2270', @ischar);
 
-    parser.addParamValue('s_lambda_splits', 1, @isscalar);
-    parser.addParamValue('s_lambdas_per_split', 1, @isscalar);
-    parser.addParamValue('s_lambda_min', 1e-01, @isscalar);
-    parser.addParamValue('s_lambda_max', 1e-01, @isscalar);
+    parser.addParameter('training_test_split', .8, @isscalar);
+    parser.addParameter('BCFW_max_iterations', 75000, @isscalar);
+    parser.addParameter('structure_type', 'loopy', @ischar);
+    parser.addParameter('compute_true_logZ', false, @islogical);
+    parser.addParameter('reweight_denominator', 'max_degree');
 
-    parser.addParamValue('density_splits', 1, @isscalar);
-    parser.addParamValue('densities_per_split', 1, @isscalar);
-    parser.addParamValue('density_min', 0.05, @isscalar);
-    parser.addParamValue('density_max', 0.05, @isscalar);
+    parser.addParameter('s_lambda_splits', 1, @isscalar);
+    parser.addParameter('s_lambdas_per_split', 1, @isscalar);
+    parser.addParameter('s_lambda_min', 1e-01, @isscalar);
+    parser.addParameter('s_lambda_max', 1e-01, @isscalar);
 
-    parser.addParamValue('p_lambda_splits', 1, @isscalar);
-    parser.addParamValue('p_lambdas_per_split', 1, @isscalar);
-    parser.addParamValue('p_lambda_min', 1e+01, @isscalar);
-    parser.addParamValue('p_lambda_max', 1e+01, @isscalar);
+    parser.addParameter('density_splits', 1, @isscalar);
+    parser.addParameter('densities_per_split', 1, @isscalar);
+    parser.addParameter('density_min', 0.05, @isscalar);
+    parser.addParameter('density_max', 0.05, @isscalar);
+
+    parser.addParameter('p_lambda_splits', 1, @isscalar);
+    parser.addParameter('p_lambdas_per_split', 1, @isscalar);
+    parser.addParameter('p_lambda_min', 1e+01, @isscalar);
+    parser.addParameter('p_lambda_max', 1e+01, @isscalar);
 
     parser.addParameter('time_span', 1, @isscalar);
 
     parser.parse(varargin{:})
 
-    training_test_split = parser.Results.training_test_split;
-    BCFW_max_iterations = parser.Results.BCFW_max_iterations;
-    structure_type = parser.Results.structure_type;
+    datapath = parser.Results.datapath;
     experiment_name = parser.Results.experiment_name;
     email_for_notifications = parser.Results.email_for_notifications;
     yeti_user = parser.Results.yeti_user;
+
+    training_test_split = parser.Results.training_test_split;
+    BCFW_max_iterations = parser.Results.BCFW_max_iterations;
+    structure_type = parser.Results.structure_type;
     compute_true_logZ = parser.Results.compute_true_logZ;
     if (compute_true_logZ); compute_true_logZ_str='true'; else;  compute_true_logZ_str='false'; end
     reweight_denominator = parser.Results.reweight_denominator;
@@ -88,7 +92,11 @@ function create_config_files(varargin)
                 end
 
                 % get real data (params.data)
-                fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data();\n');
+                if isempty(datapath)
+                    fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data();\n');
+                else
+                    fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_dataset(''%s'');\n', datapath);
+                end
 
                 if strcmp(structure_type, 'loopy')
                     % slambda

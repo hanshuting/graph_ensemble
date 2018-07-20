@@ -23,6 +23,7 @@ for( $i = 0; $i <= $#EE; $i++){
     open(my $FID, ">", "$EXPERIMENT/write_configs_for_loopy.m")
         or die "cannot open < $!";
     print $FID "create_config_files( ...\n";
+    print $FID "    'datapath', '".$DATA_DIR."".$DATA_FILE.".mat', ...\n";
     print $FID "    'experiment_name', '".$EXPERIMENT."', ...\n";
     print $FID "    'email_for_notifications', '".$EMAIL."', ...\n";
     print $FID "    'yeti_user', '".$USER."', ...\n";
@@ -63,32 +64,32 @@ for( $i = 0; $i <= $#EE; $i++){
     # print "done writing write_configs_for_tree.m\n";
     }
 
-    print "file: get_real_data.m\n";
-    open(my $FID, ">", "$EXPERIMENT/get_real_data.m")
-        or die "cannot open < $!";
-    print $FID "function [data,variable_names, stimuli] = get_real_data()\n";
-    print $FID "load(['".$DATA_DIR."' ...\n";
-    print $FID "          '".$DATA_FILE.".mat']);\n";
-    print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."' ...\n".
-        "'".$DATA_FILE.".mat']);\n";
-    print $FID "%data is time_frames by number_of_neurons\n";
-    print $FID "data = full(data);\n";
-    print $FID "N = size(data,2);\n";
-    print $FID "fprintf('data is : %d, %d\\n', size(data,1), size(data,2));\n";
-    print $FID "variable_names = {};\n";
-    print $FID "for i = 1:N\n";
-    print $FID "\tvariable_names(end+1) = {int2str(i)};\n";
-    print $FID "end\n";
-    print $FID "if exist('stimuli', 'var') == 1\n";
-    print $FID "    stimuli = full(stimuli);\n";
-    print $FID "    fprintf('stimuli is : %d, %d\\n', size(stimuli,1), size(stimuli,2));\n";
-    print $FID "else\n";
-    print $FID "    stimuli = [];\n";
-    print $FID "end\n";
-    print $FID "end\n";
-    close($FID);
+    # print "file: get_real_data.m\n";
+    # open(my $FID, ">", "$EXPERIMENT/get_real_data.m")
+    #     or die "cannot open < $!";
+    # print $FID "function [data,variable_names, stimuli] = get_real_data()\n";
+    # print $FID "load(['".$DATA_DIR."' ...\n";
+    # print $FID "          '".$DATA_FILE.".mat']);\n";
+    # print $FID "fprintf('Loaded: %s\\n', ['".$DATA_DIR."' ...\n".
+    #     "'".$DATA_FILE.".mat']);\n";
+    # print $FID "%data is time_frames by number_of_neurons\n";
+    # print $FID "data = full(data);\n";
+    # print $FID "N = size(data,2);\n";
+    # print $FID "fprintf('data is : %d, %d\\n', size(data,1), size(data,2));\n";
+    # print $FID "variable_names = {};\n";
+    # print $FID "for i = 1:N\n";
+    # print $FID "\tvariable_names(end+1) = {int2str(i)};\n";
+    # print $FID "end\n";
+    # print $FID "if exist('stimuli', 'var') == 1\n";
+    # print $FID "    stimuli = full(stimuli);\n";
+    # print $FID "    fprintf('stimuli is : %d, %d\\n', size(stimuli,1), size(stimuli,2));\n";
+    # print $FID "else\n";
+    # print $FID "    stimuli = [];\n";
+    # print $FID "end\n";
+    # print $FID "end\n";
+    # close($FID);
 
-    print "done writing get_real_data.m\n";
+    # print "done writing get_real_data.m\n";
 
     $curr_dir = cwd();
     print "curr_dir = ".$curr_dir."\n";
