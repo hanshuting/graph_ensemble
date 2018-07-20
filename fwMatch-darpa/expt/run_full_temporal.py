@@ -35,7 +35,7 @@ TIME_SPAN = 2
 # *** start constants ***
 MODEL_TYPE = "loopy"
 TRAIN_TEMPLATE_FOLDER_NAME = "{}_template".format(EXPT_NAME)
-#SHUFFLE_TEMPLATE_FOLDER_NAME = # TODO
+SHUFFLE_TEMPLATE_FOLDER_NAME = "shuffled_{}".format(TRAIN_TEMPLATE_FOLDER_NAME)
 # *** end constants ***
 
 
@@ -46,7 +46,8 @@ def check_templates():
     if not os.path.exists(TRAIN_TEMPLATE_FOLDER_NAME):
         shutil.copytree("temporal_template", TRAIN_TEMPLATE_FOLDER_NAME)
 
-    # TODO: Check stuffle
+    if not os.path.exists(SHUFFLE_TEMPLATE_FOLDER_NAME):
+        shutil.copytree("shuffled_template", SHUFFLE_TEMPLATE_FOLDER_NAME)
 
 
 def setup_exec_train_model(condition_names):
