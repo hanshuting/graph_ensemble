@@ -95,8 +95,8 @@ function create_config_files(varargin)
         if isempty(datapath)
             fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data(%d);\n',config_file_count);
         else
-            fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_dataset(''%s%d%s'');\n', ...
-                    datapath(1:end-4), int2str(config_file_count), datapath(end-3:end));
+            fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_dataset(''%s'');\n', ...
+                    strcat(datapath(1:end-4), '_', int2str(config_file_count), datapath(end-3:end)));
         end
 
         if strcmp(structure_type, 'loopy')
