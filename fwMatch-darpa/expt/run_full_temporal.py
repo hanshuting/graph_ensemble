@@ -159,10 +159,10 @@ def write_shuffling_yeti_script(experiment):
         f.write("#PBS -m ae\n")
         f.write("#PBS -V\n")
         f.write("#set output and error directories (SSCC example here)\n")
-        f.write("#PBS -o localhost:{}fwMatch-darpa/expt/{}/yeti_logs/\n".format(SOURCE_DIR,
-                                                                                experiment))
-        f.write("#PBS -e localhost:{}fwMatch-darpa/expt/{}/yeti_logs/\n".format(SOURCE_DIR,
-                                                                                experiment))
+        log_folder = "{}fwMatch-darpa/expt/{}/yeti_logs/".format(SOURCE_DIR, experiment)
+        os.makedirs(os.path.expanduser(log_folder), exist_ok=True)
+        f.write("#PBS -o localhost:{}\n".format(log_folder))
+        f.write("#PBS -e localhost:{}\n".format(log_folder))
         f.write("#Command below is to execute Matlab code for Job Array (Example 4) " +
                 "so that each part writes own output\n")
         f.write("matlab -nodesktop -nodisplay -r \"dbclear all; addpath('" +
@@ -203,10 +203,30 @@ def setup_shuffle_model(condition_names):
         save_dir = "{}shuffled/{}".format(DATA_DIR, experiment)
         # prev_umask = os.umask(mode=os.stat(DATA_DIR).st_mode)
         # os.makedirs(save_dir, mode=os.stat(DATA_DIR).st_mode, exist_ok=True)
-        os.makedirs(save_dir, exist_ok=True)
+        os.makedirs(os.path.expanduser(save_dir), exist_ok=True)
         save_name = "shuffled_{}_{}".format(EXPT_NAME, condition)
 
         write_shuffling_script(experiment, data_file, save_dir, save_name)
+
+        curr_dir = os.getcwd()
+        logger.debug("curr_dir = {}.".format(curr_dir))
+        os.chdir(experiment)
+        logger.debug("changed into dir: {}".format(os.getcwd()))
+
+        shell_command = "./shuffle_start_job.sh"
+        logger.debug("About to run {}".format(shell_command))
+        process_results = subprocess.run(shell_command, shell=True)
+        if process_results.returncode:
+            logger.critical("\nAre you on the yeti cluster? Job submission failed.")
+            raise RuntimeError("Received non-zero return code: {}".format(process_results))
+        logger.info("Shuffled dataset creation job submitted.")
+
+        os.chdir(curr_dir)
+        logger.debug("changed back to dir: {}".format(os.getcwd()))
+
+
+def create_shuffle_configs(conditions):
+    pass
 
 
 if __name__ == '__main__':
@@ -215,12 +235,12 @@ if __name__ == '__main__':
     if conditions:
         check_templates()
         setup_exec_train_model(conditions)
-        # Create bare-bones shuffle folder
+        # Create bare-bones shuffle folder and create shuffled datasets
         setup_shuffle_model(conditions)
-        # run shuffle dataset creation, if needed
         # Wait for train CRF to be done
         # Run merge and save_best, grabbing best params
-        # create shuffle configs with best params
+        # create shuffle configs with best params (write and run write_configs_for_loopy.m)
+        create_shuffle_configs(conditions)
         # Run shuffle/start_jobs.sh
         # Wait for shuffle CRFs to be done
         # Run merge and save_shuffle
