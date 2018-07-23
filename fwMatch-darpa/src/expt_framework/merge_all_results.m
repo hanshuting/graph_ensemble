@@ -1,5 +1,5 @@
-function [model_collection] = merge_all_models(results_folder_path)
-% MERGE_ALL_MODELS
+function [model_collection] = merge_all_results(results_folder_path)
+% MERGE_ALL_RESULTS
 %
 % Input
 %   results_folder_path (Optional): String to folder containing result*.mat
