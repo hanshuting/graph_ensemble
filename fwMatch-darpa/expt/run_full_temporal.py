@@ -3,6 +3,7 @@
 import time
 import sys
 import os
+import stat
 import shutil
 import shlex
 import subprocess
@@ -15,6 +16,7 @@ logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 logger.setLevel(logging.DEBUG)
 EXPT_NAME = "temporal"
 DATA_DIR = "~/data/"
+SOURCE_DIR = "~/graph_ensemble/"    # TODO: Autodetect this
 USER = "jds2270"
 EMAIL = "jds2270@columbia.edu"
 S_LAMBDAS = {'parallize': True,      # If True, each point generates a distinct config and job
@@ -30,6 +32,7 @@ P_LAMBDAS = {'parallize': True,      # If True, each point generates a distinct 
              'min': 1e+01,
              'max': 1e+04}
 TIME_SPAN = 2
+NSHUFFLE = 100
 # *** END USER EDITABLE VARIABLES ***
 
 # *** start constants ***
@@ -115,6 +118,97 @@ def setup_exec_train_model(condition_names):
         logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
+def write_shuffled_data_generating_script(experiment, data_file, save_dir, save_name):
+    # script for generate shuffled data
+    filepath = "{}/gn_shuff_data.m".format(experiment)
+    logger.debug("writing file: {}".format(filepath))
+    with open(filepath, 'w') as f:
+        f.write("if exist('{}{}')~=7\n".format(DATA_DIR, save_name))
+        f.write("    mkdir('{}{}');\n".format(DATA_DIR, save_name))
+        f.write("end\n")
+        f.write("addpath(genpath('{}'));\n".format(SOURCE_DIR))
+        f.write("load(['{}{}']);\n".format(DATA_DIR, data_file))
+        f.write("fprintf('Loaded: %s\\n', ['{}{}']);\n".format(DATA_DIR, data_file))
+        f.write("if exist('stimuli', 'var') ~= 1\n")
+        f.write("    stimuli = [];\n")
+        f.write("end\n")
+        f.write("num_stimuli = size(stimuli, 2)\n")
+        f.write("data_raw = [data stimuli]';\n")
+        f.write("for i = 1:{}\n".format(NSHUFFLE))
+        f.write("\tdata = shuffle(data_raw,'exchange')';\n")
+        f.write("\tstimuli = data(:, end - num_stimuli + 1:end);\n")
+        f.write("\tdata = data(:, 1:end - num_stimuli);\n")
+        f.write("\tsave(['{}/{}_' num2str(i) '.mat'],'data','stimuli');\n".format(save_dir,
+                                                                                  save_name))
+        f.write("end\n")
+        f.write("fprintf('done shuffling data\\n');\n")
+    f.closed
+    logger.info("done writing {}\n".format(filepath))
+
+
+def write_shuffling_yeti_script(experiment):
+    # write yeti script
+    filepath = "{}/shuffle_yeti_config.sh".format(experiment)
+    logger.debug("writing file: {}".format(filepath))
+    with open(filepath, 'w') as f:
+        f.write("#!/bin/sh\n")
+        f.write("#shuffle_yeti_config.sh\n")
+        f.write("#PBS -N {}\n".format(experiment))
+        f.write("#PBS -W group_list=yetibrain\n")
+        f.write("#PBS -l nodes=1:ppn=1,walltime=02:00:00,mem=4000mb\n")
+        f.write("#PBS -m ae\n")
+        f.write("#PBS -V\n")
+        f.write("#set output and error directories (SSCC example here)\n")
+        f.write("#PBS -o localhost:{}fwMatch-darpa/expt/{}/yeti_logs/\n".format(SOURCE_DIR,
+                                                                                experiment))
+        f.write("#PBS -e localhost:{}fwMatch-darpa/expt/{}/yeti_logs/\n".format(SOURCE_DIR,
+                                                                                experiment))
+        f.write("#Command below is to execute Matlab code for Job Array (Example 4) " +
+                "so that each part writes own output\n")
+        f.write("matlab -nodesktop -nodisplay -r \"dbclear all; addpath('" +
+                "{}fwMatch-darpa/expt/{}');gn_shuff_data; exit\"\n".format(SOURCE_DIR, experiment))
+        f.write("#End of script\n")
+    f.closed
+    # Set executable permissions
+    os.chmod(filepath, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(filepath).st_mode)
+    logger.info("done writing {}\n".format(filepath))
+
+
+def write_shuffling_submit_script(experiment):
+    # write submit script
+    filepath = "{}/shuffle_start_job.sh".format(experiment)
+    logger.debug("writing file: {}".format(filepath))
+    with open(filepath, 'w') as f:
+        f.write("qsub shuffle_yeti_config.sh\n")
+    f.closed
+    # Set executable permissions
+    os.chmod(filepath, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(filepath).st_mode)
+    logger.info("done writing {}\n".format(filepath))
+
+
+def write_shuffling_script(experiment, data_file, save_dir, save_name):
+    write_shuffled_data_generating_script(experiment, data_file, save_dir, save_name)
+    write_shuffling_yeti_script(experiment)
+    write_shuffling_submit_script(experiment)
+    logger.info("done writing {} yeti scripts\n".format(experiment))
+
+
+def setup_shuffle_model(condition_names):
+    for condition in condition_names:
+        experiment = "shuffled_{}_{}_{}".format(EXPT_NAME, condition, MODEL_TYPE)
+        logger.info("Copying {} to {}".format(SHUFFLE_TEMPLATE_FOLDER_NAME, experiment))
+        shutil.copytree(SHUFFLE_TEMPLATE_FOLDER_NAME, experiment)
+        data_file = "{}_{}.mat".format(EXPT_NAME, condition)
+
+        save_dir = "{}shuffled/{}".format(DATA_DIR, experiment)
+        # prev_umask = os.umask(mode=os.stat(DATA_DIR).st_mode)
+        # os.makedirs(save_dir, mode=os.stat(DATA_DIR).st_mode, exist_ok=True)
+        os.makedirs(save_dir, exist_ok=True)
+        save_name = "shuffled_{}_{}".format(EXPT_NAME, condition)
+
+        write_shuffling_script(experiment, data_file, save_dir, save_name)
+
+
 if __name__ == '__main__':
     start_time = time.time()
     conditions = sys.argv[1:]
@@ -122,6 +216,7 @@ if __name__ == '__main__':
         check_templates()
         setup_exec_train_model(conditions)
         # Create bare-bones shuffle folder
+        setup_shuffle_model(conditions)
         # run shuffle dataset creation, if needed
         # Wait for train CRF to be done
         # Run merge and save_best, grabbing best params
