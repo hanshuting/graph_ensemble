@@ -235,7 +235,52 @@ def setup_shuffle_model(condition_names):
 
 
 def create_shuffle_configs(conditions, best_params):
-    pass
+    for condition in conditions:
+        experiment = "shuffled_{}_{}_{}".format(EXPT_NAME, condition, MODEL_TYPE)
+        save_dir = "{}shuffled/{}".format(DATA_DIR, experiment)
+        save_name = "shuffled_{}_{}".format(EXPT_NAME, condition)
+
+        fname = "{}{}write_configs_for_loopy.m".format(experiment, os.sep)
+        with open(fname, 'w') as f:
+            f.write("create_shuffle_config_files( ...\n")
+            f.write("    'datapath', '{}{}{}.mat', ...\n".format(save_dir, os.sep, save_name))
+            f.write("    'experiment_name', '{}', ...\n".format(experiment))
+            f.write("    'email_for_notifications', '{}', ...\n".format(EMAIL))
+            f.write("    'yeti_user', '{}', ...\n".format(USER))
+            f.write("    'compute_true_logZ', false, ...\n")
+            f.write("    'reweight_denominator', 'mean_degree', ...\n")
+            # f.write("    's_lambda_splits', 1, ...\n")
+            # f.write("    's_lambdas_per_split', 1, ...\n")
+            f.write("    's_lambda_min', {}, ...\n".format(best_params[condition]['s_lambda']))
+            f.write("    's_lambda_max', {}, ...\n".format(best_params[condition]['s_lambda']))
+            # f.write("    'density_splits', 1, ...\n")
+            # f.write("    'densities_per_split', 1, ...\n")
+            f.write("    'density_min', {}, ...\n".format(best_params[condition]['density']))
+            f.write("    'density_max', {}, ...\n".format(best_params[condition]['density']))
+            # f.write("    'p_lambda_splits', 1, ...\n")
+            # f.write("    'p_lambdas_per_split', 1, ...\n")
+            f.write("    'p_lambda_min', {}, ...\n".format(best_params[condition]['p_lambda']))
+            f.write("    'p_lambda_max', {}, ...\n".format(best_params[condition]['p_lambda']))
+            f.write("    'time_span', {}, ...\n".format(best_params[condition]['time_span']))
+            f.write("    'num_shuffle', {});\n".format(NSHUFFLE))
+        f.closed
+        logger.info("done writing {}".format(fname))
+
+        curr_dir = os.getcwd()
+        logger.debug("curr_dir = {}.".format(curr_dir))
+        os.chdir(experiment)
+        logger.debug("changed into dir: {}".format(os.getcwd()))
+        scommand = ("matlab -nodesktop -nodisplay -r \"" +
+                    "write_configs_for_{}, exit\"".format(MODEL_TYPE))
+        logger.debug("About to run:\n{}".format(scommand))
+        sargs = shlex.split(scommand)
+        process_results = subprocess.run(sargs)
+        if process_results.returncode:
+            raise RuntimeError("Received non-zero return code: {}".format(process_results))
+        logger.info("\nShuffle configs generated.")
+
+        os.chdir(curr_dir)
+        logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
 def get_best_parameters(condition_names, wait_seconds=5):
