@@ -342,6 +342,18 @@ def get_best_parameters(condition_names, wait_seconds=5):
     return best_params
 
 
+def exec_shuffle_model(conditions):
+    for condition in conditions:
+        # TODO: Need to get the filepath for the each final shuffled datasets to check for
+
+        process_results = subprocess.run("./start_jobs.sh", shell=True)
+        if process_results.returncode:
+            logger.critical("\nAre you on the yeti cluster? Job submission failed.")
+            raise RuntimeError("Received non-zero return code: {}".format(process_results))
+        logger.info("Training job(s) submitted.")
+
+
+
 if __name__ == '__main__':
     start_time = time.time()
     conditions = sys.argv[1:]
@@ -358,6 +370,7 @@ if __name__ == '__main__':
         # create shuffle configs with best params (write and run write_configs_for_loopy.m)
         create_shuffle_configs(conditions, best_params)
         # Run shuffle/start_jobs.sh
+        exec_shuffle_model(conditions)
         # Wait for shuffle CRFs to be done
         # Run merge and save_shuffle
         # Extract ensemble neuron IDs. Write to disk?
