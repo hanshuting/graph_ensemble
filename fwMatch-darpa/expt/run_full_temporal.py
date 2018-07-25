@@ -49,6 +49,19 @@ SHUFFLE_TEMPLATE_FOLDER_NAME = "shuffled_{}".format(TRAIN_TEMPLATE_FOLDER_NAME)
 # *** end constants ***
 
 
+def get_conditions_metadata(conditions):
+    for name in conditions:
+        metadata = {'data_file': "{}_{}.mat".format(EXPT_NAME, name),
+                    'experiment': "{}_{}_{}".format(EXPT_NAME, name, MODEL_TYPE),
+                    'shuffle_save_name': "shuffled_{}_{}".format(EXPT_NAME, name)
+                    }
+        metadata['shuffle_save_dir'] = "{}shuffled{}{}".format(DATA_DIR, os.sep,
+                                                               metadata['experiment'])
+        metadata['shuffle_experiment'] = "shuffled_{}".format(metadata['experiment'])
+        conditions[name].update(metadata)
+    return conditions
+
+
 def check_templates():
     """Make template folders from master templates if they do not exist already.
     """
