@@ -73,23 +73,21 @@ def check_templates():
         shutil.copytree("shuffled_template", SHUFFLE_TEMPLATE_FOLDER_NAME)
 
 
-def setup_exec_train_model(condition_names):
+def setup_exec_train_model(conditions):
     """Mostly follows old create_script.pl.
 
     Args:
-        condition_names ([str]): List of condition names to setup.
+        conditions (dict): Dict of condition names: paths.
     """
-    for condition in condition_names:
-        data_file = "{}_{}.mat".format(EXPT_NAME, condition)
-        experiment = "{}_{}_{}".format(EXPT_NAME, condition, MODEL_TYPE)
-        logger.info("Copying {} to {}".format(TRAIN_TEMPLATE_FOLDER_NAME, experiment))
-        shutil.copytree(TRAIN_TEMPLATE_FOLDER_NAME, experiment)
+    for name, paths in conditions.items():
+        logger.info("Copying {} to {}".format(TRAIN_TEMPLATE_FOLDER_NAME, paths['experiment']))
+        shutil.copytree(TRAIN_TEMPLATE_FOLDER_NAME, paths['experiment'])
 
-        fname = "{}{}write_configs_for_loopy.m".format(experiment, os.sep)
+        fname = "{}{}write_configs_for_loopy.m".format(paths['experiment'], os.sep)
         with open(fname, 'w') as f:
             f.write("create_config_files( ...\n")
-            f.write("    'datapath', '{}{}', ...\n".format(DATA_DIR, data_file))
-            f.write("    'experiment_name', '{}', ...\n".format(experiment))
+            f.write("    'datapath', '{}{}', ...\n".format(DATA_DIR, paths['data_file']))
+            f.write("    'experiment_name', '{}', ...\n".format(paths['experiment']))
             f.write("    'email_for_notifications', '{}', ...\n".format(EMAIL))
             f.write("    'yeti_user', '{}', ...\n".format(USER))
             f.write("    'compute_true_logZ', false, ...\n")
@@ -118,7 +116,7 @@ def setup_exec_train_model(condition_names):
 
         curr_dir = os.getcwd()
         logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(experiment)
+        os.chdir(paths['experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
         scommand = ("matlab -nodesktop -nodisplay -r \"try, write_configs_for_" +
                     "{}, catch, end, exit\"".format(MODEL_TYPE))
@@ -215,24 +213,22 @@ def write_shuffling_script(experiment, data_file, save_dir, save_name):
     logger.info("done writing {} yeti scripts\n".format(experiment))
 
 
-def setup_shuffle_model(condition_names):
-    for condition in condition_names:
-        experiment = "shuffled_{}_{}_{}".format(EXPT_NAME, condition, MODEL_TYPE)
-        logger.info("Copying {} to {}".format(SHUFFLE_TEMPLATE_FOLDER_NAME, experiment))
-        shutil.copytree(SHUFFLE_TEMPLATE_FOLDER_NAME, experiment)
-        data_file = "{}_{}.mat".format(EXPT_NAME, condition)
+def setup_shuffle_model(conditions):
+    for name, paths in conditions.items():
+        logger.info("Copying {} to {}".format(SHUFFLE_TEMPLATE_FOLDER_NAME,
+                                              paths['shuffle_experiment']))
+        shutil.copytree(SHUFFLE_TEMPLATE_FOLDER_NAME, paths['shuffle_experiment'])
 
-        save_dir = "{}shuffled{}{}".format(DATA_DIR, os.sep, experiment)
-        # prev_umask = os.umask(mode=os.stat(DATA_DIR).st_mode)
-        # os.makedirs(save_dir, mode=os.stat(DATA_DIR).st_mode, exist_ok=True)
-        os.makedirs(os.path.expanduser(save_dir), exist_ok=True)
-        save_name = "shuffled_{}_{}".format(EXPT_NAME, condition)
+        os.makedirs(os.path.expanduser(paths['shuffle_save_dir']), exist_ok=True)
 
-        write_shuffling_script(experiment, data_file, save_dir, save_name)
+        write_shuffling_script(paths['shuffle_experiment'],
+                               paths['data_file'],
+                               paths['shuffle_save_dir'],
+                               paths['shuffle_save_name'])
 
         curr_dir = os.getcwd()
         logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(experiment)
+        os.chdir(paths['shuffle_experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
 
         shell_command = ".{}shuffle_start_job.sh".format(os.sep)
@@ -248,40 +244,37 @@ def setup_shuffle_model(condition_names):
 
 
 def create_shuffle_configs(conditions, best_params):
-    for condition in conditions:
-        experiment = "shuffled_{}_{}_{}".format(EXPT_NAME, condition, MODEL_TYPE)
-        save_dir = "{}shuffled/{}".format(DATA_DIR, experiment)
-        save_name = "shuffled_{}_{}".format(EXPT_NAME, condition)
-
-        fname = "{}{}write_configs_for_loopy.m".format(experiment, os.sep)
+    for name, paths in conditions.items():
+        fname = "{}{}write_configs_for_loopy.m".format(paths['shuffle_experiment'], os.sep)
         with open(fname, 'w') as f:
             f.write("create_shuffle_config_files( ...\n")
-            f.write("    'datapath', '{}{}{}.mat', ...\n".format(save_dir, os.sep, save_name))
-            f.write("    'experiment_name', '{}', ...\n".format(experiment))
+            f.write("    'datapath', '{}{}{}.mat', ...\n".format(paths['shuffle_save_dir'], os.sep,
+                                                                 paths['shuffle_save_name']))
+            f.write("    'experiment_name', '{}', ...\n".format(paths['shuffle_experiment']))
             f.write("    'email_for_notifications', '{}', ...\n".format(EMAIL))
             f.write("    'yeti_user', '{}', ...\n".format(USER))
             f.write("    'compute_true_logZ', false, ...\n")
             f.write("    'reweight_denominator', 'mean_degree', ...\n")
             # f.write("    's_lambda_splits', 1, ...\n")
             # f.write("    's_lambdas_per_split', 1, ...\n")
-            f.write("    's_lambda_min', {}, ...\n".format(best_params[condition]['s_lambda']))
-            f.write("    's_lambda_max', {}, ...\n".format(best_params[condition]['s_lambda']))
+            f.write("    's_lambda_min', {}, ...\n".format(best_params[name]['s_lambda']))
+            f.write("    's_lambda_max', {}, ...\n".format(best_params[name]['s_lambda']))
             # f.write("    'density_splits', 1, ...\n")
             # f.write("    'densities_per_split', 1, ...\n")
-            f.write("    'density_min', {}, ...\n".format(best_params[condition]['density']))
-            f.write("    'density_max', {}, ...\n".format(best_params[condition]['density']))
+            f.write("    'density_min', {}, ...\n".format(best_params[name]['density']))
+            f.write("    'density_max', {}, ...\n".format(best_params[name]['density']))
             # f.write("    'p_lambda_splits', 1, ...\n")
             # f.write("    'p_lambdas_per_split', 1, ...\n")
-            f.write("    'p_lambda_min', {}, ...\n".format(best_params[condition]['p_lambda']))
-            f.write("    'p_lambda_max', {}, ...\n".format(best_params[condition]['p_lambda']))
-            f.write("    'time_span', {}, ...\n".format(best_params[condition]['time_span']))
+            f.write("    'p_lambda_min', {}, ...\n".format(best_params[name]['p_lambda']))
+            f.write("    'p_lambda_max', {}, ...\n".format(best_params[name]['p_lambda']))
+            f.write("    'time_span', {}, ...\n".format(best_params[name]['time_span']))
             f.write("    'num_shuffle', {});\n".format(NSHUFFLE))
         f.closed
         logger.info("done writing {}".format(fname))
 
         curr_dir = os.getcwd()
         logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(experiment)
+        os.chdir(paths['shuffle_experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
         scommand = ("matlab -nodesktop -nodisplay -r \"" +
                     "write_configs_for_{}, exit\"".format(MODEL_TYPE))
@@ -296,11 +289,11 @@ def create_shuffle_configs(conditions, best_params):
         logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
-def get_best_parameters(condition_names, wait_seconds=5):
+def get_best_parameters(conditions, wait_seconds=5):
     """Wait for the result files to be available, and extract the best parameters.
 
     Args:
-        condition_names ([str]): List of condition names.
+        conditions (dict): Dict of condition names: paths.
         wait_seconds (float, optional): Number of seconds to sleep between checking for result
             files.
 
@@ -311,52 +304,61 @@ def get_best_parameters(condition_names, wait_seconds=5):
         dict of dicts: Best parameters for each condition. Parameters stored as a dict with
             PARAMS_TO_EXTRACT as the keys.
     """
-    best_params = {name: {} for name in condition_names}
+    best_params = {name: {} for name in conditions}
     NUM_JOBS = 1
     for param in [S_LAMBDAS, DENSITIES, P_LAMBDAS]:
         NUM_JOBS *= param['num_points'] if param['parallize'] else 1
 
-    job_to_check = [1] * len(condition_names)
-    # Generate path to results folder for each condition
-    results_paths = ["{0}_{1}_{2}{3}results{3}".format(EXPT_NAME, condition, MODEL_TYPE, os.sep)
-                     for condition in condition_names]
+    # Generate path to results folder for each condition, init job # to check at 1
+    conditions_to_check = {name: {'job': 1,
+                                  'results_path': "{0}_{1}_{2}{3}results{3}".format(
+                                      EXPT_NAME, name, MODEL_TYPE, os.sep)
+                                  }
+                           for name in conditions}
 
     logger.info("Start waiting for train results files.")
     num_waits = 0
     # TODO: Parellize this loop so finished conditions can proceed immediately.
-    while any(job_to_check):
-        for i, results_path in enumerate(results_paths):
-            if job_to_check[i]:
-                # for j in range(1, NUM_JOBS + 1):
-                while os.path.exists("{}result{}.mat".format(results_path, job_to_check[i])):
-                    job_to_check[i] += 1
-                if job_to_check[i] > NUM_JOBS:
-                    # merge & save models
-                    scommand = ("matlab -nodesktop -nodisplay -nosplash -r \"" +
-                                "addpath(genpath('{}')); ".format(SOURCE_DIR) +
-                                "save_best_params('{}'); ".format(results_path) +
-                                "exit\"")
-                    logger.debug("About to run:\n{}".format(scommand))
-                    sargs = shlex.split(scommand)
-                    process_results = subprocess.run(sargs)
-                    if process_results.returncode:
-                        raise RuntimeError("Received non-zero return code: " +
-                                           "{}".format(process_results))
-                    logger.info("Training models saved.")
-
-                    # grab and return best params
-                    with open(results_path + "best_parameters.txt", 'r') as f:
-                        for param in PARAMS_TO_EXTRACT:
-                            best_params[condition_names[i]][param] = float(f.readline())
-                    f.closed
-
-                    job_to_check[i] = False
-                    logger.info("Best parameters collected for {}.".format(condition_names[i]))
+    while conditions_to_check:
         time.sleep(wait_seconds)
         num_waits += 1
         if (num_waits % 100) == 0:
             logger.info("Waited for {} sleep cycles so far. Currently waiting for: {}".format(
-                num_waits, list(zip(condition_names, job_to_check))))
+                num_waits, conditions_to_check))
+
+        conditions_to_stop_checking = []
+        for name, to_check in conditions_to_check.items():
+            while os.path.exists("{}result{}.mat".format(to_check['results_path'],
+                                                         to_check['job'])):
+                to_check['job'] += 1
+            if to_check['job'] > NUM_JOBS:
+                # merge & save models
+                scommand = ("matlab -nodesktop -nodisplay -nosplash -r \"" +
+                            "addpath(genpath('{}')); ".format(SOURCE_DIR) +
+                            "save_best_params('{}'); ".format(to_check['results_path']) +
+                            "exit\"")
+                logger.debug("About to run:\n{}".format(scommand))
+                sargs = shlex.split(scommand)
+                process_results = subprocess.run(sargs)
+                if process_results.returncode:
+                    raise RuntimeError("Received non-zero return code: " +
+                                       "{}".format(process_results))
+                logger.info("Training models saved.")
+
+                # grab and return best params
+                with open(to_check['results_path'] + "best_parameters.txt", 'r') as f:
+                        for param in PARAMS_TO_EXTRACT:
+                            best_params[name][param] = float(f.readline())
+                f.closed
+                logger.info("Best parameters collected for {}.".format(name))
+                logger.debug("{}".format(best_params[name]))
+
+                # Risky to delete dict entries while iterating thru them,
+                # so collect and batch delete after
+                conditions_to_stop_checking.append(name)
+
+        for finished in conditions_to_stop_checking:
+            del conditions_to_check[finished]
 
     logger.info("Parameters for all conditions collected.\n")
     return best_params
@@ -373,13 +375,15 @@ def exec_shuffle_model(conditions):
         logger.info("Training job(s) submitted.")
 
 
-
 if __name__ == '__main__':
     start_time = time.time()
-    conditions = sys.argv[1:]
+
+    # Each condition is a dict containing condition specific filepaths
+    conditions = {name: {} for name in sys.argv[1:]}
     if conditions:
         if len(conditions) > 1:
             raise ValueError("Multiple conditions not currently supported.")
+        conditions = get_conditions_metadata(conditions)
         check_templates()
         setup_exec_train_model(conditions)
         # Create bare-bones shuffle folder and create shuffled datasets
