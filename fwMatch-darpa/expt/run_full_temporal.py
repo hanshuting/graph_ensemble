@@ -128,7 +128,7 @@ def setup_exec_train_model(condition_names):
 
 def write_shuffled_data_generating_script(experiment, data_file, save_dir, save_name):
     # script for generate shuffled data
-    filepath = "{}/gn_shuff_data.m".format(experiment)
+    filepath = "{}{}gn_shuff_data.m".format(experiment, os.sep)
     logger.debug("writing file: {}".format(filepath))
     with open(filepath, 'w') as f:
         f.write("if exist('{}{}')~=7\n".format(DATA_DIR, save_name))
@@ -156,7 +156,7 @@ def write_shuffled_data_generating_script(experiment, data_file, save_dir, save_
 
 def write_shuffling_yeti_script(experiment):
     # write yeti script
-    filepath = "{}/shuffle_yeti_config.sh".format(experiment)
+    filepath = "{}{}shuffle_yeti_config.sh".format(experiment, os.sep)
     logger.debug("writing file: {}".format(filepath))
     with open(filepath, 'w') as f:
         f.write("#!/bin/sh\n")
@@ -185,7 +185,7 @@ def write_shuffling_yeti_script(experiment):
 
 def write_shuffling_submit_script(experiment):
     # write submit script
-    filepath = "{}/shuffle_start_job.sh".format(experiment)
+    filepath = "{}{}shuffle_start_job.sh".format(experiment, os.sep)
     logger.debug("writing file: {}".format(filepath))
     with open(filepath, 'w') as f:
         f.write("qsub shuffle_yeti_config.sh\n")
@@ -209,7 +209,7 @@ def setup_shuffle_model(condition_names):
         shutil.copytree(SHUFFLE_TEMPLATE_FOLDER_NAME, experiment)
         data_file = "{}_{}.mat".format(EXPT_NAME, condition)
 
-        save_dir = "{}shuffled/{}".format(DATA_DIR, experiment)
+        save_dir = "{}shuffled{}{}".format(DATA_DIR, os.sep, experiment)
         # prev_umask = os.umask(mode=os.stat(DATA_DIR).st_mode)
         # os.makedirs(save_dir, mode=os.stat(DATA_DIR).st_mode, exist_ok=True)
         os.makedirs(os.path.expanduser(save_dir), exist_ok=True)
@@ -222,7 +222,7 @@ def setup_shuffle_model(condition_names):
         os.chdir(experiment)
         logger.debug("changed into dir: {}".format(os.getcwd()))
 
-        shell_command = "./shuffle_start_job.sh"
+        shell_command = ".{}shuffle_start_job.sh".format(os.sep)
         logger.debug("About to run {}".format(shell_command))
         process_results = subprocess.run(shell_command, shell=True)
         if process_results.returncode:
