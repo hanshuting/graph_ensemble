@@ -392,6 +392,14 @@ def test_shuffle_datasets_exist(paths, **kwargs):
     return True
 
 
+def simple_test_shuffle_datasets(shuffle_save_dir, shuffle_save_name, **kwargs):
+    filebase = os.path.expanduser("{}{}{}".format(shuffle_save_dir, os.sep, shuffle_save_name))
+    job = 1
+    while os.path.exists("{}_{}.mat".format(filebase, job)):
+        job += 1
+    return job > NSHUFFLE
+
+
 def wait_and_run(conditions_to_check, wait_seconds=5):
     """Execute specified functions after their corresponding tests pass, pausing between tests.
 
@@ -452,10 +460,10 @@ if __name__ == '__main__':
         best_params = get_best_parameters(conditions)
         # create shuffle configs with best params (write and run write_configs_for_loopy.m)
         create_shuffle_configs(conditions, best_params)
-        # Run shuffle/start_jobs.sh
+        # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
         for name, meta in conditions.items():
+            meta['to_test'] = simple_test_shuffle_datasets
             meta['to_run'] = exec_shuffle_model
-            meta['to_test'] = test_shuffle_datasets_exist
         wait_and_run(conditions)
         # Wait for shuffle CRFs to be done
         # Run merge and save_shuffle
