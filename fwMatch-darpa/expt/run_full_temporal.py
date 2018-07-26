@@ -408,6 +408,11 @@ def get_max_job_done(filebase, filesuffix=".mat"):
     return job - 1
 
 
+def test_shuffle_CRFs(shuffle_experiment, **kwargs):
+    filebase = "{0}{1}results{1}result".format(shuffle_experiment, os.sep)
+    return get_max_job_done(filebase) >= NSHUFFLE
+
+
 def wait_and_run(conditions_to_check, wait_seconds=5):
     """Execute specified functions after their corresponding tests pass, pausing between tests.
 
@@ -450,6 +455,21 @@ def wait_and_run(conditions_to_check, wait_seconds=5):
     return return_vals
 
 
+def exec_merge_shuffle_CRFs(shuffle_experiment, **kwargs):
+    results_path = "{0}{1}results{1}".format(shuffle_experiment, os.sep)
+    scommand = ("matlab -nodesktop -nodisplay -nosplash -r \"" +
+                "addpath(genpath('{}')); ".format(SOURCE_DIR) +
+                "save_and_merge_shuffled_models('{}'); ".format(results_path) +
+                "exit\"")
+    logger.debug("About to run:\n{}".format(scommand))
+    sargs = shlex.split(scommand)
+    process_results = subprocess.run(sargs)
+    if process_results.returncode:
+        raise RuntimeError("Received non-zero return code: " +
+                           "{}".format(process_results))
+    logger.info("Shuffle models merged and saved.")
+
+
 if __name__ == '__main__':
     start_time = time.time()
 
@@ -473,8 +493,11 @@ if __name__ == '__main__':
             meta['to_test'] = simple_test_shuffle_datasets
             meta['to_run'] = exec_shuffle_model
         wait_and_run(conditions)
-        # Wait for shuffle CRFs to be done
-        # Run merge and save_shuffle
+        # Wait for shuffle CRFs to be done and run merge and save_shuffle
+        for meta in conditions.values():
+            meta['to_test'] = test_shuffle_CRFs
+            meta['to_run'] = exec_merge_shuffle_CRFs
+        wait_and_run(conditions)
         # Extract ensemble neuron IDs. Write to disk?
     else:
         raise TypeError("At least one condition name must be passed on the command line.")
