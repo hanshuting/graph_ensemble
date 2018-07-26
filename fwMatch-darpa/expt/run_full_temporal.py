@@ -400,6 +400,14 @@ def simple_test_shuffle_datasets(shuffle_save_dir, shuffle_save_name, **kwargs):
     return job > NSHUFFLE
 
 
+def get_max_job_done(filebase, filesuffix=".mat"):
+    filebase = os.path.expanduser(filebase)
+    job = 1
+    while os.path.exists("{}{}{}".format(filebase, job, filesuffix)):
+        job += 1
+    return job - 1
+
+
 def wait_and_run(conditions_to_check, wait_seconds=5):
     """Execute specified functions after their corresponding tests pass, pausing between tests.
 
