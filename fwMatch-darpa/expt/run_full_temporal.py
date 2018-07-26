@@ -127,7 +127,7 @@ def setup_exec_train_model(conditions):
             raise RuntimeError("Received non-zero return code: {}".format(process_results))
         logger.info("\nTraining configs generated.")
 
-        process_results = subprocess.run("./start_jobs.sh", shell=True)
+        process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
         if process_results.returncode:
             logger.critical("\nAre you on the yeti cluster? Job submission failed.")
             raise RuntimeError("Received non-zero return code: {}".format(process_results))
@@ -364,15 +364,20 @@ def get_best_parameters(conditions, wait_seconds=5):
     return best_params
 
 
-def exec_shuffle_model(conditions):
-    for condition in conditions:
-        # TODO: Need to get the filepath for the each final shuffled datasets to check for
+def exec_shuffle_model(shuffle_experiment, **kwargs):
+    curr_dir = os.getcwd()
+    logger.debug("curr_dir = {}.".format(curr_dir))
+    os.chdir(shuffle_experiment)
+    logger.debug("changed into dir: {}".format(os.getcwd()))
 
-        process_results = subprocess.run("./start_jobs.sh", shell=True)
-        if process_results.returncode:
-            logger.critical("\nAre you on the yeti cluster? Job submission failed.")
-            raise RuntimeError("Received non-zero return code: {}".format(process_results))
-        logger.info("Training job(s) submitted.")
+    process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
+    if process_results.returncode:
+        logger.critical("\nAre you on the yeti cluster? Job submission failed.")
+        raise RuntimeError("Received non-zero return code: {}".format(process_results))
+    logger.info("Shuffle jobs submitted.")
+
+    os.chdir(curr_dir)
+    logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
 def wait_and_run(conditions_to_check, wait_seconds=5):
@@ -436,7 +441,6 @@ if __name__ == '__main__':
         # create shuffle configs with best params (write and run write_configs_for_loopy.m)
         create_shuffle_configs(conditions, best_params)
         # Run shuffle/start_jobs.sh
-        exec_shuffle_model(conditions)
         # Wait for shuffle CRFs to be done
         # Run merge and save_shuffle
         # Extract ensemble neuron IDs. Write to disk?
