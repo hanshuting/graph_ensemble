@@ -16,11 +16,11 @@ p_lambda = best_model.p_lambda;
 density = best_model.density;
 time_span = merged_models.models{best_model_index}.time_span;
 
-save([results_folder 'best_model_full.mat'], 'graph', 'node_pot', 'edge_pot', ...
+save(fullfile(results_folder, 'best_model_full.mat'), 'graph', 'node_pot', 'edge_pot', ...
     'G', 'F', 'logZ', 's_lambda', 'p_lambda', 'density', 'time_span');
 
-save([results_folder 'best_parameters.txt'], 's_lambda', 'density', 'p_lambda', ...
-    'time_span', '-ascii', '-double');
+save(fullfile(results_folder, 'best_parameters.txt'), 's_lambda', 'density', 'p_lambda', ...
+    'time_span', '-ascii','-double');
 
 end
 
