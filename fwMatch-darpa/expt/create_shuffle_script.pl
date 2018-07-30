@@ -18,9 +18,6 @@ for( $i = 0; $i <= $#EE; $i++){
     # create experiment directory
     $EXPERIMENT = sprintf("shuffled_%s_%s_%s", $EXPT_NAME, $EE[$i], $MODEL_TYPE);
     mkdir($EXPERIMENT);
-    $scommand = sprintf("cp shuffled_%s_template/* %s/", $EXPT_NAME, $EXPERIMENT);
-    print "Running: ".$scommand."\n";
-    ($status, $result) = system($scommand);
 
     $DATA_FILE = sprintf("%s_%s",$EXPT_NAME,$EE[$i]);
     $SAVE_DIR = sprintf("%sshuffled/%s",$DATA_DIR,$EXPERIMENT);

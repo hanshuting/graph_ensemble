@@ -14,10 +14,6 @@ for( $i = 0; $i <= $#EE; $i++){
     $DATA_FILE = sprintf("%s_%s", $EXPT_NAME, $EE[$i]);
     $EXPERIMENT = sprintf("%s_%s_%s", $EXPT_NAME, $EE[$i], $MODEL_TYPE);
     mkdir($EXPERIMENT);
-    #$scommand = sprintf("cp %s_%s_template/* %s/", $EXPT_NAME, $EE[$i],$EXPERIMENT);
-    $scommand = sprintf("cp %s_template/* %s", $EXPT_NAME, $EXPERIMENT);
-    print "Running: ".$scommand."\n";
-    ($status, $result) = system($scommand);
 
     if($MODEL_TYPE eq "loopy"){
     open(my $FID, ">", "$EXPERIMENT/write_configs_for_loopy.m")

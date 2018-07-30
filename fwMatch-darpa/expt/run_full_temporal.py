@@ -43,9 +43,6 @@ MODEL_TYPE = "loopy"
 # These parameters and their order must match best_parameters.txt.
 # See save_best_parameters.m for best_parameters.txt creation.
 PARAMS_TO_EXTRACT = ['s_lambda', 'density', 'p_lambda', 'time_span']
-
-TRAIN_TEMPLATE_FOLDER_NAME = "{}_template".format(EXPT_NAME)
-SHUFFLE_TEMPLATE_FOLDER_NAME = "shuffled_{}".format(TRAIN_TEMPLATE_FOLDER_NAME)
 # *** end constants ***
 
 
@@ -60,17 +57,6 @@ def get_conditions_metadata(conditions):
         metadata['shuffle_experiment'] = "shuffled_{}".format(metadata['experiment'])
         conditions[name].update(metadata)
     return conditions
-
-
-def check_templates():
-    """Make template folders from master templates if they do not exist already.
-    """
-    # Check train
-    if not os.path.exists(TRAIN_TEMPLATE_FOLDER_NAME):
-        shutil.copytree("temporal_template", TRAIN_TEMPLATE_FOLDER_NAME)
-
-    if not os.path.exists(SHUFFLE_TEMPLATE_FOLDER_NAME):
-        shutil.copytree("shuffled_template", SHUFFLE_TEMPLATE_FOLDER_NAME)
 
 
 def run_command(scommand):
@@ -89,10 +75,11 @@ def setup_exec_train_model(conditions):
         conditions (dict): Dict of condition names: paths.
     """
     for name, paths in conditions.items():
-        logger.info("Copying {} to {}".format(TRAIN_TEMPLATE_FOLDER_NAME, paths['experiment']))
-        shutil.copytree(TRAIN_TEMPLATE_FOLDER_NAME, paths['experiment'])
+        logger.info("Creating working directory: {}".format(paths['experiment']))
+        os.makedirs(os.path.expanduser(paths['experiment']))
 
         fname = "{}{}write_configs_for_loopy.m".format(paths['experiment'], os.sep)
+        # TODO: Just call write_configs_for_loopy directly
         with open(fname, 'w') as f:
             f.write("create_config_files( ...\n")
             f.write("    'datapath', '{}{}', ...\n".format(DATA_DIR, paths['data_file']))
@@ -127,8 +114,9 @@ def setup_exec_train_model(conditions):
         logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(paths['experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
-        run_command("matlab -nodesktop -nodisplay -r \"try, write_configs_for_" +
-                    "{}, catch, end, exit\"".format(MODEL_TYPE))
+        run_command("matlab -nodesktop -nodisplay -r \"" +
+                    "addpath(genpath('{}')); ".format(SOURCE_DIR) +
+                    "try, write_configs_for_{}, catch, end, exit\"".format(MODEL_TYPE))
         logger.info("\nTraining configs generated.")
 
         process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
@@ -219,9 +207,8 @@ def write_shuffling_script(experiment, data_file, save_dir, save_name):
 
 def setup_shuffle_model(conditions):
     for name, paths in conditions.items():
-        logger.info("Copying {} to {}".format(SHUFFLE_TEMPLATE_FOLDER_NAME,
-                                              paths['shuffle_experiment']))
-        shutil.copytree(SHUFFLE_TEMPLATE_FOLDER_NAME, paths['shuffle_experiment'])
+        logger.info("Creating working directory: {}".format(paths['shuffle_experiment']))
+        os.makedirs(os.path.expanduser(paths['shuffle_experiment']))
 
         os.makedirs(os.path.expanduser(paths['shuffle_save_dir']), exist_ok=True)
 
@@ -249,7 +236,7 @@ def setup_shuffle_model(conditions):
 
 def create_shuffle_configs(conditions, best_params):
     for name, paths in conditions.items():
-        fname = "{}{}write_configs_for_loopy.m".format(paths['shuffle_experiment'], os.sep)
+        fname = "{}{}write_shuffle_configs_for_loopy.m".format(paths['shuffle_experiment'], os.sep)
         with open(fname, 'w') as f:
             f.write("create_shuffle_config_files( ...\n")
             f.write("    'datapath', '{}{}{}.mat', ...\n".format(paths['shuffle_save_dir'], os.sep,
@@ -281,7 +268,8 @@ def create_shuffle_configs(conditions, best_params):
         os.chdir(paths['shuffle_experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
         run_command("matlab -nodesktop -nodisplay -r \"" +
-                    "write_configs_for_{}, exit\"".format(MODEL_TYPE))
+                    "addpath(genpath('{}')); ".format(SOURCE_DIR) +
+                    "write_shuffle_configs_for_{}, exit\"".format(MODEL_TYPE))
 
         os.chdir(curr_dir)
         logger.debug("changed back to dir: {}".format(os.getcwd()))
@@ -434,7 +422,6 @@ if __name__ == '__main__':
         if len(conditions) > 1:
             raise ValueError("Multiple conditions not currently supported.")
         conditions = get_conditions_metadata(conditions)
-        check_templates()
         setup_exec_train_model(conditions)
         # Create bare-bones shuffle folder and create shuffled datasets
         setup_shuffle_model(conditions)

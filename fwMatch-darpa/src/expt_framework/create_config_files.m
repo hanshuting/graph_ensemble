@@ -1,4 +1,5 @@
 function create_config_files(varargin)
+% Expects to be run in the working directory
     % Remove old config files
     system('rm -f config*.m');
     system('rm -f yeti_config.sh');
@@ -11,9 +12,9 @@ function create_config_files(varargin)
     parser = inputParser;
 
     parser.addParameter('datapath', [], @ischar);
-    parser.addParameter('experiment_name', 'spikes_opto_on', @ischar);
-    parser.addParameter('email_for_notifications', 'jds2270@columbia.edu', @ischar);
-    parser.addParameter('yeti_user', 'jds2270', @ischar);
+    parser.addParameter('experiment_name', 'experiment', @ischar);
+    parser.addParameter('email_for_notifications', 'UNI@columbia.edu', @ischar);
+    parser.addParameter('yeti_user', 'UNI', @ischar);
 
     parser.addParameter('training_test_split', .8, @isscalar);
     parser.addParameter('BCFW_max_iterations', 75000, @isscalar);
