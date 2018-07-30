@@ -287,72 +287,31 @@ def create_shuffle_configs(conditions, best_params):
         logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
-def get_best_parameters(conditions, wait_seconds=5):
-    """Wait for the result files to be available, and extract the best parameters.
+def get_best_parameters(experiment, **kwargs):
+    """Extract the best parameters from gridsearch results.
 
     Args:
-        conditions (dict): Dict of condition names: paths.
-        wait_seconds (float, optional): Number of seconds to sleep between checking for result
-            files.
-
-    Raises:
-        RuntimeError: Shell command to execute Matlab script failed.
+        experiment (str): Path to working directory containing results subdirectory.
 
     Returns:
-        dict of dicts: Best parameters for each condition. Parameters stored as a dict with
+        dict: Best parameters from the gridsearch. Parameters stored as a dict with
             PARAMS_TO_EXTRACT as the keys.
     """
-    best_params = {name: {} for name in conditions}
-    NUM_JOBS = 1
-    for param in [S_LAMBDAS, DENSITIES, P_LAMBDAS]:
-        NUM_JOBS *= param['num_points'] if param['parallize'] else 1
+    best_params = {}
+    results_path = "{0}{1}results{1}".format(experiment, os.sep)
 
-    # Generate path to results folder for each condition, init job # to check at 1
-    conditions_to_check = {name: {'job': 1,
-                                  'results_path': "{0}_{1}_{2}{3}results{3}".format(
-                                      EXPT_NAME, name, MODEL_TYPE, os.sep)
-                                  }
-                           for name in conditions}
+    # merge & save models
+    run_command("matlab -nodesktop -nodisplay -nosplash -r \"" +
+                "addpath(genpath('{}')); ".format(SOURCE_DIR) +
+                "save_best_params('{}'); ".format(results_path) +
+                "exit\"")
 
-    logger.info("Start waiting for train results files.")
-    num_waits = 0
-    # TODO: Parellize this loop so finished conditions can proceed immediately.
-    while conditions_to_check:
-        time.sleep(wait_seconds)
-        num_waits += 1
-        if (num_waits % 100) == 0:
-            logger.info("Waited for {} sleep cycles so far. Currently waiting for: {}".format(
-                num_waits, conditions_to_check))
+    # grab and return best params
+    with open(results_path + "best_parameters.txt", 'r') as f:
+            for param in PARAMS_TO_EXTRACT:
+                best_params[param] = float(f.readline())
+    f.closed
 
-        conditions_to_stop_checking = []
-        for name, to_check in conditions_to_check.items():
-            while os.path.exists("{}result{}.mat".format(to_check['results_path'],
-                                                         to_check['job'])):
-                to_check['job'] += 1
-            if to_check['job'] > NUM_JOBS:
-                # merge & save models
-                run_command("matlab -nodesktop -nodisplay -nosplash -r \"" +
-                            "addpath(genpath('{}')); ".format(SOURCE_DIR) +
-                            "save_best_params('{}'); ".format(to_check['results_path']) +
-                            "exit\"")
-                logger.info("Training models saved.")
-
-                # grab and return best params
-                with open(to_check['results_path'] + "best_parameters.txt", 'r') as f:
-                        for param in PARAMS_TO_EXTRACT:
-                            best_params[name][param] = float(f.readline())
-                f.closed
-                logger.info("Best parameters collected for {}.".format(name))
-                logger.debug("{}".format(best_params[name]))
-
-                # Risky to delete dict entries while iterating thru them,
-                # so collect and batch delete after
-                conditions_to_stop_checking.append(name)
-
-        for finished in conditions_to_stop_checking:
-            del conditions_to_check[finished]
-
-    logger.info("Parameters for all conditions collected.\n")
     return best_params
 
 
@@ -405,6 +364,14 @@ def test_shuffle_CRFs(shuffle_experiment, **kwargs):
     return get_max_job_done(filebase) >= NSHUFFLE
 
 
+def test_train_CRFs(experiment, **kwargs):
+    filebase = "{0}{1}results{1}result".format(experiment, os.sep)
+    num_jobs = 1
+    for param in [S_LAMBDAS, DENSITIES, P_LAMBDAS]:
+        num_jobs *= param['num_points'] if param['parallize'] else 1
+    return get_max_job_done(filebase) >= num_jobs
+
+
 def wait_and_run(conditions_to_check, wait_seconds=5):
     """Execute specified functions after their corresponding tests pass, pausing between tests.
 
@@ -429,6 +396,8 @@ def wait_and_run(conditions_to_check, wait_seconds=5):
                 logger.debug("{}['to_test'] passed.".format(name))
                 # TODO: Parallize here so we can run but still continue to test others?
                 return_vals[name] = to_check['to_run'](**to_check)
+                logger.info("{} for {} completed.".format(to_check['to_run'].__name__, name))
+                logger.debug("return_vals['{}'] = {}".format(name, return_vals[name]))
                 stop_checking.append(name)
         for finished in stop_checking:
             del conditions_remaining[finished]
@@ -471,7 +440,11 @@ if __name__ == '__main__':
         setup_shuffle_model(conditions)
         # Wait for train CRF to be done
         # Run merge and save_best, grabbing best params
-        best_params = get_best_parameters(conditions)
+        for cond in conditions.values():
+            cond['to_test'] = test_train_CRFs
+            cond['to_run'] = get_best_parameters
+        best_params = wait_and_run(conditions)
+        logger.info("Parameters for all conditions collected.\n")
         # create shuffle configs with best params (write and run write_configs_for_loopy.m)
         create_shuffle_configs(conditions, best_params)
         # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
