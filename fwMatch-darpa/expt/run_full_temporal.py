@@ -73,6 +73,15 @@ def check_templates():
         shutil.copytree("shuffled_template", SHUFFLE_TEMPLATE_FOLDER_NAME)
 
 
+def run_command(scommand):
+    logger.debug("About to run:\n{}".format(scommand))
+    sargs = shlex.split(scommand)
+    process_results = subprocess.run(sargs)
+    if process_results.returncode:
+        raise RuntimeError("Received non-zero return code: {}".format(process_results))
+    return process_results
+
+
 def setup_exec_train_model(conditions):
     """Mostly follows old create_script.pl.
 
@@ -118,13 +127,8 @@ def setup_exec_train_model(conditions):
         logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(paths['experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
-        scommand = ("matlab -nodesktop -nodisplay -r \"try, write_configs_for_" +
+        run_command("matlab -nodesktop -nodisplay -r \"try, write_configs_for_" +
                     "{}, catch, end, exit\"".format(MODEL_TYPE))
-        logger.debug("About to run:\n{}".format(scommand))
-        sargs = shlex.split(scommand)
-        process_results = subprocess.run(sargs)
-        if process_results.returncode:
-            raise RuntimeError("Received non-zero return code: {}".format(process_results))
         logger.info("\nTraining configs generated.")
 
         process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
@@ -276,14 +280,8 @@ def create_shuffle_configs(conditions, best_params):
         logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(paths['shuffle_experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
-        scommand = ("matlab -nodesktop -nodisplay -r \"" +
+        run_command("matlab -nodesktop -nodisplay -r \"" +
                     "write_configs_for_{}, exit\"".format(MODEL_TYPE))
-        logger.debug("About to run:\n{}".format(scommand))
-        sargs = shlex.split(scommand)
-        process_results = subprocess.run(sargs)
-        if process_results.returncode:
-            raise RuntimeError("Received non-zero return code: {}".format(process_results))
-        logger.info("\nShuffle configs generated.")
 
         os.chdir(curr_dir)
         logger.debug("changed back to dir: {}".format(os.getcwd()))
@@ -333,16 +331,10 @@ def get_best_parameters(conditions, wait_seconds=5):
                 to_check['job'] += 1
             if to_check['job'] > NUM_JOBS:
                 # merge & save models
-                scommand = ("matlab -nodesktop -nodisplay -nosplash -r \"" +
+                run_command("matlab -nodesktop -nodisplay -nosplash -r \"" +
                             "addpath(genpath('{}')); ".format(SOURCE_DIR) +
                             "save_best_params('{}'); ".format(to_check['results_path']) +
                             "exit\"")
-                logger.debug("About to run:\n{}".format(scommand))
-                sargs = shlex.split(scommand)
-                process_results = subprocess.run(sargs)
-                if process_results.returncode:
-                    raise RuntimeError("Received non-zero return code: " +
-                                       "{}".format(process_results))
                 logger.info("Training models saved.")
 
                 # grab and return best params
@@ -457,16 +449,10 @@ def wait_and_run(conditions_to_check, wait_seconds=5):
 
 def exec_merge_shuffle_CRFs(shuffle_experiment, **kwargs):
     results_path = "{0}{1}results{1}".format(shuffle_experiment, os.sep)
-    scommand = ("matlab -nodesktop -nodisplay -nosplash -r \"" +
+    run_command("matlab -nodesktop -nodisplay -nosplash -r \"" +
                 "addpath(genpath('{}')); ".format(SOURCE_DIR) +
                 "save_and_merge_shuffled_models('{}'); ".format(results_path) +
                 "exit\"")
-    logger.debug("About to run:\n{}".format(scommand))
-    sargs = shlex.split(scommand)
-    process_results = subprocess.run(sargs)
-    if process_results.returncode:
-        raise RuntimeError("Received non-zero return code: " +
-                           "{}".format(process_results))
     logger.info("Shuffle models merged and saved.")
 
 
