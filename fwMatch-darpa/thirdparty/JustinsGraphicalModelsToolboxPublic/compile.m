@@ -1,6 +1,8 @@
 cd Differentiation
-%mex trw_bprop_scheduled_helper1.cpp -I../eigen3/ CXXFLAGS="\$CFLAGS -O3"
-%mex trw_bprop_scheduled_helper2.cpp -I../eigen3/ CXXFLAGS="\$CFLAGS -O3"
+%mex trw_bprop_scheduled_helper1.cpp -v -I../eigen3/ CXXFLAGS="\$CFLAGS -O3"
+%mex trw_bprop_scheduled_helper2.cpp -v -I../eigen3/ CXXFLAGS="\$CFLAGS -O3"
+%mex trw_bprop_scheduled_helper1.cpp -v -I../eigen3/ CXXFLAGS="\$CFLAGS -O3 -fPIC"
+%mex trw_bprop_scheduled_helper2.cpp -v -I../eigen3/ CXXFLAGS="\$CFLAGS -O3 -fPIC"
 mex trw_bprop_scheduled_helper1.cpp -I../eigen3/
 mex trw_bprop_scheduled_helper2.cpp -I../eigen3/
 cd ..
