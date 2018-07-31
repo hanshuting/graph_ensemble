@@ -62,12 +62,9 @@ def write_shuffled_data_generating_script(experiment, data_file, save_dir, save_
         f.write("if exist('stimuli', 'var') ~= 1\n")
         f.write("    stimuli = [];\n")
         f.write("end\n")
-        f.write("num_stimuli = size(stimuli, 2)\n")
-        f.write("data_raw = [data stimuli]';\n")
+        f.write("data_raw = data';\n")
         f.write("for i = 1:{}\n".format(NSHUFFLE))
         f.write("\tdata = shuffle(data_raw,'exchange')';\n")
-        f.write("\tstimuli = data(:, end - num_stimuli + 1:end);\n")
-        f.write("\tdata = data(:, 1:end - num_stimuli);\n")
         f.write("\tsave(['{}_' num2str(i) '.mat'],'data','stimuli');\n".format(
             os.path.join(save_dir, save_name)))
         f.write("end\n")
