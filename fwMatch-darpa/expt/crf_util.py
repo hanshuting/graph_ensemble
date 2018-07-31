@@ -7,7 +7,7 @@ import subprocess
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def run_command(scommand):

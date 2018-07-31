@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 # *** START USER EDITABLE VARIABLES ***
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 EXPT_NAME = "experiment"
 DATA_DIR = "~/data/"
 SOURCE_DIR = "~/graph_ensemble/"    # TODO: Autodetect this
