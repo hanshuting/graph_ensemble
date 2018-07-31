@@ -27,7 +27,7 @@ for ii = 1:num_models
     time_span(ii) = merged_models.models{ii}.time_span;
 end
 
-save([results_folder 'fulldata.mat'],'F','G','node_pot','edge_pot',...
+save(fullfile(results_folder 'fulldata.mat'),'F','G','node_pot','edge_pot',...
     'graphs','logZ', 's_lambda', 'p_lambda', 'density','time_span','-v7.3');
 
 end
