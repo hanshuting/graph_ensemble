@@ -28,7 +28,8 @@ function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,s
         Coord_active = repmat(Coord_active, time_span, 1);
     end
 
-    [core_crf, results] = find_temporal_crf_core(best_model, shuffle_model, data, stimuli, num_controls);
+    [~, results] = find_temporal_ens_nodes(best_model, shuffle_model, data, stimuli, num_controls);
+    core_crf = results.core_crf;
     epsum = results.epsum;
     auc = results.auc;
     auc_ens = results.auc_ens;
