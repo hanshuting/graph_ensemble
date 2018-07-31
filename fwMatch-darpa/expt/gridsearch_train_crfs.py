@@ -120,7 +120,7 @@ def merge_save_train_models(experiment, **kwargs):
 
 
 def get_best_parameters(experiment, **kwargs):
-    """Extract the best parameters from gridsearch results.
+    """Get the best parameters from gridsearch results.
 
     Args:
         experiment (str): Path to working directory containing results subdirectory.
@@ -129,9 +129,6 @@ def get_best_parameters(experiment, **kwargs):
         dict: Best parameters from the gridsearch. Parameters stored as a dict with
             PARAMS_TO_EXTRACT as the keys.
     """
-    # merge & save models
-    merge_save_train_models(experiment)
-
     best_params = {}
 
     # grab and return best params
