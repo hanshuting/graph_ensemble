@@ -55,7 +55,7 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
         % length(find(multiplied_coefficients ~= 0)), even though it will
         % show up as a positive edge in numeric_graph_structure and may
         % very well become an actual edge if greater than threshold.
-        fprintf('Found %d/%d edges that had contradicting weight signs in both lassos. Zero these coefficients\n',...
+        fprintf('Found %d/%d edges that had contradicting weight signs in both lassos.\n',...
             length(negative_values_indexes), length(find(multiplied_coefficients ~= 0)));
         summed_negative_values = coefficients + coefficients';
         summed_negative_values = summed_negative_values(negative_values_indexes);
@@ -63,7 +63,7 @@ function [graph_structures, numeric_graph_structure] = learn_structures_by_densi
             mean(summed_negative_values(:)), max(summed_negative_values(:)));
         fprintf('Compare with %d, the mean of all coefficient pairs.\n', ...
             2*mean(coefficients(coefficients ~= 0)));
-        coefficients(negative_values_indexes) = 0;
+        % coefficients(negative_values_indexes) = 0;
     end
 
     % numeric graph structure
