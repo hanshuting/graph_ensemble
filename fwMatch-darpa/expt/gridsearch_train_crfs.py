@@ -5,8 +5,8 @@
 import time
 import sys
 import os
-import shlex
 import subprocess
+import crf_util
 
 import logging
 logger = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ TIME_SPAN = 2
 
 # *** start constants ***
 MODEL_TYPE = "loopy"
+EXPT_DIR = os.path.join(SOURCE_DIR, "fwMatch-darpa", "expt")
 
 # These parameters and their order must match best_parameters.txt.
 # See save_best_parameters.m for best_parameters.txt creation.
@@ -50,22 +51,6 @@ def get_conditions_metadata(conditions):
                     }
         conditions[name].update(metadata)
     return conditions
-
-
-def run_command(scommand):
-    logger.debug("About to run:\n{}".format(scommand))
-    sargs = shlex.split(scommand)
-    process_results = subprocess.run(sargs)
-    if process_results.returncode:
-        raise RuntimeError("Received non-zero return code: {}".format(process_results))
-    return process_results
-
-
-def run_matlab_command(scommand):
-    return run_command("matlab -nodesktop -nodisplay -nosplash -r \"" +
-                       "addpath(genpath('{}')); ".format(SOURCE_DIR) +
-                       scommand +
-                       "exit\"")
 
 
 def setup_exec_train_model(conditions):
@@ -114,9 +99,8 @@ def setup_exec_train_model(conditions):
         logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(paths['experiment'])
         logger.debug("changed into dir: {}".format(os.getcwd()))
-        run_command("matlab -nodesktop -nodisplay -r \"" +
-                    "addpath(genpath('{}')); ".format(SOURCE_DIR) +
-                    "try, write_configs_for_{}, catch, end, exit\"".format(MODEL_TYPE))
+        crf_util.run_matlab_command("try, write_configs_for_{}, catch, end,".format(MODEL_TYPE),
+                                    add_path=SOURCE_DIR)
         logger.info("\nTraining configs generated.")
 
         process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
@@ -131,7 +115,8 @@ def setup_exec_train_model(conditions):
 
 def merge_save_train_models(experiment, **kwargs):
     results_path = "{0}{1}results{1}".format(experiment, os.sep)
-    return run_matlab_command("save_best_params('{}'); ".format(results_path))
+    return crf_util.run_matlab_command("save_best_params('{}'); ".format(results_path),
+                                       add_path=SOURCE_DIR)
 
 
 def get_best_parameters(experiment, **kwargs):
@@ -159,87 +144,45 @@ def get_best_parameters(experiment, **kwargs):
     return best_params
 
 
-def get_max_job_done(filebase, filesuffix=".mat"):
-    filebase = os.path.expanduser(filebase)
-    job = 1
-    while os.path.exists("{}{}{}".format(filebase, job, filesuffix)):
-        job += 1
-    return job - 1
-
-
 def test_train_CRFs(experiment, **kwargs):
     filebase = "{0}{1}results{1}result".format(experiment, os.sep)
     num_jobs = 1
     for param in [S_LAMBDAS, DENSITIES, P_LAMBDAS]:
         num_jobs *= param['num_points'] if param['parallize'] else 1
-    return get_max_job_done(filebase) >= num_jobs
+    return crf_util.get_max_job_done(filebase) >= num_jobs
 
 
-def wait_and_run(conditions_to_check, wait_seconds=5):
-    """Execute specified functions after their corresponding tests pass, pausing between tests.
+def main(conditions):
+    """Summary
 
     Args:
-        conditions_to_check (dict of dicts): An item per waiting task and subsequent execution.
-            Expects each top-level key to have an associated dict with at least:
-                'to_test': a function that returns true when testing should conclude and execution
-                    should begin.
-                'to_run': the function to run once 'to_test' returns true. Ret
-            The full dict of each top level key is passed as kwargs to its 'to_test' and 'to_run'.
-        wait_seconds (float, optional): Number of seconds to wait per 'to_test' iterations.
+        conditions (dict): Each key refers to a condition, and its value is a dict containing
+            condition specific filepaths.
     """
-    return_vals = {}
-    conditions_remaining = {name: None for name in conditions_to_check}
-    logger.debug("Start waiting for\n{}".format(conditions_to_check))
-    num_waits = 0
-    while conditions_remaining:
-        stop_checking = []
-        for name in conditions_remaining:
-            to_check = conditions_to_check[name]
-            if to_check['to_test'](**to_check):
-                logger.debug("{}['to_test'] passed.".format(name))
-                # TODO: Parallize here so we can run but still continue to test others?
-                return_vals[name] = to_check['to_run'](**to_check)
-                logger.info("{} for {} completed.".format(to_check['to_run'].__name__, name))
-                logger.debug("return_vals['{}'] = {}".format(name, return_vals[name]))
-                stop_checking.append(name)
-        for finished in stop_checking:
-            del conditions_remaining[finished]
-
-        time.sleep(wait_seconds)
-        num_waits += 1
-        if (num_waits % 100) == 0:
-            logger.info("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
-                num_waits, conditions_to_check))
-        elif (num_waits % 20) == 0:
-            logger.debug("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
-                num_waits, conditions_to_check))
-
-    logger.debug("Done waiting for {}.\n".format(conditions_to_check.keys()))
-    # TODO: Returning all values together means the last test to pass blocks returing others.
-    return return_vals
-
-
-if __name__ == '__main__':
-    start_time = time.time()
-
-    # Each condition is a dict containing condition specific filepaths
-    conditions = {name: {} for name in sys.argv[1:]}
     if conditions:
         if len(conditions) > 1:
             raise ValueError("Multiple conditions not currently supported.")
         conditions = get_conditions_metadata(conditions)
         setup_exec_train_model(conditions)
         # Wait for train CRF to be done
-        # Run merge and save_best, grabbing best params
+        # Run merge and save_best
         for cond in conditions.values():
             cond['to_test'] = test_train_CRFs
             cond['to_run'] = merge_save_train_models
-        wait_and_run(conditions)
-        full_results_path = "{0}{1}{2}{1}results{1}".format(SOURCE_DIR, os.sep,
-                                                            conditions['experiment'])
-        logger.info("Grid search complete. Best parameters in {}".format(full_results_path) +
-                    "best_parameters.txt in the following order:\n{}\n".format())
+        crf_util.wait_and_run(conditions)
+        for cond in conditions.values():
+            best_params_path = os.path.join(EXPT_DIR, cond['experiment'],
+                                            "results", "best_parameters.txt")
+            logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +
+                        " in the following order:\n{}\n".format(PARAMS_TO_EXTRACT))
     else:
         raise TypeError("At least one condition name must be passed on the command line.")
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+
+    conditions = {name: {} for name in sys.argv[1:]}
+    main(conditions)
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
