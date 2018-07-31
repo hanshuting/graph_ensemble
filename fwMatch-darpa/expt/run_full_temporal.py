@@ -6,7 +6,6 @@ import time
 import sys
 import os
 import stat
-import shutil
 import shlex
 import subprocess
 
@@ -16,7 +15,7 @@ logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 # *** START USER EDITABLE VARIABLES ***
 logger.setLevel(logging.DEBUG)
-EXPT_NAME = "temporal"
+EXPT_NAME = "experiment"
 DATA_DIR = "~/data/"
 SOURCE_DIR = "~/graph_ensemble/"    # TODO: Autodetect this
 USER = "jds2270"
