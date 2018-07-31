@@ -63,8 +63,8 @@ def setup_exec_train_model(conditions):
         logger.info("Creating working directory: {}".format(paths['experiment']))
         os.makedirs(os.path.expanduser(paths['experiment']))
 
-        fname = "{}{}write_configs_for_loopy.m".format(paths['experiment'], os.sep)
-        # TODO: Just call write_configs_for_loopy directly
+        fname = os.path.join(paths['experiment'], "write_configs_for_loopy.m")
+        # TODO: Just call create_config_files directly
         with open(fname, 'w') as f:
             f.write("create_config_files( ...\n")
             f.write("    'datapath', '{}{}', ...\n".format(DATA_DIR, paths['data_file']))
@@ -114,7 +114,7 @@ def setup_exec_train_model(conditions):
 
 
 def merge_save_train_models(experiment, **kwargs):
-    results_path = "{0}{1}results{1}".format(experiment, os.sep)
+    results_path = os.path.join(experiment, "results")
     return crf_util.run_matlab_command("save_best_params('{}'); ".format(results_path),
                                        add_path=SOURCE_DIR)
 
@@ -133,10 +133,10 @@ def get_best_parameters(experiment, **kwargs):
     merge_save_train_models(experiment)
 
     best_params = {}
-    results_path = "{0}{1}results{1}".format(experiment, os.sep)
 
     # grab and return best params
-    with open(results_path + "best_parameters.txt", 'r') as f:
+    results_path = os.path.join(experiment, "results")
+    with open(os.path.join(results_path, "best_parameters.txt"), 'r') as f:
             for param in PARAMS_TO_EXTRACT:
                 best_params[param] = float(f.readline())
     f.closed
@@ -145,7 +145,7 @@ def get_best_parameters(experiment, **kwargs):
 
 
 def test_train_CRFs(experiment, **kwargs):
-    filebase = "{0}{1}results{1}result".format(experiment, os.sep)
+    filebase = os.path.join(experiment, "results", "result")
     num_jobs = 1
     for param in [S_LAMBDAS, DENSITIES, P_LAMBDAS]:
         num_jobs *= param['num_points'] if param['parallize'] else 1
