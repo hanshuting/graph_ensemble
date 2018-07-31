@@ -1,5 +1,5 @@
-function [results] = find_temporal_crf_core(best_model,shuffle_model,data,stimuli, Coord_active)
-% FIND_TEMPORAL_CRF_CORE Find and plot multi-timeframe neuron ensembles with CRF models.
+function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,stimuli, Coord_active)
+% FIND_PLOT_TEMPORAL_CRF_CORE Find and plot multi-timeframe neuron ensembles with CRF models.
 %
 % Input
 %   best_model: Trained CRF model to analyze.
