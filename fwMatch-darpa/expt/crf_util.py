@@ -3,11 +3,55 @@ import sys
 import os
 import shlex
 import subprocess
+import configparser
 
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 logger.setLevel(logging.INFO)
+
+
+def get_raw_configparser(fname="crf_parameters.ini"):
+    config = configparser.ConfigParser()
+    config.read(fname)
+    return config
+
+
+def get_GridsearchOptions(parser=None, fname="crf_parameters.ini"):
+    if parser is None:
+        parser = get_raw_configparser(fname)
+    GridsearchOptions = {section: {} for section in ["S_LAMBDAS", "DENSITIES", "P_LAMBDAS"]}
+    for section, parameters in GridsearchOptions.items():
+        parameters['parallize'] = parser.getboolean(section, 'parallize')
+        parameters['num_points'] = parser.getint(section, 'num_points')
+        parameters['min'] = parser.getfloat(section, 'min')
+        parameters['max'] = parser.getfloat(section, 'max')
+    return GridsearchOptions
+
+
+def get_OtherOptions(parser=None, fname="crf_parameters.ini"):
+    if parser is None:
+        parser = get_raw_configparser(fname)
+    OtherOptions = {}
+    OtherOptions['time_span'] = parser.getint('OtherOptions', 'time_span')
+    OtherOptions['num_shuffle'] = parser.getint('OtherOptions', 'num_shuffle')
+    return OtherOptions
+
+
+def get_section_options(section, parser=None, fname="crf_parameters.ini"):
+    if parser is None:
+        parser = get_raw_configparser(fname)
+    section_options = {name: option for name, option in parser.items(section)}
+    return section_options
+
+
+def get_user_parameters(fname="crf_parameters.ini"):
+    config = get_raw_configparser(fname)
+    parameters = {name: {} for name in config.sections()}
+    for name, options in parameters.items():
+        for option in config.options(name):
+            parameters[name][option] = config.get(name, option)
+    return parameters
 
 
 def run_command(scommand):
