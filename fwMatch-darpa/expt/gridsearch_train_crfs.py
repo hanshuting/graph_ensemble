@@ -5,6 +5,7 @@
 import time
 import sys
 import os
+import stat
 import subprocess
 import crf_util
 
@@ -41,13 +42,7 @@ def get_conditions_metadata(conditions):
     return conditions
 
 
-def setup_exec_train_model(conditions):
-    """Mostly follows old create_script.pl.
-
-    Args:
-        conditions (dict): Dict of condition names: params.
-    """
-    for name, params in conditions.items():
+def create_write_configs_for_loopy_m(name, params):
         logger.info("Creating working directory: {}".format(params['experiment']))
         os.makedirs(os.path.expanduser(params['experiment']))
 
@@ -84,9 +79,39 @@ def setup_exec_train_model(conditions):
             f.write("    'p_lambda_min', {}, ...\n".format(p_lambdas['min']))
             f.write("    'p_lambda_max', {}, ...\n".format(p_lambdas['max']))
             f.write("    'time_span', {});\n".format(params['time_span']))
-        f.closed
-        logger.info("done writing {}".format(fname))
+    f.closed
+    logger.info("done writing {}".format(fname))
 
+
+def create_start_jobs_sh(experiment):
+    # Expect to be in the experiment folder already when writing this
+    # TODO: yeti specific
+    fname = "start_jobs.sh"
+    with open(fname, 'w') as f:
+        # Clear out any basic remainders from previous runs
+        f.write("rm -f ./results/result*.mat\n")
+        f.write("rm -f ./yeti_logs/*\n")
+        f.write("rm -f ./job_logs/*\n")
+        f.write("cd ../.. && qsub {}\n".format(os.path.join("expt", experiment, "yeti_config.sh")))
+    f.closed
+
+    # make sure file is executable
+    os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
+    logger.info("Created " + os.path.join(experiment, fname) + ".")
+
+
+def setup_exec_train_model(conditions):
+    """Mostly follows old create_script.pl.
+
+        Expect to be in expt folder at start.
+
+    Args:
+        conditions (dict): Dict of condition names: params.
+    """
+    for name, params in conditions.items():
+        create_write_configs_for_loopy_m(name, params)
+
+        # Move into experiment folder
         curr_dir = os.getcwd()
         logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(params['experiment'])
@@ -94,6 +119,8 @@ def setup_exec_train_model(conditions):
         crf_util.run_matlab_command("try, write_configs_for_{}, catch, end,".format(MODEL_TYPE),
                                     add_path=params['source_directory'])
         logger.info("\nTraining configs generated.")
+
+        create_start_jobs_sh(params['experiment_name'])
 
         process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
         if process_results.returncode:

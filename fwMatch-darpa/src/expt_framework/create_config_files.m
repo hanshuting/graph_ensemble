@@ -169,19 +169,6 @@ function create_config_files(varargin)
 
 fclose(fid);
 
-% Kate: we should write the start_jobs.sh script, too, since it includes the experiment name var
-    fid = fopen('start_jobs.sh','w');
-
-    fprintf(fid,'#If you are having problem with line endings use ":set ff=unix" in vim\n\n');
-
-%Kate - I do not want to remove any of the already computed model files; do that manually
-fprintf(fid,'rm -f ./results/result*.mat\n');
-%fprintf(fid,'rm -f ./results/model_calcium.mat\n');
-fprintf(fid,'rm -f ./yeti_logs/*\n');
-fprintf(fid,'rm -f ./job_logs/*\n');
-
-fprintf(fid,'cd ../.. && qsub expt/%s/yeti_config.sh\n', experiment_name);
-fclose(fid);
 %Kate: make sure they are executable:
 system('chmod +x start_jobs.sh yeti_config.sh');
 
