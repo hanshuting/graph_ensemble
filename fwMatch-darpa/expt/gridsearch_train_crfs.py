@@ -43,44 +43,93 @@ def get_conditions_metadata(conditions):
 
 
 def create_write_configs_for_loopy_m(name, params):
-        logger.info("Creating working directory: {}".format(params['experiment']))
-        os.makedirs(os.path.expanduser(params['experiment']))
+    logger.info("Creating working directory: {}".format(params['experiment']))
+    os.makedirs(os.path.expanduser(params['experiment']))
 
-        fname = os.path.join(params['experiment'], "write_configs_for_loopy.m")
-        # TODO: Just call create_config_files directly
-        with open(fname, 'w') as f:
-            f.write("create_config_files( ...\n")
-            f.write("    'datapath', '{}{}', ...\n".format(params['data_directory'],
-                                                           params['data_file']))
-            f.write("    'experiment_name', '{}', ...\n".format(params['experiment']))
-            f.write("    'email_for_notifications', '{}', ...\n".format(params['email']))
-            f.write("    'yeti_user', '{}', ...\n".format(params['username']))
-            f.write("    'compute_true_logZ', false, ...\n")
-            f.write("    'reweight_denominator', 'mean_degree', ...\n")
-            s_lambdas = params['S_LAMBDAS']
-            f.write("    's_lambda_splits', {}, ...\n".format(
-                s_lambdas['num_points'] if s_lambdas['parallize'] else 1))
-            f.write("    's_lambdas_per_split', {}, ...\n".format(
-                1 if s_lambdas['parallize'] else s_lambdas['num_points']))
-            f.write("    's_lambda_min', {}, ...\n".format(s_lambdas['min']))
-            f.write("    's_lambda_max', {}, ...\n".format(s_lambdas['max']))
-            densities = params['DENSITIES']
-            f.write("    'density_splits', {}, ...\n".format(
-                densities['num_points'] if densities['parallize'] else 1))
-            f.write("    'densities_per_split', {}, ...\n".format(
-                1 if densities['parallize'] else densities['num_points']))
-            f.write("    'density_min', {}, ...\n".format(densities['min']))
-            f.write("    'density_max', {}, ...\n".format(densities['max']))
-            p_lambdas = params['P_LAMBDAS']
-            f.write("    'p_lambda_splits', {}, ...\n".format(
-                p_lambdas['num_points'] if p_lambdas['parallize'] else 1))
-            f.write("    'p_lambdas_per_split', {}, ...\n".format(
-                1 if p_lambdas['parallize'] else p_lambdas['num_points']))
-            f.write("    'p_lambda_min', {}, ...\n".format(p_lambdas['min']))
-            f.write("    'p_lambda_max', {}, ...\n".format(p_lambdas['max']))
-            f.write("    'time_span', {});\n".format(params['time_span']))
+    fname = os.path.join(params['experiment'], "write_configs_for_loopy.m")
+    # TODO: Just call create_config_files directly
+    with open(fname, 'w') as f:
+        f.write("create_config_files( ...\n")
+        f.write("    'datapath', '{}{}', ...\n".format(params['data_directory'],
+                                                       params['data_file']))
+        f.write("    'experiment_name', '{}', ...\n".format(params['experiment']))
+        f.write("    'email_for_notifications', '{}', ...\n".format(params['email']))
+        f.write("    'yeti_user', '{}', ...\n".format(params['username']))
+        f.write("    'compute_true_logZ', false, ...\n")
+        f.write("    'reweight_denominator', 'mean_degree', ...\n")
+        s_lambdas = params['S_LAMBDAS']
+        f.write("    's_lambda_splits', {}, ...\n".format(
+            s_lambdas['num_points'] if s_lambdas['parallize'] else 1))
+        f.write("    's_lambdas_per_split', {}, ...\n".format(
+            1 if s_lambdas['parallize'] else s_lambdas['num_points']))
+        f.write("    's_lambda_min', {}, ...\n".format(s_lambdas['min']))
+        f.write("    's_lambda_max', {}, ...\n".format(s_lambdas['max']))
+        densities = params['DENSITIES']
+        f.write("    'density_splits', {}, ...\n".format(
+            densities['num_points'] if densities['parallize'] else 1))
+        f.write("    'densities_per_split', {}, ...\n".format(
+            1 if densities['parallize'] else densities['num_points']))
+        f.write("    'density_min', {}, ...\n".format(densities['min']))
+        f.write("    'density_max', {}, ...\n".format(densities['max']))
+        p_lambdas = params['P_LAMBDAS']
+        f.write("    'p_lambda_splits', {}, ...\n".format(
+            p_lambdas['num_points'] if p_lambdas['parallize'] else 1))
+        f.write("    'p_lambdas_per_split', {}, ...\n".format(
+            1 if p_lambdas['parallize'] else p_lambdas['num_points']))
+        f.write("    'p_lambda_min', {}, ...\n".format(p_lambdas['min']))
+        f.write("    'p_lambda_max', {}, ...\n".format(p_lambdas['max']))
+        f.write("    'time_span', {});\n".format(params['time_span']))
     f.closed
     logger.info("done writing {}".format(fname))
+
+
+def create_yeti_config_sh(name, params):
+    # Expect to be in the experiment folder already when writing this
+    num_jobs = 1
+    for param in [params['S_LAMBDAS'], params['DENSITIES'], params['P_LAMBDAS']]:
+        num_jobs *= param['num_points'] if param['parallize'] else 1
+    fname = "yeti_config.sh"
+    with open(fname, 'w') as f:
+        f.write("#!/bin/sh\n")
+        f.write("#yeti_config.sh\n\n")
+        f.write("#Torque script to run Matlab program\n")
+
+        f.write("\n#Torque directives\n")
+        f.write("#PBS -N {}\n".format(params['experiment']))
+        f.write("#PBS -W group_list={}\n".format(params['groupID']))
+        f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
+            params['yeti_nodes'], params['yeti_ppn'], params['yeti_walltime'], params['yeti_mem']))
+        if params['email_notification'] == "num_jobs":
+            # Reduce email notifications for greater numbers of jobs
+            if num_jobs == 1:
+                f.write("#PBS -m abe\n")
+            elif num_jobs <= params['email_jobs_threshold']:
+                f.write("#PBS -m ae\n")
+            else:
+                f.write("#PBS -m af\n")
+        else:
+            # Use email_notification setting verbatim
+            f.write("#PBS -m {}\n".format(params['email_notification']))
+        f.write("#PBS -M {}\n".format(params['email']))
+        f.write("#PBS -V\n")
+        f.write("#PBS -t 1-{}\n".format(int(num_jobs)))
+
+        working_dir = os.path.join(params['expt_dir'], params['experiment'])
+        f.write("\n#set output and error directories (SSCC example here)\n")
+        f.write("#PBS -o localhost:{}/yeti_logs/\n".format(working_dir))
+        f.write("#PBS -e localhost:{}/yeti_logs/\n".format(working_dir))
+
+        f.write("\n#Command below is to execute Matlab code for Job Array (Example 4) so that " +
+                "each part writes own output\n")
+        f.write("cd {}\n".format(os.path.join(params['source_directory'], "fwMatch-darpa")))
+        f.write("./run.sh {0} $PBS_ARRAYID > expt/{0}/job_logs/matoutfile.$PBS_ARRAYID\n".format(
+            params['experiment']))
+        f.write("#End of script\n")
+    f.closed
+
+    # make sure file is executable:
+    os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
+    logger.info("Created " + fname + ".")
 
 
 def create_start_jobs_sh(experiment):
@@ -120,6 +169,7 @@ def setup_exec_train_model(conditions):
                                     add_path=params['source_directory'])
         logger.info("\nTraining configs generated.")
 
+        create_yeti_config_sh(name, params)
         create_start_jobs_sh(params['experiment_name'])
 
         process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
