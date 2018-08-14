@@ -30,6 +30,8 @@ def get_conditions_metadata(conditions):
     parameters.update(crf_util.get_OtherOptions(parser=parameters_parser))
     parameters.update(crf_util.get_section_options('GeneralOptions', parser=parameters_parser))
     parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
+    parameters.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
+                                                   parser=parameters_parser))
     for name, cond in conditions.items():
         cond.update(parameters)
         experiment = "{}_{}_{}".format(cond['experiment_name'], name, MODEL_TYPE)
@@ -78,13 +80,20 @@ def write_shuffling_yeti_script(params):
         f.write("#!/bin/sh\n")
         f.write("#shuffle_yeti_config.sh\n")
         f.write("#PBS -N {}\n".format(params['shuffle_experiment']))
-        f.write("#PBS -W group_list=yetibrain\n")
-        f.write("#PBS -l nodes=1:ppn=1,walltime=02:00:00,mem=4000mb\n")
-        f.write("#PBS -m ae\n")
+        f.write("#PBS -W group_list={}\n".format(params['group_id']))
+        f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
+            params['yeti_gen_sh_nodes'], params['yeti_gen_sh_ppn'],
+            params['yeti_gen_sh_walltime'], params['yeti_gen_sh_mem']))
+        if params['email_notification'] == "num_jobs":
+            # Always only 1 job, fully notify
+            f.write("#PBS -m abe\n")
+        else:
+            # Use email_notification setting verbatim
+            f.write("#PBS -m {}\n".format(params['email_notification']))
+        f.write("#PBS -M {}\n".format(params['email']))
         f.write("#PBS -V\n")
         f.write("#set output and error directories (SSCC example here)\n")
-        log_folder = "{}fwMatch-darpa/expt/{}/yeti_logs/".format(params['source_directory'],
-                                                                 params['shuffle_experiment'])
+        log_folder = "{}/".format(os.path.join(params['shuffle_experiment_dir'], "yeti_logs"))
         os.makedirs(os.path.expanduser(log_folder), exist_ok=True)
         f.write("#PBS -o localhost:{}\n".format(log_folder))
         f.write("#PBS -e localhost:{}\n".format(log_folder))
