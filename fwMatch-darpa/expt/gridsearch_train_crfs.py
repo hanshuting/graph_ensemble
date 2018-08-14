@@ -32,6 +32,8 @@ def get_conditions_metadata(conditions):
     parameters.update(crf_util.get_OtherOptions(parser=parameters_parser))
     parameters.update(crf_util.get_section_options('GeneralOptions', parser=parameters_parser))
     parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
+    parameters.update(crf_util.get_section_options('YetiGridsearchOptions',
+                                                   parser=parameters_parser))
     for name, cond in conditions.items():
         cond.update(parameters)
         metadata = {'data_file': "{}_{}.mat".format(cond['experiment_name'], name),
@@ -96,14 +98,15 @@ def create_yeti_config_sh(name, params):
 
         f.write("\n#Torque directives\n")
         f.write("#PBS -N {}\n".format(params['experiment']))
-        f.write("#PBS -W group_list={}\n".format(params['groupID']))
+        f.write("#PBS -W group_list={}\n".format(params['group_id']))
         f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
-            params['yeti_nodes'], params['yeti_ppn'], params['yeti_walltime'], params['yeti_mem']))
+            params['yeti_grid_nodes'], params['yeti_grid_ppn'],
+            params['yeti_grid_walltime'], params['yeti_grid_mem']))
         if params['email_notification'] == "num_jobs":
             # Reduce email notifications for greater numbers of jobs
             if num_jobs == 1:
                 f.write("#PBS -m abe\n")
-            elif num_jobs <= params['email_jobs_threshold']:
+            elif num_jobs <= int(params['email_jobs_threshold']):
                 f.write("#PBS -m ae\n")
             else:
                 f.write("#PBS -m af\n")
