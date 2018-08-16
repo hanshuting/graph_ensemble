@@ -11,6 +11,10 @@ logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 logger.setLevel(logging.INFO)
 
 
+def loglevel_from_verbosity(verbosity):
+    return max([logging.CRITICAL - (verbosity * 10), logging.DEBUG])
+
+
 def get_raw_configparser(fname="crf_parameters.ini"):
     config = configparser.ConfigParser()
     config.read(fname)

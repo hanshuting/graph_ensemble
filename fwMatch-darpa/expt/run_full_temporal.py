@@ -12,10 +12,6 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
-# *** START USER EDITABLE VARIABLES ***
-logger.setLevel(logging.INFO)
-# *** END USER EDITABLE VARIABLES ***
-
 
 def merge_and_get_parameters(experiment, **kwargs):
     gridsearch_train_crfs.merge_save_train_models(experiment, kwargs['source_directory'])
@@ -31,6 +27,8 @@ if __name__ == '__main__':
         if len(conditions) > 1:
             raise ValueError("Multiple conditions not currently supported.")
         conditions = gridsearch_train_crfs.get_conditions_metadata(conditions)
+        verbosity = int(conditions[sys.argv[1]]['verbosity'])
+        logger.setLevel(crf_util.loglevel_from_verbosity(verbosity))
         conditions = shuffled_control_crfs.get_conditions_metadata(conditions)
         gridsearch_train_crfs.setup_exec_train_model(conditions)
         # Create bare-bones shuffle folder and create shuffled datasets
