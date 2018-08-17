@@ -78,7 +78,7 @@ def write_shuffling_yeti_script(params):
     with open(filepath, 'w') as f:
         f.write("#!/bin/sh\n")
         f.write("#shuffle_yeti_config.sh\n")
-        f.write("#PBS -N {}\n".format(params['shuffle_experiment']))
+        f.write("#PBS -N Create_shuffled_dataset_{}\n".format(params['shuffle_experiment']))
         f.write("#PBS -W group_list={}\n".format(params['group_id']))
         f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
             params['yeti_gen_sh_nodes'], params['yeti_gen_sh_ppn'],

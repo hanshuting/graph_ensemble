@@ -94,7 +94,7 @@ def create_yeti_config_sh(name, params):
         f.write("#Torque script to run Matlab program\n")
 
         f.write("\n#Torque directives\n")
-        f.write("#PBS -N {}\n".format(params['experiment']))
+        f.write("#PBS -N Gridsearch_{}\n".format(params['experiment']))
         f.write("#PBS -W group_list={}\n".format(params['group_id']))
         f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
             params['yeti_grid_nodes'], params['yeti_grid_ppn'],
