@@ -142,7 +142,6 @@ function create_config_files(varargin)
     end
     fprintf(fid,'#PBS -m af\n');
     fprintf(fid,'#PBS -M %s\n', email_for_notifications);
-    fprintf(fid,'#PBS -V\n');
     fprintf(fid,'#PBS -t 1-%d\n',num_shuffle);
 
     expt_dir = pwd;

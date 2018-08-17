@@ -111,7 +111,6 @@ def create_yeti_config_sh(name, params):
             # Use email_notification setting verbatim
             f.write("#PBS -m {}\n".format(params['email_notification']))
         f.write("#PBS -M {}\n".format(params['email']))
-        f.write("#PBS -V\n")
         f.write("#PBS -t 1-{}\n".format(int(num_jobs)))
 
         working_dir = os.path.join(params['expt_dir'], params['experiment'])

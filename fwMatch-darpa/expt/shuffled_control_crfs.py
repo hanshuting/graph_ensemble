@@ -88,7 +88,6 @@ def write_shuffling_yeti_script(params):
             # Use email_notification setting verbatim
             f.write("#PBS -m {}\n".format(params['email_notification']))
         f.write("#PBS -M {}\n".format(params['email']))
-        f.write("#PBS -V\n")
         f.write("#set output and error directories (SSCC example here)\n")
         log_folder = "{}/".format(os.path.join(params['shuffle_experiment_dir'], "yeti_logs"))
         os.makedirs(os.path.expanduser(log_folder), exist_ok=True)
