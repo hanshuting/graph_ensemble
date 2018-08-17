@@ -125,38 +125,6 @@ function create_config_files(varargin)
         fclose(fid);
     end
 
-    % Write YETI script
-    fid = fopen('yeti_config.sh','w');
-
-    fprintf(fid,'#!/bin/sh\n');
-    fprintf(fid,'#yeti_config.sh\n\n');
-    fprintf(fid,'#Torque script to run Matlab program\n');
-
-    fprintf(fid,'\n#Torque directives\n');
-    fprintf(fid,'#PBS -N %s\n', experiment_name);
-    fprintf(fid,'#PBS -W group_list=yetibrain\n');
-    if(strcmp( structure_type, 'loopy') == 1)
-      fprintf(fid,'#PBS -l nodes=1:ppn=1,walltime=2:00:00,mem=8000mb\n');
-    else
-      fprintf(fid,'#PBS -l nodes=1:ppn=1,walltime=2:00:00,mem=8000mb\n');
-    end
-    fprintf(fid,'#PBS -m af\n');
-    fprintf(fid,'#PBS -M %s\n', email_for_notifications);
-    fprintf(fid,'#PBS -t 1-%d\n',num_shuffle);
-
-    expt_dir = pwd;
-    run_dir = expt_dir(1:regexp(expt_dir, 'fwMatch-darpa/','end'));
-    fprintf(fid,'\n#set output and error directories (SSCC example here)\n');
-    fprintf(fid,'#PBS -o localhost:%s/yeti_logs/\n', expt_dir);
-    fprintf(fid,'#PBS -e localhost:%s/yeti_logs/\n', expt_dir);
-
-    fprintf(fid,'\n#Command below is to execute Matlab code for Job Array (Example 4) so that each part writes own output\n');
-    fprintf(fid,'cd %s\n', run_dir);
-    fprintf(fid,'./run.sh %s $PBS_ARRAYID > expt/%s/job_logs/matoutfile.$PBS_ARRAYID\n', experiment_name, experiment_name);
-    fprintf(fid,'#End of script\n');
-
-fclose(fid);
-
 % Kate: we should write the start_jobs.sh script, too, since it includes the experiment name var
     fid = fopen('start_jobs.sh','w');
 
