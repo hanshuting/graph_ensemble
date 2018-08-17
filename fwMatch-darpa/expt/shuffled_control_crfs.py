@@ -189,6 +189,7 @@ def create_shuffle_configs(conditions, best_params):
                                     add_path=params['source_directory'])
 
         create_controls_yeti_config_sh(name, params)
+        create_start_jobs_sh(params['shuffle_experiment'])
 
         os.chdir(curr_dir)
         logger.debug("changed back to dir: {}".format(os.getcwd()))
@@ -240,6 +241,24 @@ def create_controls_yeti_config_sh(name, params):
     # make sure file is executable:
     os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
     logger.info("Created " + fname + ".")
+
+
+def create_start_jobs_sh(experiment):
+    # Expect to be in the experiment folder already when writing this
+    # TODO: yeti specific
+    fname = "start_jobs.sh"
+    with open(fname, 'w') as f:
+        # Clear out any basic remainders from previous runs
+        f.write("rm -f ./results/result*.mat\n")
+        f.write("rm -f ./yeti_logs/*\n")
+        f.write("rm -f ./job_logs/*\n")
+        f.write("cd ../.. && qsub {}\n".format(
+            os.path.join("expt", experiment, "controls_yeti_config.sh")))
+    f.closed
+
+    # make sure file is executable
+    os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
+    logger.info("Created " + os.path.join(experiment, fname) + ".")
 
 
 def exec_shuffle_model(shuffle_experiment, **kwargs):
