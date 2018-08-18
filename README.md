@@ -94,5 +94,5 @@ We will continue our previous example:
 Another script, `scripts/core/find_temporal_crf_core.m`, can also be used to find ensemble neurons and plot some features, including spatial arrangement if coordinates are provided.
 
 ## References
-* [This paper - to be cited]
+* Carrillo-Reid, L.\*, Han, S.\*, Taralova, E., Jebara, T., Yuste, R. (2017). Identification and Targeting of Cortical Ensembles. bioRxiv. doi: https://doi.org/10.1101/226514
 * Tang, K., Ruozzi, N., Belanger, D., and Jebara, T. (2016). Bethe Learning of Graphical Models via MAP Decoding. Artificial Intelligence and Statistics (AISTATS).
