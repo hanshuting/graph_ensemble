@@ -32,8 +32,9 @@ will ensure the R2017a version is used until you logout.
 
 ## Data format
 Two binary spike matrices should be stored in a `.mat` file, under the variable names `data` and `stimuli`.
-`data` needs to be number of frame by number of neuron, corresponding to the neuron recording.
-`stimuli` needs to be number of frame by number of stimuli, corresponding to the when each stimuli was present.
+`data` needs to be number of frames by number of neurons, corresponding to the neuron recordings.
+`stimuli` needs to be number of frames by number of stimuli, corresponding to when each stimuli is present.
+Submitting a stimulus with no occurrences is not accepted, and needs to be reoved from the matrix.
 
 The `.mat` file should be named as `<experiment>_<condition>.mat`, for example, given the `m21_d2_vis` dataset, the “experiment” is `m21_d2_vis`, the condition could be something like `high_add_neuron`, therefore the `.mat` file should be named as `m21_d2_vis_high_add_neuron.mat`.
 This allows you to run multiple files that are originated from the same dataset but processed differently (high activity frame vs all frames, visual stimulations only vs all frames, no add neuron vs add neuron model, etc.) at the same time.
