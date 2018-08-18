@@ -15,10 +15,6 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
-# *** START USER EDITABLE VARIABLES ***
-logger.setLevel(logging.INFO)
-# *** END USER EDITABLE VARIABLES ***
-
 # *** start constants ***
 MODEL_TYPE = "loopy"
 # *** end constants ***
@@ -29,7 +25,12 @@ def get_conditions_metadata(conditions):
     parameters = crf_util.get_GridsearchOptions(parser=parameters_parser)
     parameters.update(crf_util.get_OtherOptions(parser=parameters_parser))
     parameters.update(crf_util.get_section_options('GeneralOptions', parser=parameters_parser))
+    logger.setLevel(crf_util.loglevel_from_verbosity(int(parameters['verbosity'])))
     parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
+    parameters.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
+                                                   parser=parameters_parser))
+    parameters.update(crf_util.get_section_options('YetiShuffledControlsOptions',
+                                                   parser=parameters_parser))
     for name, cond in conditions.items():
         cond.update(parameters)
         experiment = "{}_{}_{}".format(cond['experiment_name'], name, MODEL_TYPE)
@@ -77,14 +78,20 @@ def write_shuffling_yeti_script(params):
     with open(filepath, 'w') as f:
         f.write("#!/bin/sh\n")
         f.write("#shuffle_yeti_config.sh\n")
-        f.write("#PBS -N {}\n".format(params['shuffle_experiment']))
-        f.write("#PBS -W group_list=yetibrain\n")
-        f.write("#PBS -l nodes=1:ppn=1,walltime=02:00:00,mem=4000mb\n")
-        f.write("#PBS -m ae\n")
-        f.write("#PBS -V\n")
+        f.write("#PBS -N Create_shuffled_dataset_{}\n".format(params['shuffle_experiment']))
+        f.write("#PBS -W group_list={}\n".format(params['group_id']))
+        f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
+            params['yeti_gen_sh_nodes'], params['yeti_gen_sh_ppn'],
+            params['yeti_gen_sh_walltime'], params['yeti_gen_sh_mem']))
+        if params['email_notification'] == "num_jobs":
+            # Always only 1 job, fully notify
+            f.write("#PBS -m abe\n")
+        else:
+            # Use email_notification setting verbatim
+            f.write("#PBS -m {}\n".format(params['email_notification']))
+        f.write("#PBS -M {}\n".format(params['email']))
         f.write("#set output and error directories (SSCC example here)\n")
-        log_folder = "{}fwMatch-darpa/expt/{}/yeti_logs/".format(params['source_directory'],
-                                                                 params['shuffle_experiment'])
+        log_folder = "{}/".format(os.path.join(params['shuffle_experiment_dir'], "yeti_logs"))
         os.makedirs(os.path.expanduser(log_folder), exist_ok=True)
         f.write("#PBS -o localhost:{}\n".format(log_folder))
         f.write("#PBS -e localhost:{}\n".format(log_folder))
@@ -180,8 +187,78 @@ def create_shuffle_configs(conditions, best_params):
         logger.debug("changed into dir: {}".format(os.getcwd()))
         crf_util.run_matlab_command("write_shuffle_configs_for_{},".format(MODEL_TYPE),
                                     add_path=params['source_directory'])
+
+        create_controls_yeti_config_sh(name, params)
+        create_start_jobs_sh(params['shuffle_experiment'])
+
         os.chdir(curr_dir)
         logger.debug("changed back to dir: {}".format(os.getcwd()))
+
+
+def create_controls_yeti_config_sh(name, params):
+    # Expect to be in the experiment folder already when writing this
+    # TODO: Absolute path from source_directory
+    fname = "controls_yeti_config.sh"
+    with open(fname, 'w') as f:
+        f.write("#!/bin/sh\n")
+        f.write("#{}\n\n".format(fname))
+        f.write("#Torque script to run Matlab program\n")
+
+        f.write("\n#Torque directives\n")
+        f.write("#PBS -N Shuffled_CRFs_{}\n".format(params['shuffle_experiment']))
+        f.write("#PBS -W group_list={}\n".format(params['group_id']))
+        f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
+            params['yeti_sh_ctrl_nodes'], params['yeti_sh_ctrl_ppn'],
+            params['yeti_sh_ctrl_walltime'], params['yeti_sh_ctrl_mem']))
+        num_jobs = int(params['num_shuffle'])
+        if params['email_notification'] == "num_jobs":
+            # Reduce email notifications for greater numbers of jobs
+            if num_jobs == 1:
+                f.write("#PBS -m abe\n")
+            elif num_jobs <= int(params['email_jobs_threshold']):
+                f.write("#PBS -m ae\n")
+            else:
+                f.write("#PBS -m af\n")
+        else:
+            # Use email_notification setting verbatim
+            f.write("#PBS -m {}\n".format(params['email_notification']))
+        f.write("#PBS -M {}\n".format(params['email']))
+        f.write("#PBS -t 1-{}\n".format(int(num_jobs)))
+
+        working_dir = os.path.expanduser(params['shuffle_experiment_dir'])
+        f.write("\n#set output and error directories (SSCC example here)\n")
+        f.write("#PBS -o localhost:{}/yeti_logs/\n".format(working_dir))
+        f.write("#PBS -e localhost:{}/yeti_logs/\n".format(working_dir))
+
+        f.write("\n#Command below is to execute Matlab code for Job Array (Example 4) so that " +
+                "each part writes own output\n")
+        f.write("cd {}\n".format(os.path.join(params['source_directory'], "fwMatch-darpa")))
+        f.write("./run.sh {0} $PBS_ARRAYID > expt/{0}/job_logs/matoutfile.$PBS_ARRAYID\n".format(
+            params['shuffle_experiment']))
+        f.write("#End of script\n")
+    f.closed
+
+    # make sure file is executable:
+    os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
+    logger.info("Created " + fname + ".")
+
+
+def create_start_jobs_sh(experiment):
+    # Expect to be in the experiment folder already when writing this
+    # TODO: yeti specific
+    fname = "start_jobs.sh"
+    with open(fname, 'w') as f:
+        # Clear out any basic remainders from previous runs
+        f.write("rm -f ./results/result*.mat\n")
+        f.write("rm -f ./yeti_logs/*\n")
+        f.write("rm -f ./job_logs/*\n")
+        f.write("cd ../.. && qsub {}\n".format(
+            os.path.join("expt", experiment, "controls_yeti_config.sh")))
+    f.closed
+
+    # make sure file is executable
+    os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
+    logger.info("Created " + os.path.join(experiment, fname) + ".")
 
 
 def exec_shuffle_model(shuffle_experiment, **kwargs):
