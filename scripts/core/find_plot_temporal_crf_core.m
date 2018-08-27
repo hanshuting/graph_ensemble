@@ -20,7 +20,7 @@ function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,s
 
     [num_frame, num_stim] = size(stimuli);
     num_node = size(best_model.graph,1);
-    num_orig_neuron = size(data, 1);
+    num_orig_neuron = size(data, 2);
     time_span = best_model.time_span;
 
     % expand for additional time_span nodes

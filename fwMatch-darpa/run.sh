@@ -1,5 +1,5 @@
 #!/bin/bash
 # TODO: Error check
 
-matlab -nodesktop -nosplash -r "runExpt('${1}', ${2});exit"
+matlab -nodisplay -nodesktop -nosplash -r "runExpt('${1}', ${2});exit"
 
