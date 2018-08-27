@@ -91,7 +91,7 @@ We will continue our previous example:
    `ens_nodes` is a cell vector where each cell contains the ensemble neurons found for each stimuli.
    Each such stimuli cell contains a further cell vector where each cell contains the ensemble neurons found for each offset frame of the `time_span` window.
 
-Another script, `scripts/core/find_temporal_crf_core.m`, can also be used to find ensemble neurons and plot some features, including spatial arrangement if coordinates are provided.
+Another script, `scripts/core/find_plot_temporal_crf_core.m`, can also be used to find ensemble neurons and plot some features, including spatial arrangement if coordinates are provided.
 
 ## References
 * Carrillo-Reid, L.\*, Han, S.\*, Taralova, E., Jebara, T., Yuste, R. (2017). Identification and Targeting of Cortical Ensembles. bioRxiv. doi: https://doi.org/10.1101/226514
