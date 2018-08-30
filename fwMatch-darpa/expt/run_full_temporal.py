@@ -4,13 +4,43 @@
 """
 import time
 import sys
+import os
 import crf_util
 import gridsearch_train_crfs
 import shuffled_control_crfs
 
 import logging
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+logger = logging.getLogger("top")
+logger.setLevel(logging.DEBUG)
+
+
+def setup_logging(verbosity, debug_filelogging, expt_dir, **_):
+    """Set up logging to monitor progress.
+
+    All model module loggers only emit messages to their specific log files, and then pass the
+    records up to the "top" logger. If you want messages to appear on screen, implementing a
+    StreamHandler for the "top" logger here is necessary.
+
+    Args:
+        verbosity (int): How many messages to print to screen.
+        debug_filelogging (bool): If True, print maximal messages to the log file.
+        expt_dir (str (path)): Path at which to create the log file.
+        **_: Catches and ignores any other keys in the passed dict, for convenience.
+    """
+    stream_handler = logging.StreamHandler(stream=sys.stdout)
+    stream_handler.setLevel(crf_util.loglevel_from_verbosity(int(verbosity)))
+    logger.addHandler(stream_handler)
+    logger.debug("Logging stream handler to sys.stdout added.")
+
+    # Set log file to script's filename with a .log extension, in expt folder
+    log_fname = os.path.join(os.path.expanduser(expt_dir), __file__) + ".log"
+    # Overwrite previous log file every time via mode='w'. Change to mode='a' to append.
+    logfile_handler = logging.FileHandler(log_fname, mode='w')
+    logfile_handler.setLevel(logging.DEBUG if debug_filelogging else logging.INFO)
+    logfile_format = logging.Formatter('%(asctime)s - %(levelname)s@%(name)s - %(message)s')
+    logfile_handler.setFormatter(logfile_format)
+    logger.addHandler(logfile_handler)
+    logger.debug("Logging file handler to {} added.".format(log_fname))
 
 
 def merge_and_get_parameters(experiment, **kwargs):
@@ -27,9 +57,9 @@ if __name__ == '__main__':
         if len(conditions) > 1:
             raise ValueError("Multiple conditions not currently supported.")
         conditions = gridsearch_train_crfs.get_conditions_metadata(conditions)
-        verbosity = int(conditions[sys.argv[1]]['verbosity'])
-        logger.setLevel(crf_util.loglevel_from_verbosity(verbosity))
         conditions = shuffled_control_crfs.get_conditions_metadata(conditions)
+        setup_logging(**conditions[sys.argv[1]])
+
         gridsearch_train_crfs.setup_exec_train_model(conditions)
         # Create bare-bones shuffle folder and create shuffled datasets
         shuffled_control_crfs.setup_shuffle_model(conditions)

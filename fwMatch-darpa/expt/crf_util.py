@@ -39,6 +39,11 @@ def get_OtherOptions(parser=None, fname="crf_parameters.ini"):
     OtherOptions = {}
     OtherOptions['time_span'] = parser.getint('OtherOptions', 'time_span')
     OtherOptions['num_shuffle'] = parser.getint('OtherOptions', 'num_shuffle')
+    for bool_option in ['debug_filelogging']:
+        try:
+            OtherOptions[bool_option] = parser.getboolean('OtherOptions', bool_option)
+        except ValueError:
+            OtherOptions[bool_option] = False
     return OtherOptions
 
 

@@ -12,7 +12,7 @@ import crf_util
 from gridsearch_train_crfs import get_best_parameters
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("top." + __name__)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 # *** start constants ***

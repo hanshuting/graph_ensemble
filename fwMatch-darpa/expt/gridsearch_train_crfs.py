@@ -10,7 +10,7 @@ import subprocess
 import crf_util
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("top." + __name__)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 # *** start constants ***
