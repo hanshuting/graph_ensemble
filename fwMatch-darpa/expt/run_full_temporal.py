@@ -27,19 +27,12 @@ def setup_logging(verbosity, debug_filelogging, expt_dir, **_):
         expt_dir (str (path)): Path at which to create the log file.
         **_: Catches and ignores any other keys in the passed dict, for convenience.
     """
-    stream_handler = logging.StreamHandler(stream=sys.stdout)
-    stream_handler.setLevel(crf_util.loglevel_from_verbosity(verbosity))
-    logger.addHandler(stream_handler)
+    logger.addHandler(crf_util.get_StreamHandler(verbosity))
     logger.debug("Logging stream handler to sys.stdout added.")
 
     # Set log file to script's filename with a .log extension, in expt folder
     log_fname = os.path.join(os.path.expanduser(expt_dir), __file__) + ".log"
-    # Overwrite previous log file every time via mode='w'. Change to mode='a' to append.
-    logfile_handler = logging.FileHandler(log_fname, mode='w')
-    logfile_handler.setLevel(logging.DEBUG if debug_filelogging else logging.INFO)
-    logfile_format = logging.Formatter('%(asctime)s - %(levelname)s@%(name)s - %(message)s')
-    logfile_handler.setFormatter(logfile_format)
-    logger.addHandler(logfile_handler)
+    logger.addHandler(crf_util.get_FileHandler(log_fname, debug_filelogging=debug_filelogging))
     logger.debug("Logging file handler to {} added.".format(log_fname))
 
 
