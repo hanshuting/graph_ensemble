@@ -28,7 +28,7 @@ def setup_logging(verbosity, debug_filelogging, expt_dir, **_):
         **_: Catches and ignores any other keys in the passed dict, for convenience.
     """
     stream_handler = logging.StreamHandler(stream=sys.stdout)
-    stream_handler.setLevel(crf_util.loglevel_from_verbosity(int(verbosity)))
+    stream_handler.setLevel(crf_util.loglevel_from_verbosity(verbosity))
     logger.addHandler(stream_handler)
     logger.debug("Logging stream handler to sys.stdout added.")
 

@@ -23,9 +23,8 @@ MODEL_TYPE = "loopy"
 def get_conditions_metadata(conditions):
     parameters_parser = crf_util.get_raw_configparser()
     parameters = crf_util.get_GridsearchOptions(parser=parameters_parser)
-    parameters.update(crf_util.get_OtherOptions(parser=parameters_parser))
-    parameters.update(crf_util.get_section_options('GeneralOptions', parser=parameters_parser))
-    logger.setLevel(crf_util.loglevel_from_verbosity(int(parameters['verbosity'])))
+    parameters.update(crf_util.get_GeneralOptions(parser=parameters_parser))
+    logger.setLevel(crf_util.loglevel_from_verbosity(parameters['verbosity']))
     parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
     parameters.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
                                                    parser=parameters_parser))

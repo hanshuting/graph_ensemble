@@ -12,6 +12,11 @@ logger.setLevel(logging.INFO)
 
 
 def loglevel_from_verbosity(verbosity):
+    """Convert verbosity setting to logging level.
+
+    Args:
+        verbosity (int): Setting value. Meaningful values only between 0 and 5.
+    """
     return max([logging.CRITICAL - (verbosity * 10), logging.DEBUG])
 
 
@@ -33,18 +38,19 @@ def get_GridsearchOptions(parser=None, fname="crf_parameters.ini"):
     return GridsearchOptions
 
 
-def get_OtherOptions(parser=None, fname="crf_parameters.ini"):
+def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     if parser is None:
         parser = get_raw_configparser(fname)
-    OtherOptions = {}
-    OtherOptions['time_span'] = parser.getint('OtherOptions', 'time_span')
-    OtherOptions['num_shuffle'] = parser.getint('OtherOptions', 'num_shuffle')
+    GeneralOptions = get_section_options("GeneralOptions", parser)
+    # Reread settings we expect to be non-string data types with correct getter
+    for int_option in ['time_span', 'num_shuffle', 'verbosity']:
+        GeneralOptions[int_option] = parser.getint('GeneralOptions', int_option)
     for bool_option in ['debug_filelogging']:
         try:
-            OtherOptions[bool_option] = parser.getboolean('OtherOptions', bool_option)
+            GeneralOptions[bool_option] = parser.getboolean('GeneralOptions', bool_option)
         except ValueError:
-            OtherOptions[bool_option] = False
-    return OtherOptions
+            GeneralOptions[bool_option] = False
+    return GeneralOptions
 
 
 def get_section_options(section, parser=None, fname="crf_parameters.ini"):
