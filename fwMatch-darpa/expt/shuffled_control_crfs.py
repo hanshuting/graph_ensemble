@@ -302,39 +302,42 @@ def exec_merge_shuffle_CRFs(shuffle_experiment, source_directory, **kwargs):
 
 
 def main(conditions):
-    if conditions:
-        if len(conditions) > 1:
-            raise ValueError("Multiple conditions not currently supported.")
-        conditions = get_conditions_metadata(conditions)
+    """Summary
 
-        # Create stdout log handler if module is invoked from the command line
-        if __name__ == '__main__':
-            verbosity = list(conditions.values())[0]['verbosity']
-            logger.addHandler(crf_util.get_StreamHandler(verbosity))
-            logger.debug("Logging stream handler to sys.stdout added.")
+    Args:
+        conditions (dict): Each key refers to a condition, and its value is a dict containing
+            condition specific filepaths.
+    """
+    if len(conditions) > 1:
+        raise ValueError("Multiple conditions not currently supported.")
+    conditions = get_conditions_metadata(conditions)
 
-        # Create bare-bones shuffle folder and create shuffled datasets
-        setup_shuffle_model(conditions)
-        # Get best params
-        best_params = {}
-        for name, cond in conditions.items():
-            best_params[name] = get_best_parameters(cond['experiment'])
-        logger.info("Parameters for all conditions collected.\n")
-        # create shuffle configs with best params (write and run write_configs_for_loopy.m)
-        create_shuffle_configs(conditions, best_params)
-        # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
-        for name, meta in conditions.items():
-            meta['to_test'] = simple_test_shuffle_datasets
-            meta['to_run'] = exec_shuffle_model
-        crf_util.wait_and_run(conditions)
-        # Wait for shuffle CRFs to be done and run merge and save_shuffle
-        for meta in conditions.values():
-            meta['to_test'] = test_shuffle_CRFs
-            meta['to_run'] = exec_merge_shuffle_CRFs
-        crf_util.wait_and_run(conditions)
-        # Extract ensemble neuron IDs. Write to disk?
-    else:
-        raise TypeError("At least one condition name must be passed on the command line.")
+    # Create stdout log handler if module is invoked from the command line
+    if __name__ == '__main__':
+        verbosity = list(conditions.values())[0]['verbosity']
+        logger.addHandler(crf_util.get_StreamHandler(verbosity))
+        logger.debug("Logging stream handler to sys.stdout added.")
+
+    # Create bare-bones shuffle folder and create shuffled datasets
+    setup_shuffle_model(conditions)
+    # Get best params
+    best_params = {}
+    for name, cond in conditions.items():
+        best_params[name] = get_best_parameters(cond['experiment'])
+    logger.info("Parameters for all conditions collected.\n")
+    # create shuffle configs with best params (write and run write_configs_for_loopy.m)
+    create_shuffle_configs(conditions, best_params)
+    # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
+    for name, meta in conditions.items():
+        meta['to_test'] = simple_test_shuffle_datasets
+        meta['to_run'] = exec_shuffle_model
+    crf_util.wait_and_run(conditions)
+    # Wait for shuffle CRFs to be done and run merge and save_shuffle
+    for meta in conditions.values():
+        meta['to_test'] = test_shuffle_CRFs
+        meta['to_run'] = exec_merge_shuffle_CRFs
+    crf_util.wait_and_run(conditions)
+    # Extract ensemble neuron IDs. Write to disk?
 
 
 if __name__ == '__main__':
@@ -342,6 +345,9 @@ if __name__ == '__main__':
 
     # Each condition is a dict containing condition specific filepaths
     conditions = {name: {} for name in sys.argv[1:]}
-    main(conditions)
+    if conditions:
+        main(conditions)
+    else:
+        raise TypeError("At least one condition name must be passed on the command line.")
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))

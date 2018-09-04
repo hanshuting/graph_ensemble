@@ -234,37 +234,37 @@ def main(conditions):
         conditions (dict): Each key refers to a condition, and its value is a dict containing
             condition specific filepaths.
     """
-    if conditions:
-        if len(conditions) > 1:
-            raise ValueError("Multiple conditions not currently supported.")
-        conditions = get_conditions_metadata(conditions)
+    if len(conditions) > 1:
+        raise ValueError("Multiple conditions not currently supported.")
+    conditions = get_conditions_metadata(conditions)
 
-        # Create stdout log handler if module is invoked from the command line
-        if __name__ == '__main__':
-            verbosity = list(conditions.values())[0]['verbosity']
-            logger.addHandler(crf_util.get_StreamHandler(verbosity))
-            logger.debug("Logging stream handler to sys.stdout added.")
+    # Create stdout log handler if module is invoked from the command line
+    if __name__ == '__main__':
+        verbosity = list(conditions.values())[0]['verbosity']
+        logger.addHandler(crf_util.get_StreamHandler(verbosity))
+        logger.debug("Logging stream handler to sys.stdout added.")
 
-        setup_exec_train_model(conditions)
-        # Wait for train CRF to be done
-        # Run merge and save_best
-        for cond in conditions.values():
-            cond['to_test'] = test_train_CRFs
-            cond['to_run'] = merge_save_train_models
-        crf_util.wait_and_run(conditions)
-        for cond in conditions.values():
-            best_params_path = os.path.join(cond['expt_dir'], cond['experiment'],
-                                            "results", "best_parameters.txt")
-            logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +
-                        " in the following order:\n{}\n".format(PARAMS_TO_EXTRACT))
-    else:
-        raise TypeError("At least one condition name must be passed on the command line.")
+    setup_exec_train_model(conditions)
+    # Wait for train CRF to be done
+    # Run merge and save_best
+    for cond in conditions.values():
+        cond['to_test'] = test_train_CRFs
+        cond['to_run'] = merge_save_train_models
+    crf_util.wait_and_run(conditions)
+    for cond in conditions.values():
+        best_params_path = os.path.join(cond['expt_dir'], cond['experiment'],
+                                        "results", "best_parameters.txt")
+        logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +
+                    " in the following order:\n{}\n".format(PARAMS_TO_EXTRACT))
 
 
 if __name__ == '__main__':
     start_time = time.time()
 
     conditions = {name: {} for name in sys.argv[1:]}
-    main(conditions)
+    if conditions:
+        main(conditions)
+    else:
+        raise TypeError("At least one condition name must be passed on the command line.")
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
