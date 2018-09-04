@@ -13,18 +13,25 @@ from gridsearch_train_crfs import get_best_parameters
 
 import logging
 logger = logging.getLogger("top." + __name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+logger.setLevel(logging.DEBUG)
 
 # *** start constants ***
 MODEL_TYPE = "loopy"
 # *** end constants ***
 
 
+def start_logfile(debug_filelogging, shuffle_experiment_dir, **_):
+    log_fname = os.path.join(os.path.expanduser(shuffle_experiment_dir),
+                             "shuffled_control_crfs.log")
+    logfile_handler = crf_util.get_FileHandler(log_fname, debug_filelogging=debug_filelogging)
+    logger.addHandler(logfile_handler)
+    logger.debug("Logging file handler to {} added.".format(log_fname))
+
+
 def get_conditions_metadata(conditions):
     parameters_parser = crf_util.get_raw_configparser()
     parameters = crf_util.get_GridsearchOptions(parser=parameters_parser)
     parameters.update(crf_util.get_GeneralOptions(parser=parameters_parser))
-    logger.setLevel(crf_util.loglevel_from_verbosity(parameters['verbosity']))
     parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
     parameters.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
                                                    parser=parameters_parser))
@@ -129,6 +136,7 @@ def setup_shuffle_model(conditions):
     for name, params in conditions.items():
         logger.info("Creating working directory: {}".format(params['shuffle_experiment']))
         os.makedirs(os.path.expanduser(params['shuffle_experiment']))
+        start_logfile(**params)
 
         os.makedirs(os.path.expanduser(params['shuffle_save_dir']), exist_ok=True)
 
@@ -298,6 +306,13 @@ def main(conditions):
         if len(conditions) > 1:
             raise ValueError("Multiple conditions not currently supported.")
         conditions = get_conditions_metadata(conditions)
+
+        # Create stdout log handler if module is invoked from the command line
+        if __name__ == '__main__':
+            verbosity = list(conditions.values())[0]['verbosity']
+            logger.addHandler(crf_util.get_StreamHandler(verbosity))
+            logger.debug("Logging stream handler to sys.stdout added.")
+
         # Create bare-bones shuffle folder and create shuffled datasets
         setup_shuffle_model(conditions)
         # Get best params
