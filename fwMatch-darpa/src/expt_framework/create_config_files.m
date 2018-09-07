@@ -37,6 +37,8 @@ function create_config_files(varargin)
     parser.addParameter('p_lambda_min', 1e+01, @isscalar);
     parser.addParameter('p_lambda_max', 1e+01, @isscalar);
 
+    parser.addParameter('edges', 'simple', @ischar);
+    parser.addParameter('no_same_neuron_edges', true, @islogical);
     parser.addParameter('time_span', 1, @isscalar);
 
     parser.parse(varargin{:})
@@ -69,6 +71,8 @@ function create_config_files(varargin)
     p_lambda_max = parser.Results.p_lambda_max;
 
     edges = parser.Results.edges;
+    no_same_neuron_edges = parser.Results.no_same_neuron_edges;
+    if (no_same_neuron_edges); no_same_neuron_edges_str='true'; else;  no_same_neuron_edges_str='false'; end
     time_span = parser.Results.time_span;
 
      display('CHECK INFO BELOW');
@@ -115,6 +119,7 @@ function create_config_files(varargin)
 
                     % edge constraint parameters
                     fprintf(fid,'params.edges = ''%s'';\n', edges);
+                    fprintf(fid,'params.no_same_neuron_edges = %s;\n', no_same_neuron_edges_str);
 
                     % lookback time span
                     fprintf(fid,'params.time_span = %d;\n', time_span);

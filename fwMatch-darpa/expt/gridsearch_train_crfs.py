@@ -86,6 +86,8 @@ def create_write_configs_for_loopy_m(name, params):
         f.write("    'p_lambda_min', {}, ...\n".format(p_lambdas['min']))
         f.write("    'p_lambda_max', {}, ...\n".format(p_lambdas['max']))
         f.write("    'edges', '{}', ...\n".format(params['edges'].lower()))
+        f.write("    'no_same_neuron_edges', {}, ...\n".format(
+            str(params['no_same_neuron_edges']).lower()))
         f.write("    'time_span', {});\n".format(params['time_span']))
     f.closed
     logger.info("done writing {}".format(fname))

@@ -119,12 +119,14 @@ function run(params)
             for ii = stimidx
                 variable_groups{ii} = [origidx dupidx];
             end
-            
-            % Remove all edges between a neuron and itself
-            for ii = origidx
-                this_node_idxs = ii:base_node_count:params.time_span*base_node_count;
-                for jj = this_node_idxs
-                    variable_groups{jj} = setdiff(variable_groups{jj}, this_node_idxs);
+
+            if params.no_same_neuron_edges
+                % Remove all edges between a neuron and itself
+                for ii = origidx
+                    this_node_idxs = ii:base_node_count:params.time_span*base_node_count;
+                    for jj = this_node_idxs
+                        variable_groups{jj} = setdiff(variable_groups{jj}, this_node_idxs);
+                    end
                 end
             end
         else
