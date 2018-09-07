@@ -183,6 +183,7 @@ def create_shuffle_configs(conditions, best_params):
             # f.write("    'p_lambdas_per_split', 1, ...\n")
             f.write("    'p_lambda_min', {}, ...\n".format(best_params[name]['p_lambda']))
             f.write("    'p_lambda_max', {}, ...\n".format(best_params[name]['p_lambda']))
+            f.write("    'edges', '{}', ...\n".format(params['edges'].lower()))
             f.write("    'time_span', {}, ...\n".format(best_params[name]['time_span']))
             f.write("    'num_shuffle', {});\n".format(params['num_shuffle']))
         f.closed

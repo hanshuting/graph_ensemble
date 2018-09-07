@@ -68,6 +68,7 @@ function create_config_files(varargin)
     p_lambda_min = parser.Results.p_lambda_min;
     p_lambda_max = parser.Results.p_lambda_max;
 
+    edges = parser.Results.edges;
     time_span = parser.Results.time_span;
 
      display('CHECK INFO BELOW');
@@ -111,6 +112,9 @@ function create_config_files(varargin)
                     fprintf(fid,'params.density_count = %d;\n', densities_per_split);
                     fprintf(fid,'params.density_min = densities(%d);\n', (k-1)*densities_per_split + 1);
                     fprintf(fid,'params.density_max = densities(%d);\n', k*densities_per_split);
+
+                    % edge constraint parameters
+                    fprintf(fid,'params.edges = ''%s'';\n', edges);
 
                     % lookback time span
                     fprintf(fid,'params.time_span = %d;\n', time_span);

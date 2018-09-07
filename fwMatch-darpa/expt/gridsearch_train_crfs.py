@@ -85,6 +85,7 @@ def create_write_configs_for_loopy_m(name, params):
             1 if p_lambdas['parallize'] else p_lambdas['num_points']))
         f.write("    'p_lambda_min', {}, ...\n".format(p_lambdas['min']))
         f.write("    'p_lambda_max', {}, ...\n".format(p_lambdas['max']))
+        f.write("    'edges', '{}', ...\n".format(params['edges'].lower()))
         f.write("    'time_span', {});\n".format(params['time_span']))
     f.closed
     logger.info("done writing {}".format(fname))
