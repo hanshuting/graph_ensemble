@@ -1,4 +1,4 @@
-function create_config_files(varargin)
+function create_configs(varargin)
 % Expects to be run in the working directory
     % Remove old config files
     system('rm -f config*.m');

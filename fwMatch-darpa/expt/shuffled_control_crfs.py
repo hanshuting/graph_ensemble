@@ -163,7 +163,7 @@ def create_shuffle_configs(conditions, best_params):
     for name, params in conditions.items():
         fname = os.path.join(params['shuffle_experiment'], "write_shuffle_configs_for_loopy.m")
         with open(fname, 'w') as f:
-            f.write("create_shuffle_config_files( ...\n")
+            f.write("create_shuffle_configs( ...\n")
             f.write("    'datapath', '{}.mat', ...\n".format(
                 os.path.join(params['shuffle_save_dir'], params['shuffle_save_name'])))
             f.write("    'experiment_name', '{}', ...\n".format(params['shuffle_experiment']))

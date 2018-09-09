@@ -54,9 +54,9 @@ def create_working_dir(params):
 
 def create_write_configs_for_loopy_m(name, params):
     fname = os.path.join(params['experiment'], "write_configs_for_loopy.m")
-    # TODO: Just call create_config_files directly
+    # TODO: Just call create_configs directly
     with open(fname, 'w') as f:
-        f.write("create_config_files( ...\n")
+        f.write("create_configs( ...\n")
         f.write("    'datapath', '{}{}', ...\n".format(params['data_directory'],
                                                        params['data_file']))
         f.write("    'experiment_name', '{}', ...\n".format(params['experiment']))
