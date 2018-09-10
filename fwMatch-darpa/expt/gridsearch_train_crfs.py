@@ -10,8 +10,8 @@ import subprocess
 import crf_util
 
 import logging
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+logger = logging.getLogger("top." + __name__)
+logger.setLevel(logging.DEBUG)
 
 # *** start constants ***
 MODEL_TYPE = "loopy"
@@ -22,12 +22,18 @@ PARAMS_TO_EXTRACT = ['s_lambda', 'density', 'p_lambda', 'time_span']
 # *** end constants ***
 
 
+def start_logfile(debug_filelogging, expt_dir, experiment, **_):
+    expt_dir = os.path.expanduser(expt_dir)
+    log_fname = os.path.join(expt_dir, experiment, "gridsearch_train_crfs.log")
+    logfile_handler = crf_util.get_FileHandler(log_fname, debug_filelogging=debug_filelogging)
+    logger.addHandler(logfile_handler)
+    logger.debug("Logging file handler to {} added.".format(log_fname))
+
+
 def get_conditions_metadata(conditions):
     parameters_parser = crf_util.get_raw_configparser()
     parameters = crf_util.get_GridsearchOptions(parser=parameters_parser)
-    parameters.update(crf_util.get_OtherOptions(parser=parameters_parser))
-    parameters.update(crf_util.get_section_options('GeneralOptions', parser=parameters_parser))
-    logger.setLevel(crf_util.loglevel_from_verbosity(int(parameters['verbosity'])))
+    parameters.update(crf_util.get_GeneralOptions(parser=parameters_parser))
     parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
     parameters.update(crf_util.get_section_options('YetiGridsearchOptions',
                                                    parser=parameters_parser))
@@ -41,10 +47,12 @@ def get_conditions_metadata(conditions):
     return conditions
 
 
-def create_write_configs_for_loopy_m(name, params):
+def create_working_dir(params):
     logger.info("Creating working directory: {}".format(params['experiment']))
     os.makedirs(os.path.expanduser(params['experiment']))
 
+
+def create_write_configs_for_loopy_m(name, params):
     fname = os.path.join(params['experiment'], "write_configs_for_loopy.m")
     # TODO: Just call create_config_files directly
     with open(fname, 'w') as f:
@@ -157,6 +165,8 @@ def setup_exec_train_model(conditions):
         conditions (dict): Dict of condition names: params.
     """
     for name, params in conditions.items():
+        create_working_dir(params)
+        start_logfile(**params)
         create_write_configs_for_loopy_m(name, params)
 
         # Move into experiment folder
@@ -224,30 +234,37 @@ def main(conditions):
         conditions (dict): Each key refers to a condition, and its value is a dict containing
             condition specific filepaths.
     """
-    if conditions:
-        if len(conditions) > 1:
-            raise ValueError("Multiple conditions not currently supported.")
-        conditions = get_conditions_metadata(conditions)
-        setup_exec_train_model(conditions)
-        # Wait for train CRF to be done
-        # Run merge and save_best
-        for cond in conditions.values():
-            cond['to_test'] = test_train_CRFs
-            cond['to_run'] = merge_save_train_models
-        crf_util.wait_and_run(conditions)
-        for cond in conditions.values():
-            best_params_path = os.path.join(cond['expt_dir'], cond['experiment'],
-                                            "results", "best_parameters.txt")
-            logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +
-                        " in the following order:\n{}\n".format(PARAMS_TO_EXTRACT))
-    else:
-        raise TypeError("At least one condition name must be passed on the command line.")
+    if len(conditions) > 1:
+        raise ValueError("Multiple conditions not currently supported.")
+    conditions = get_conditions_metadata(conditions)
+
+    # Create stdout log handler if module is invoked from the command line
+    if __name__ == '__main__':
+        verbosity = list(conditions.values())[0]['verbosity']
+        logger.addHandler(crf_util.get_StreamHandler(verbosity))
+        logger.debug("Logging stream handler to sys.stdout added.")
+
+    setup_exec_train_model(conditions)
+    # Wait for train CRF to be done
+    # Run merge and save_best
+    for cond in conditions.values():
+        cond['to_test'] = test_train_CRFs
+        cond['to_run'] = merge_save_train_models
+    crf_util.wait_and_run(conditions)
+    for cond in conditions.values():
+        best_params_path = os.path.join(cond['expt_dir'], cond['experiment'],
+                                        "results", "best_parameters.txt")
+        logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +
+                    " in the following order:\n{}\n".format(PARAMS_TO_EXTRACT))
 
 
 if __name__ == '__main__':
     start_time = time.time()
 
     conditions = {name: {} for name in sys.argv[1:]}
-    main(conditions)
+    if conditions:
+        main(conditions)
+    else:
+        raise TypeError("At least one condition name must be passed on the command line.")
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))

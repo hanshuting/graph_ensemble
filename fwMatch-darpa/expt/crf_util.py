@@ -12,7 +12,47 @@ logger.setLevel(logging.INFO)
 
 
 def loglevel_from_verbosity(verbosity):
+    """Convert verbosity setting to logging level.
+
+    Args:
+        verbosity (int): Setting value. Meaningful values only between 0 and 5.
+    """
     return max([logging.CRITICAL - (verbosity * 10), logging.DEBUG])
+
+
+def get_FileHandler(log_fname, debug_filelogging=False, overwrite=True):
+    """Setup logging to a log file on disk.
+
+    Args:
+        log_fname (str): File path at which to create the log file.
+        debug_filelogging (bool, optional): If True, emit maximal messages to log. Default False,
+            which emits one step down, omitting many large log records mostly used for debugging.
+        overwrite (bool, optional): Determines whether to overwrite any preexisting log file.
+            Default True.
+
+    Returns:
+        logging.FileHandler: The set up handler.
+    """
+    logfile_handler = logging.FileHandler(log_fname, mode='w' if overwrite else 'a')
+    logfile_handler.setLevel(logging.DEBUG if debug_filelogging else logging.INFO)
+    logfile_format = logging.Formatter('%(asctime)s - %(levelname)s@%(name)s: %(message)s')
+    logfile_handler.setFormatter(logfile_format)
+    return logfile_handler
+
+
+def get_StreamHandler(verbosity, stream=sys.stdout):
+    """Setup logging to a stream, typically for viewing messages on screen.
+
+    Args:
+        verbosity (int): Sets how many messages to emit. Higher values produce more messages.
+        stream (IO stream, optional): Where messages are emitted. Default to standard output.
+
+    Returns:
+        logging.StreamHandler: The set up handler.
+    """
+    stream_handler = logging.StreamHandler(stream=stream)
+    stream_handler.setLevel(loglevel_from_verbosity(verbosity))
+    return stream_handler
 
 
 def get_raw_configparser(fname="crf_parameters.ini"):
@@ -33,13 +73,19 @@ def get_GridsearchOptions(parser=None, fname="crf_parameters.ini"):
     return GridsearchOptions
 
 
-def get_OtherOptions(parser=None, fname="crf_parameters.ini"):
+def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     if parser is None:
         parser = get_raw_configparser(fname)
-    OtherOptions = {}
-    OtherOptions['time_span'] = parser.getint('OtherOptions', 'time_span')
-    OtherOptions['num_shuffle'] = parser.getint('OtherOptions', 'num_shuffle')
-    return OtherOptions
+    GeneralOptions = get_section_options("GeneralOptions", parser)
+    # Reread settings we expect to be non-string data types with correct getter
+    for int_option in ['time_span', 'num_shuffle', 'verbosity']:
+        GeneralOptions[int_option] = parser.getint('GeneralOptions', int_option)
+    for bool_option in ['debug_filelogging']:
+        try:
+            GeneralOptions[bool_option] = parser.getboolean('GeneralOptions', bool_option)
+        except ValueError:
+            GeneralOptions[bool_option] = False
+    return GeneralOptions
 
 
 def get_section_options(section, parser=None, fname="crf_parameters.ini"):
