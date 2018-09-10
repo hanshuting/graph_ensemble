@@ -96,7 +96,9 @@ function run(params)
             else
                 if params.edges ~= "simple"
                     fprintf('Invalid edges parameter. Resorting to default setting "simple".\n');
+                    params.edges  = "simple"
                 end
+                fprintf('Prohibiting edges between offset nodes.\n');
                 % Add edge from every current timestep node to every
                 % added previous timestep node.
 
@@ -121,7 +123,7 @@ function run(params)
             end
 
             if params.no_same_neuron_edges
-                % Remove all edges between a neuron and itself
+                fprintf('Removing all edges between same-neuron nodes.\n');
                 for ii = origidx
                     this_node_idxs = ii:base_node_count:params.time_span*base_node_count;
                     for jj = this_node_idxs
