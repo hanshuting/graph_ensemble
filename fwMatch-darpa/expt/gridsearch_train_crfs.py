@@ -54,9 +54,9 @@ def create_working_dir(params):
 
 def create_write_configs_for_loopy_m(name, params):
     fname = os.path.join(params['experiment'], "write_configs_for_loopy.m")
-    # TODO: Just call create_config_files directly
+    # TODO: Just call create_configs directly
     with open(fname, 'w') as f:
-        f.write("create_config_files( ...\n")
+        f.write("create_configs( ...\n")
         f.write("    'datapath', '{}{}', ...\n".format(params['data_directory'],
                                                        params['data_file']))
         f.write("    'experiment_name', '{}', ...\n".format(params['experiment']))
@@ -85,6 +85,9 @@ def create_write_configs_for_loopy_m(name, params):
             1 if p_lambdas['parallize'] else p_lambdas['num_points']))
         f.write("    'p_lambda_min', {}, ...\n".format(p_lambdas['min']))
         f.write("    'p_lambda_max', {}, ...\n".format(p_lambdas['max']))
+        f.write("    'edges', '{}', ...\n".format(params['edges'].lower()))
+        f.write("    'no_same_neuron_edges', {}, ...\n".format(
+            str(params['no_same_neuron_edges']).lower()))
         f.write("    'time_span', {});\n".format(params['time_span']))
     f.closed
     logger.info("done writing {}".format(fname))

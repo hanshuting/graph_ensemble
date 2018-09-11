@@ -1,4 +1,4 @@
-function create_config_files(varargin)
+function create_configs(varargin)
 % Expects to be run in the working directory
     % Remove old config files
     system('rm -f config*.m');
@@ -37,7 +37,11 @@ function create_config_files(varargin)
     parser.addParameter('p_lambda_min', 1e+01, @isscalar);
     parser.addParameter('p_lambda_max', 1e+01, @isscalar);
 
+    parser.addParameter('edges', 'simple', @ischar);
+    parser.addParameter('no_same_neuron_edges', true, @islogical);
     parser.addParameter('time_span', 1, @isscalar);
+
+    parser.addParameter('num_shuffle', 100, @isscalar);
 
     parser.parse(varargin{:})
 
@@ -68,63 +72,66 @@ function create_config_files(varargin)
     p_lambda_min = parser.Results.p_lambda_min;
     p_lambda_max = parser.Results.p_lambda_max;
 
+    edges = parser.Results.edges;
+    no_same_neuron_edges = parser.Results.no_same_neuron_edges;
+    if (no_same_neuron_edges); no_same_neuron_edges_str='true'; else;  no_same_neuron_edges_str='false'; end
     time_span = parser.Results.time_span;
+
+    num_shuffle = parser.Results.num_shuffle;
 
      display('CHECK INFO BELOW');
     display(sprintf('Writing config files for yeti user %s', yeti_user));
     display(sprintf('Experiment name: %s', experiment_name));
-    display(sprintf('Total jobs to be submitted: %d', p_lambda_splits*s_lambda_splits*density_splits));
+    display(sprintf('Total jobs to be submitted: %d', num_shuffle));
 
     % Write config files
-    config_file_count = 0;
-    for i=1:p_lambda_splits
-        for j=1:s_lambda_splits
-            for k=1:density_splits
-                config_file_count = config_file_count + 1;
-                fid = fopen(sprintf('config%d.m',config_file_count),'w');
-                fprintf(fid,'params.split = %f;\n', training_test_split);
-                fprintf(fid,'params.BCFW_max_iterations = %d;\n', BCFW_max_iterations);
-                fprintf(fid,'params.structure_type = ''%s'';\n', structure_type);
-                fprintf(fid,'params.compute_true_logZ = %s;\n', compute_true_logZ_str);
-                if ischar(reweight_denominator)
-                    fprintf(fid,'params.reweight_denominator = ''%s'';\n', reweight_denominator);
-                else
-                    fprintf(fid,'params.reweight_denominator = %d;\n', reweight_denominator);
-                end
-
-                % get real data (params.data)
-                if isempty(datapath)
-                    fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data();\n');
-                else
-                    fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_dataset(''%s'');\n', datapath);
-                end
-
-                if strcmp(structure_type, 'loopy')
-                    % slambda
-                    fprintf(fid,'s_lambdas = logspace(%f,%f,%d);\n', log10(s_lambda_min), log10(s_lambda_max), s_lambdas_per_split*s_lambda_splits);
-                    fprintf(fid,'params.s_lambda_count = %d;\n', s_lambdas_per_split);
-                    fprintf(fid,'params.s_lambda_min = s_lambdas(%d);\n', (j-1)*s_lambdas_per_split + 1);
-                    fprintf(fid,'params.s_lambda_max = s_lambdas(%d);\n', j*s_lambdas_per_split);
-
-                    % density
-                    fprintf(fid,'densities = linspace(%f,%f,%d);\n', density_min, density_max, densities_per_split*density_splits);
-                    fprintf(fid,'params.density_count = %d;\n', densities_per_split);
-                    fprintf(fid,'params.density_min = densities(%d);\n', (k-1)*densities_per_split + 1);
-                    fprintf(fid,'params.density_max = densities(%d);\n', k*densities_per_split);
-
-                    % lookback time span
-                    fprintf(fid,'params.time_span = %d;\n', time_span);
-                end
-
-                % plambda
-                fprintf(fid,'p_lambdas = logspace(%f,%f,%d);\n', log10(p_lambda_min), log10(p_lambda_max), p_lambdas_per_split*p_lambda_splits);
-                fprintf(fid,'params.p_lambda_count = %d;\n', p_lambdas_per_split);
-                fprintf(fid,'params.p_lambda_min = p_lambdas(%d);\n', (i-1)*p_lambdas_per_split + 1);
-                fprintf(fid,'params.p_lambda_max = p_lambdas(%d);\n', i*p_lambdas_per_split);
-
-                fclose(fid);
-            end
+    for config_file_count=1:num_shuffle
+        fid = fopen(sprintf('config%d.m',config_file_count),'w');
+        fprintf(fid,'params.split = %f;\n', training_test_split);
+        fprintf(fid,'params.BCFW_max_iterations = %d;\n', BCFW_max_iterations);
+        fprintf(fid,'params.structure_type = ''%s'';\n', structure_type);
+        fprintf(fid,'params.compute_true_logZ = %s;\n', compute_true_logZ_str);
+        if ischar(reweight_denominator)
+            fprintf(fid,'params.reweight_denominator = ''%s'';\n', reweight_denominator);
+        else
+            fprintf(fid,'params.reweight_denominator = %d;\n', reweight_denominator);
         end
+
+        % get real data (params.data)
+        if isempty(datapath)
+            fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_real_data(%d);\n',config_file_count);
+        else
+            fprintf(fid,'[params.data, params.variable_names, params.stimuli] = get_dataset(''%s'');\n', ...
+                    strcat(datapath(1:end-4), '_', int2str(config_file_count), datapath(end-3:end)));
+        end
+
+        if strcmp(structure_type, 'loopy')
+            % slambda
+            fprintf(fid,'s_lambdas = logspace(%f,%f,%d);\n', log10(s_lambda_min), log10(s_lambda_max), s_lambdas_per_split*s_lambda_splits);
+            fprintf(fid,'params.s_lambda_count = %d;\n', s_lambdas_per_split);
+            fprintf(fid,'params.s_lambda_min = s_lambdas(%d);\n', 1);
+            fprintf(fid,'params.s_lambda_max = s_lambdas(%d);\n', s_lambdas_per_split);
+            % density
+            fprintf(fid,'densities = linspace(%f,%f,%d);\n', density_min, density_max, densities_per_split*density_splits);
+            fprintf(fid,'params.density_count = %d;\n', densities_per_split);
+            fprintf(fid,'params.density_min = densities(%d);\n', 1);
+            fprintf(fid,'params.density_max = densities(%d);\n', densities_per_split);
+
+            % edge constraint parameters
+            fprintf(fid,'params.edges = ''%s'';\n', edges);
+            fprintf(fid,'params.no_same_neuron_edges = %s;\n', no_same_neuron_edges_str);
+
+            % lookback time span
+            fprintf(fid,'params.time_span = %d;\n', time_span);
+        end
+
+        % plambda
+        fprintf(fid,'p_lambdas = logspace(%f,%f,%d);\n', log10(p_lambda_min), log10(p_lambda_max), p_lambdas_per_split*p_lambda_splits);
+        fprintf(fid,'params.p_lambda_count = %d;\n', p_lambdas_per_split);
+        fprintf(fid,'params.p_lambda_min = p_lambdas(%d);\n', 1);
+        fprintf(fid,'params.p_lambda_max = p_lambdas(%d);\n', p_lambdas_per_split);
+
+        fclose(fid);
     end
 
 end

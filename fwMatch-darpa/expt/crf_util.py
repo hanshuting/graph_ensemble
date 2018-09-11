@@ -80,11 +80,12 @@ def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     # Reread settings we expect to be non-string data types with correct getter
     for int_option in ['time_span', 'num_shuffle', 'verbosity']:
         GeneralOptions[int_option] = parser.getint('GeneralOptions', int_option)
-    for bool_option in ['debug_filelogging']:
+    for bool_option, option_default in [('debug_filelogging', False),
+                                        ('no_same_neuron_edges', True)]:
         try:
             GeneralOptions[bool_option] = parser.getboolean('GeneralOptions', bool_option)
         except ValueError:
-            GeneralOptions[bool_option] = False
+            GeneralOptions[bool_option] = option_default
     return GeneralOptions
 
 

@@ -78,11 +78,6 @@ function run(params)
         % One variable group entry per node. Each group entry is a (possibly
         % empty) list of other node indexes.
         if params.time_span > 1
-            % TODO
-            if params.time_span > 3
-                fprintf('Time span greater than 3 is experimental.');
-            end
-
             num_groups = size(x_train,2);
             variable_groups = cell(1, num_groups);
             base_node_count = size(params.data, 2);
@@ -94,9 +89,16 @@ function run(params)
             % Always consider fully connected graph at current timestep
             variable_groups(origidx) = all_but_me(1, base_node_count);
 
-            lookback_method = 4;    % DEBUG
-            fprintf('lookback_method = %d;\n', lookback_method);
-            if lookback_method == 4
+            if params.edges == "full"
+                % Fully connect all neuron nodes.
+                variable_groups = all_but_me(1, params.time_span * base_node_count);
+%                     variable_groups = uint16(1:size(x_train, 2));
+            else
+                if params.edges ~= "simple"
+                    fprintf('Invalid edges parameter. Resorting to default setting "simple".\n');
+                    params.edges  = "simple"
+                end
+                fprintf('Prohibiting edges between offset nodes.\n');
                 % Add edge from every current timestep node to every
                 % added previous timestep node.
 
@@ -106,10 +108,6 @@ function run(params)
 
                 % Set half edge from every dup edge to every orig node.
                 variable_groups(dupidx) = {origidx};
-            else % lookback_method == 3
-                % Fully connect all neuron nodes.
-                variable_groups = all_but_me(1, params.time_span * base_node_count);
-%                     variable_groups = uint16(1:size(x_train, 2));
             end
 
             % Always connect stimulus nodes to all non-stimulus nodes
@@ -123,12 +121,14 @@ function run(params)
             for ii = stimidx
                 variable_groups{ii} = [origidx dupidx];
             end
-            
-            % Remove all edges between a neuron and itself
-            for ii = origidx
-                this_node_idxs = ii:base_node_count:params.time_span*base_node_count;
-                for jj = this_node_idxs
-                    variable_groups{jj} = setdiff(variable_groups{jj}, this_node_idxs);
+
+            if params.no_same_neuron_edges
+                fprintf('Removing all edges between same-neuron nodes.\n');
+                for ii = origidx
+                    this_node_idxs = ii:base_node_count:params.time_span*base_node_count;
+                    for jj = this_node_idxs
+                        variable_groups{jj} = setdiff(variable_groups{jj}, this_node_idxs);
+                    end
                 end
             end
         else
