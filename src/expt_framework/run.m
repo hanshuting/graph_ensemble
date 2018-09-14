@@ -89,14 +89,14 @@ function run(params)
             % Always consider fully connected graph at current timestep
             variable_groups(origidx) = all_but_me(1, base_node_count);
 
-            if params.edges == "full"
+            if params.edges == 'full'
                 % Fully connect all neuron nodes.
                 variable_groups = all_but_me(1, params.time_span * base_node_count);
 %                     variable_groups = uint16(1:size(x_train, 2));
             else
-                if params.edges ~= "simple"
+                if params.edges ~= 'simple'
                     fprintf('Invalid edges parameter. Resorting to default setting "simple".\n');
-                    params.edges  = "simple"
+                    params.edges  = 'simple'
                 end
                 fprintf('Prohibiting edges between offset nodes.\n');
                 % Add edge from every current timestep node to every

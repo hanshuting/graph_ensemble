@@ -1,3 +1,0 @@
-def.o: def.c config.h
-
-config.h:

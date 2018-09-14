@@ -1,3 +1,5 @@
+local/
+trash/
 data/
 results/
 tex/
@@ -18,3 +20,4 @@ paper/
 mnms/perf/
 scripts/figure_scripts/
 scripts/OUT_DATED/
+.DS_Store

@@ -1,0 +1,328 @@
+function [] = fig7_opto_stim(param)
+
+% parameters
+expt_name = param.expt_name;
+ge_type = param.ge_type;
+data_path = param.data_path;
+fig_path = param.fig_path.opto_stim;
+save_path = param.result_path.stats_path;
+result_path_base = param.result_path_base;
+ccode_path = param.ccode_path;
+linew = param.linew;
+
+load(ccode_path);
+gmap = load(param.graymap);
+
+epsum = cell(length(expt_name),2);
+
+redmap_light = load(param.redmap_light);
+
+qnoise = 0.7;
+
+%%
+for n = 1:length(expt_name)
+    
+    expt_ee = param.ee{n}{1};
+    model_path = [result_path_base '\' expt_name{n} '\models\']; 
+    load([data_path expt_name{n} '\' expt_name{n} '.mat']);
+    load([data_path expt_name{n} '\stim_indx.mat']); % stim_indx
+    load([data_path expt_name{n} '\Pks_Frame.mat']); % Pks_Frame
+    load([data_path expt_name{n} '\opto_stim_high.mat']); % opto_stim_high
+    load([data_path expt_name{n} '\opto_indx.mat']); % opto_indx
+    load([data_path expt_name{n} '\' expt_name{n} '_' expt_ee '.mat']); % data
+    
+    model = load([model_path expt_name{n} '_' expt_ee '_loopy_best_model_'...
+        ge_type '.mat']);
+    model.graph = full(model.graph);
+    
+    % shuffled models
+    shuffle_models = load([model_path 'shuffled_' expt_name{n} '_' ...
+        expt_ee '_loopy.mat']);
+    
+    num_node = size(model.graph,1);
+    num_stim_cell = length(stim_indx);
+    num_nostim_cell = num_node-num_stim_cell;
+    nostim_indx = setdiff(1:num_node,stim_indx);
+    
+    num_frame = size(data,1);
+    num_add = length(setdiff(unique(opto_stim_high),0));
+    num_neuron = num_node-num_add;
+    
+    % extend coordinates
+    coords = Coord_active;
+    coords(end+1,:) = [0 max(coords(:,2))];
+    coords(end+1,:) = [0 0];
+    coords(end+1,:) = [max(coords(:,1)) 0];
+    coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
+    coords(end+1,:) = [max(coords(:,1))/2 0];
+    coords(end+1,:) = [max(coords(:,1))/2 max(coords(:,2))];
+    
+    % convert to on edges
+    model.ep_on = getOnEdgePot(model.graph,model.G)';
+    for ii = 1:length(shuffle_models.graphs)
+        shuffle_models.ep_on{ii} = getOnEdgePot(shuffle_models.graphs{ii},...
+            shuffle_models.G{ii})';
+        shuffle_models.epsum{ii} = sum(shuffle_models.ep_on{ii},2);
+        shuffle_models.epsum{ii}(sum(shuffle_models.graphs{ii},2)==0) = NaN;
+    end
+    shuffle_models.mepsum = nanmean(cellfun(@(x) nanmean(x),shuffle_models.epsum));
+    shuffle_models.sdepsum = nanstd(cellfun(@(x) nanmean(x),shuffle_models.epsum));
+    
+    % edge potential sum
+    epsum{n} = sum(model.ep_on,2);
+    epsum{n}(sum(model.graph,2)==0) = NaN;
+    
+    %% plot model
+    figure; set(gcf,'color','w','position',[2154 560 479 377])
+    cc_range = [];
+    ep_range = [-1.5 0.1];
+    plotGraphModelHighlightEP(model.graph,coords,model.ep_on,...
+        cc_range,ep_range,gmap.cmap,[]);
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_ON_' ...
+        ge_type '_epsum_graph.pdf']);
+    
+    %% temporarily set recall/norecall cell indx here
+    stim_recall = 44;
+    stim_norecall = 39;
+    
+    %% use each node to predict opto stim
+    % stimulating the second cell recalls the imprinted ensemble
+    % use the second added neuron as standard
+    pattern_indx = 2;
+    nopattern_indx = 5;
+    
+    % predict cosine similarity
+    true_label = opto_stim_high'==(pattern_indx+1);
+    figure; set(gcf,'color','w','position',[2014 369 518 225])
+    subplot(1,2,1); hold on
+    % random ensemble performance
+    auc_ens = zeros(100,1);
+    for ii = 1:100
+        rd_ens = randperm(num_neuron,length(stim_indx));
+        [~,sim_core] = core_cos_sim(rd_ens,data(:,1:num_neuron),true_label);
+        [xx,yy,~,auc_ens(ii)] = perfcurve(true_label,sim_core,1);
+    end
+    plot(xx,yy,'color','k','linewidth',2*linew);
+    % individual cells
+    cc = jet(64);
+    auc = zeros(num_stim_cell,1);
+    for ii = 1:num_stim_cell
+        [~,sim_core] = core_cos_sim(stim_indx(ii),data(:,1:num_neuron),true_label);
+        [xx,yy,~,auc(ii)] = perfcurve(true_label,sim_core,1);
+        curve_cc = cc(ceil((epsum{n}(stim_indx(ii))-min(epsum{n}(stim_indx)))/...
+            (max(epsum{n}(stim_indx))-min(epsum{n}(stim_indx)))*63+1),:);
+        plot(xx,yy,'color',curve_cc,'linewidth',linew);
+    end
+    % plot auc
+    nodesz = 30;
+    subplot(1,2,2); hold on
+    scatter(epsum{n}(stim_indx),auc,nodesz,mycc.gray,'filled')
+    scatter(epsum{n}(stim_recall),auc(stim_indx==stim_recall),nodesz,mycc.red,'filled')
+    scatter(epsum{n}(stim_norecall),auc(stim_indx==stim_norecall),nodesz,mycc.blue,'filled')
+    nsmi = min(epsum{n}(stim_indx));
+    nsma = max(epsum{n}(stim_indx));
+    aucmi = min(auc(:))-0.1;
+    aucma = max(auc(:))+0.1;
+    plot([nsmi nsma],mean(auc_ens)*[1 1],'k--');
+    plot([nsmi nsma],(mean(auc_ens)+std(auc_ens))*[1 1],'--','color',mycc.gray_light);
+    plot(shuffle_models.mepsum*[1 1],[aucmi aucma],'k--');
+    plot((shuffle_models.mepsum+shuffle_models.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
+    plot((shuffle_models.mepsum-shuffle_models.sdepsum)*[1 1],[aucmi aucma],'--',...
+        'color',mycc.gray_light);
+    xlim([nsmi nsma]); ylim([aucmi aucma])
+    xlabel('node strength'); ylabel('AUC');
+        
+%     % change single node activity and predict with LL
+%     LL_frame_stim = zeros(num_stim_cell,num_frame,2);
+%     LL_frame_nostim = zeros(num_stim_cell,num_frame,2);
+%     for ii = 1:num_stim_cell
+%         for jj = 1:num_frame % 126:214
+%             frame_vec = data(jj,:);
+%             % stim node on
+%             frame_vec(num_neuron+pattern_indx) = 1;
+%             frame_vec(stim_indx(ii)) = 0;
+%             LL_frame_stim(ii,jj,1) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%             frame_vec(stim_indx(ii)) = 1;
+%             LL_frame_stim(ii,jj,2) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%             % stim node off
+%             frame_vec(num_neuron+pattern_indx) = 0;
+%             frame_vec(stim_indx(ii)) = 0;
+%             LL_frame_nostim(ii,jj,1) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%             frame_vec(stim_indx(ii)) = 1;
+%             LL_frame_nostim(ii,jj,2) = compute_avg_log_likelihood(model.node_pot,...
+%                 model.edge_pot,model.logZ,frame_vec);
+%         end
+%     end
+%     LL_stim = squeeze(LL_frame_stim(:,:,2)-LL_frame_stim(:,:,1));
+%     LL_nostim = squeeze(LL_frame_nostim(:,:,2)-LL_frame_nostim(:,:,1));
+%     LL_rel = LL_stim-LL_nostim;
+%     
+%     % plot ROC and calculate AUC
+%     auc = zeros(num_stim_cell,1);
+%     cc = jet(64);
+%     figure; set(gcf,'color','w','position',[2014 369 518 225])
+%     subplot(1,2,1); hold on
+%     for ii = 1:num_stim_cell
+%         [xx,yy,~,auc(ii)] = perfcurve(opto_stim_high'==(pattern_indx+1),...
+%             LL_stim(ii,:),1);
+%         curve_cc = cc(ceil((epsum{n}(stim_indx(ii))-min(epsum{n}(stim_indx)))/...
+%             (max(epsum{n}(stim_indx))-min(epsum{n}(stim_indx)))*63+1),:);
+%         plot(xx,yy,'color',curve_cc);
+%     end
+%     xlabel('FPR'); ylabel('TPR');
+%     
+%     nodesz = 30;
+%     subplot(1,2,2); hold on
+%     scatter(epsum{n}(stim_indx),auc,nodesz,mycc.gray,'filled')
+%     scatter(epsum{n}(stim_recall),auc(stim_indx==stim_recall),nodesz,mycc.red,'filled')
+%     scatter(epsum{n}(stim_norecall),auc(stim_indx==stim_norecall),nodesz,mycc.blue,'filled')
+%     xlabel('node strength'); ylabel('AUC');
+    
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_ROC_stim_cell.pdf']);
+    
+    %% plot epsum raster
+    wd = 0.01;
+    figure; set(gcf,'color','w','position',[2034 331 596 327])
+    hold on
+    num_node = length(epsum{n});
+    edge_map = jet(64);
+    for ii = 1:num_node
+        cep = epsum{n}(ii);
+        if ~isnan(cep)
+            cindx = ceil((cep-ep_range(1))/(ep_range(2)-ep_range(1))*64);
+        if cindx<=0 || isnan(cindx)
+            cindx = 1;
+        elseif cindx >= 64
+            cindx = 64;
+        end
+            patch(epsum{n}(ii)+[-wd wd wd -wd -wd],ii+[-0.5 -0.5 0.5 0.5 -0.5],...
+                edge_map(cindx,:),'edgecolor',mycc.gray);
+        end
+    end
+    xlim([min(epsum{n})-2*wd max(epsum{n})+2*wd])
+    box on
+    xlabel('sum(edge pot)'); ylabel('cell index')
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_ON_' ...
+        ge_type '_epsum_raster.pdf']);
+    
+    %% box plot of recall/nonrecall cells
+    rec_indx = find((auc>(mean(auc_ens)+std(auc_ens)))&...
+        (epsum{n}(stim_indx)>(shuffle_models.mepsum+shuffle_models.sdepsum)));
+    nonrec_indx = find((auc<(mean(auc_ens)+std(auc_ens)))&...
+        (epsum{n}(stim_indx)<(shuffle_models.mepsum+shuffle_models.sdepsum)));
+%     nonrec_indx = setdiff(1:num_stim_cell,rec_indx)';
+    
+    ww = 0.4;
+    figure; set(gcf,'color','w','position',[2204 432 545 219])
+    
+    % AUC box plot
+    subplot(1,2,1); hold on
+    h = boxplot(auc(nonrec_indx),'positions',1,'width',ww,'colors',mycc.blue);
+    setBoxStyle(h,linew);
+    h = boxplot(auc(rec_indx),'positions',2,'width',ww,'colors',mycc.red);
+    setBoxStyle(h,linew);
+    set(gca,'xtick',[1 2],'xticklabel',{'nonrecall','recall'})
+    ylabel('AUC')
+    pval = ranksum(auc(nonrec_indx),auc(rec_indx));
+    title(num2str(pval))
+    xlim([0 3]); ylim([aucmi aucma]); box off
+    
+    % rec/nonrec connectivity
+%     conn1 = sum(model.graph(stim_indx(nonrec_indx),stim_indx),2);
+%     conn2 = sum(model.graph(stim_indx(rec_indx),stim_indx),2);
+%     subplot(1,2,2); hold on
+%     h = boxplot(conn1,'positions',1,'width',ww,'colors',mycc.blue);
+%     setBoxStyle(h,linew);
+%     h = boxplot(conn2,'positions',2,'width',ww,'colors',mycc.red);
+%     setBoxStyle(h,linew);
+%     set(gca,'xtick',[1 2],'xticklabel',{'nonrecall','recall'})
+%     ylabel('# connections')
+%     pval = ranksum(conn1,conn2);
+%     title(num2str(pval));
+%     xlim([0 3]); ylim([min([conn1;conn2]) max([conn1;conn2])]); box off
+    
+    % node strength box plot
+    subplot(1,2,2); hold on
+    h = boxplot(epsum{n}(stim_indx(nonrec_indx)),'positions',1,'width',ww,'colors',mycc.blue);
+    setBoxStyle(h,linew);
+    h = boxplot(epsum{n}(stim_indx(rec_indx)),'positions',2,'width',ww,'colors',mycc.red);
+    setBoxStyle(h,linew);
+    set(gca,'xtick',[1 2],'xticklabel',{'nonrecall','recall'})
+    ylabel('node strength')
+    pval = ranksum(epsum{n}(stim_indx(nonrec_indx)),epsum{n}(stim_indx(rec_indx)));
+    title(num2str(pval));
+    xlim([0 3]); ylim([nsmi nsma]); box off
+    
+    print(gcf,'-dpdf','-painters',[fig_path expt_name{n} '_rec_nonrec_boxplot.pdf']);
+    
+    %% circle representation
+    light_gray = 0.9*[1 1 1];
+    cells1 = setdiff(stim_indx,stim_recall)';
+    cells2 = setdiff(stim_indx,stim_norecall)';
+    num_half = round(num_nostim_cell/2); num_half(2) = num_nostim_cell-num_half;
+    sort_indx1 = [nostim_indx(1:num_half(1)),stim_recall,...
+        nostim_indx(num_half(1)+1:sum(num_half)),cells1];
+    sort_indx2 = [nostim_indx(1:num_half(1)),stim_norecall,...
+        nostim_indx(num_half(1)+1:sum(num_half)),cells2];
+    
+    % node colors for recall experiment
+    nodec1 = zeros(num_node,3);
+    nodec1(1:num_half(1),:) = repmat(light_gray,num_half(1),1);
+    nodec1(num_half(1)+1,:) = mycc.red;
+    nodec1(num_half(1)+2:num_nostim_cell+1,:) = repmat(light_gray,num_half(2),1);
+    nodec1(num_nostim_cell+2:end,:) = repmat(mycc.red,num_stim_cell-1,1);
+    
+    % node colors for norecall experiment
+    nodec2 = nodec1;
+    nodec2(num_half(1)+1,:) = mycc.blue;
+    
+    % edge colors for recall experiment
+    maxep = max(max(model.ep_on(stim_indx,stim_indx)));
+    minep = min(min(model.ep_on(stim_indx,stim_indx)));
+    edge_list1 = zeros(sum(model.graph(:))/2,2);
+    [edge_list1(:,2),edge_list1(:,1)] = find(tril(model.graph(sort_indx1,sort_indx1)));
+    edgec1 = num2cell(edge_list1);
+    for ii = 1:size(edge_list1,1)
+        if ismember(edge_list1(ii,1),[num_half(1)+1,num_nostim_cell+2:num_node]) && ...
+                ismember(edge_list1(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
+            ep = model.ep_on(sort_indx1(edge_list1(ii,1)),sort_indx1(edge_list1(ii,2)));
+            edgec1{ii,3} = redmap_light.cmap(ceil((ep-minep)/(maxep-minep)*64),:);
+        else
+            edgec1{ii,3} = light_gray; % mycc.gray_light; % NaN
+        end
+    end
+    
+    % edge colors for norecall experiment
+    edge_list2 = zeros(sum(model.graph(:))/2,2);
+    [edge_list2(:,2),edge_list2(:,1)] = find(tril(model.graph(sort_indx2,sort_indx2)));
+    edgec2 = num2cell(edge_list2);
+    for ii = 1:size(edge_list2,1)
+        if ismember(edge_list2(ii,1),[num_half(1)+1,num_nostim_cell+2:num_node]) && ...
+                ismember(edge_list2(ii,2),[num_half(1)+1,num_nostim_cell+2:num_node])
+            ep = model.ep_on(sort_indx2(edge_list2(ii,1)),sort_indx2(edge_list2(ii,2)));
+            edgec2{ii,3} = redmap_light.cmap(ceil((ep-minep)/(maxep-minep)*64),:);
+        else
+            edgec2{ii,3} = light_gray; % mycc.gray_light; % NaN
+        end
+    end
+    
+    % plot
+    figure; set(gcf,'color','w','position',[2022 313 894 372]);
+    subplot(1,2,1); title('recalled')
+    visGraphCirc(model.graph(sort_indx1,sort_indx1),'edgeColor',edgec1,...
+        'nodeColor',nodec1);
+    subplot(1,2,2); title('not recalled')
+    visGraphCirc(model.graph(sort_indx2,sort_indx2),'edgeColor',edgec2,...
+        'nodeColor',nodec2);
+    
+    print(gcf,'-dpdf','-painters','-bestfit',[fig_path expt_name{n} '_circlelayout_' ...
+        ge_type '_stim_neuron.pdf']);
+    
+    
+end
+
+end
