@@ -41,7 +41,7 @@ def get_conditions_metadata(conditions):
         cond.update(parameters)
         metadata = {'data_file': "{}_{}.mat".format(cond['experiment_name'], name),
                     'experiment': "{}_{}_{}".format(cond['experiment_name'], name, MODEL_TYPE),
-                    'expt_dir': os.path.join(cond['source_directory'], "fwMatch-darpa", "expt")
+                    'expt_dir': os.path.join(cond['source_directory'], "expt")
                     }
         cond.update(metadata)
     return conditions
@@ -131,7 +131,7 @@ def create_yeti_config_sh(name, params):
 
         f.write("\n#Command below is to execute Matlab code for Job Array (Example 4) so that " +
                 "each part writes own output\n")
-        f.write("cd {}\n".format(os.path.join(params['source_directory'], "fwMatch-darpa")))
+        f.write("cd {}\n".format(params['source_directory']))
         f.write("./run.sh {0} $PBS_ARRAYID > expt/{0}/job_logs/matoutfile.$PBS_ARRAYID\n".format(
             params['experiment']))
         f.write("#End of script\n")
