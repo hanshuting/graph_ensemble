@@ -55,5 +55,6 @@ addpath src/paramter_estimation/;
 
 % ensemble tools
 addpath src/util
+addpath src/graphs
 
 display(sprintf('PATH is now set!'));
