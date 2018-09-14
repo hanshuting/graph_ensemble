@@ -1,25 +1,34 @@
-# Master Makefile
+# Compile third party libraries
 
-all:
-	$(MAKE) -f compile.mk
-#	$(MAKE) -f cook.mk
-#	$(MAKE) -f report.mk
+# exclude blossom for now
+# TARGETS = QPBO JustinsGraphicalModelsToolboxPublic l1graph l1_logreg fast_gibbs_sampler pmtk3
+TARGETS = QPBO
 
+all: $(TARGETS)
+.PHONY: $(TARGETS)
 
-# EXPERIMENTS (Put here so we can run the experiments on demand, one at a time)
+# Recursive Make
+QPBO:
+	$(MAKE) -C thirdparty/QPBO-v1.32.src
 
-# Learns a graph of 10 nodes and plots the true and estimated graph comparison
-#expt/structure_learning_graph_plot/config1_10_node_graph: expt/structure_learning_graph_plot/config1.m expt/structure_learning_graph_plot/run.m expt/structure_learning_graph_plot/plot_results.m
-#	./run_and_plot.sh structure_learning_graph_plot 1
+# blossom:
+# 	$(MAKE) -C thirdparty/blossom
 
-# Compares the effect in the AUC if we increase the number of samples from daily to hourly
-#expt/structure_learning_daily_to_hourly_data/config1: expt/structure_learning_daily_to_hourly_data/config1.m expt/structure_learning_daily_to_hourly_data/run.m expt/structure_learning_daily_to_hourly_data/plot_results.m
-#	./run_and_plot.sh structure_learning_daily_to_hourly_data 1
+# csapp:
+# 	$(MAKE) -C thirdparty/csa++
 
-# Compares the two ways of building an adjencency matrix from the lasso logistic regression output (min and max)
-#expt/structure_learning_min_vs_max_graph/config1: expt/structure_learning_min_vs_max_graph/config1.m expt/structure_learning_min_vs_max_graph/run.m expt/structure_learning_min_vs_max_graph/plot_results.m
-#	./run_and_plot.sh structure_learning_min_vs_max_graph 1
+# JustinsGraphicalModelsToolboxPublic:
+# 	cd thirdparty/JustinsGraphicalModelsToolboxPublic && matlab -nojvm -r "compile; exit"
 
-# Varies the regulatization parameters and see how AUC varies for structure learning
-#expt/structure_learning_regularization/config1_absolute_lambda: expt/structure_learning_regularization/config1.m expt/structure_learning_regularization/run.m expt/structure_learning_regularization/plot_results.m
-#	./run_and_plot.sh structure_learning_regularization 1
+# l1graph:
+# 	$(MAKE) -C thirdparty/l1graph_clean
+
+# l1_logreg:
+# 	$(MAKE) -C thirdparty/l1_logreg-0.8.2 -f configure-and-make.mk
+
+#fast_gibbs_sampler:
+#	$(MAKE) -C src/structure_learning/gibbs_sampler
+
+# pmtk3:
+# 	cd thirdparty/pmtk3-master && matlab -nojvm -r "initPmtk3; exit"
+
