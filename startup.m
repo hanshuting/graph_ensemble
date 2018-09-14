@@ -1,4 +1,4 @@
-dbstop error;
+% dbstop error;
 
 % Diary
 %[~, name] = system('hostname');
