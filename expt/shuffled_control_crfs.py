@@ -48,7 +48,7 @@ def get_conditions_metadata(conditions):
                     'shuffle_experiment': "shuffled_{}".format(experiment)
                     }
         metadata['shuffle_experiment_dir'] = os.path.join(
-            cond['source_directory'], "fwMatch-darpa", "expt", metadata['shuffle_experiment'])
+            cond['source_directory'], "expt", metadata['shuffle_experiment'])
         conditions[name].update(metadata)
     return conditions
 
@@ -242,7 +242,7 @@ def create_controls_yeti_config_sh(name, params):
 
         f.write("\n#Command below is to execute Matlab code for Job Array (Example 4) so that " +
                 "each part writes own output\n")
-        f.write("cd {}\n".format(os.path.join(params['source_directory'], "fwMatch-darpa")))
+        f.write("cd {}\n".format(params['source_directory']))
         f.write("./run.sh {0} $PBS_ARRAYID > expt/{0}/job_logs/matoutfile.$PBS_ARRAYID\n".format(
             params['shuffle_experiment']))
         f.write("#End of script\n")
