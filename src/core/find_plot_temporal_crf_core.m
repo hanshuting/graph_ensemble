@@ -1,4 +1,4 @@
-function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,stimuli, Coord_active)
+function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,stimuli, coords)
 % FIND_PLOT_TEMPORAL_CRF_CORE Find and plot multi-timeframe neuron ensembles with CRF models.
 %
 % Input
@@ -6,10 +6,10 @@ function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,s
 %   shuffle_model: Shuffled dataset CRFs.
 %   data: Expected to be a timeframes by neurons binary matrix.
 %   stimuli: Expected to be a timeframes by stimuli binary matrix.
-%   Coord_active: Optional. 2D spatial coordinates to display each neuron.
+%   coords: Optional. 2D spatial coordinates to display each neuron.
 %       Neurons by coordinates.
     if nargin < 5
-        Coord_active = [];
+        coords = [];
         num_subplots = 1;
     else
         num_subplots = 2;
@@ -25,7 +25,7 @@ function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,s
 
     % expand for additional time_span nodes
     if time_span > 1
-        Coord_active = repmat(Coord_active, time_span, 1);
+        coords = repmat(coords, time_span, 1);
     end
 
     [~, results] = find_temporal_ens_nodes(best_model, shuffle_model, data, stimuli, num_controls);
@@ -73,7 +73,7 @@ function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,s
         % plot coordinates
         if num_subplots > 1
             subplot(num_subplots,num_stim,ii+num_stim);
-            plotGraphHighlight(Coord_active,mod(core_crf{ii}-1, num_orig_neuron)+1,'red',1 / time_span)
+            plotGraphHighlight(coords,mod(core_crf{ii}-1, num_orig_neuron)+1,'red',1 / time_span)
         end
 
     end
