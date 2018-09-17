@@ -1,88 +1,0 @@
-8
-
-dir
-1831
-svn+ssh://julianm@sml.nicta.com.au/payload/projects/repos/structuredsvm/Code/bmrm-2.1
-svn+ssh://julianm@sml.nicta.com.au/payload/projects/repos/structuredsvm
-
-
-
-2008-02-05T09:28:00.101489Z
-1829
-vishy
-
-
-svn:special svn:externals svn:needs-lock
-
-
-
-
-
-
-
-
-
-
-
-f5c3ece1-4b19-0410-bce7-deb783aaa22a
-
-loss
-dir
-
-model
-dir
-
-tools
-dir
-
-externalpackages
-dir
-
-TODO.txt
-file
-
-
-
-
-2008-02-06T23:28:07.000000Z
-0143f8277bea3bd69e687c75c69cb656
-2008-01-25T09:17:06.283558Z
-1691
-chteo
-
-utest
-dir
-
-doc
-dir
-
-linear-bmrm
-dir
-
-README.bmrm-2.1
-file
-
-
-
-
-2007-11-29T00:04:44.000000Z
-bde9f3cd038f49eb3771fdfeeb01775e
-2007-07-29T05:37:03.006703Z
-1157
-chteo
-
-data
-dir
-
-solver
-dir
-
-ramp-bmrm
-dir
-
-utilities
-dir
-
-lbfgs
-dir
-
