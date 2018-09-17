@@ -1,26 +1,18 @@
 graph_ensemble
 ==============
 
-by Shuting Han, Apr. 2017. Updated by Jonathan Shor, June 2018.
-
-Licensing Info
---------------
-[To be added]
-Based on code written by Tang et al. (2016) available at https://github.com/kuitang/fwmatch-public.
+by Shuting Han, Apr. 2017, Sep. 2018; Jonathan Shor, June 2018.
 
 Overview
 --------
-This project applies conditional random field models in _in vivo_ two-photon calcium imaging data in mouse V1 cortex. We built CRFs on such imaging data to identify representative neuronal ensembles corresponding to specific external stimulus, and to identify core neurons that are able to perform pattern completion.
-This code is intended for parallel processings on linux servers. The following instructions are designed for Columbia Yeti HPC usage.
+This project applies conditional random field models in _in vivo_ two-photon calcium imaging data in mouse V1 cortex. We built CRFs on such imaging data to identify representative neuronal ensembles corresponding to specific external stimulus, and to identify core neurons that are able to perform pattern completion. This codebase is based on the [fwMatch](https://github.com/kuitang/fwmatch-public) repo from Jebara group.
 
-## CRF codebase
-The original version from Kui Tang in Jebara’s group is at https://github.com/kuitang/fwmatch-public.
-This repo has a modified version.
-After downloading the codebase to your yeti directory, compile the dependencies as described in `fwMatch-darpa/README.md`.
+This code currently only support linux/macOS platforms.
 
-The codebase is organized as following: all experiments should be under `fwMatch-darpa/expt/` directory; `scripts/` has matlab code to process the results; `fwMatch-darpa/src/` has all source code needed to run the model; `fwMatch-darpa/thirdparty/` has some third-party packages needed for the model.
+## Compile dependencies
+After cloning the repo, run `make` in the base directory.
 
-## Working with Yeti
+## Working with Yeti (for Columbia users)
 See documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti+HPC+Cluster+User+Documentation.
 
 Ensure you are using a current version of MATLAB; version R2016b and later are known to work.
@@ -44,26 +36,26 @@ All of the `.mat` files should be saved in the same directory, for example `~/da
 For all runs under the same experiment name, this is required.
 
 ## Running CRF model - An example
-1. Upload a data file. Using an experiment name of "test" and a condition name of "1" as an example, we might upload to `~/data/test_1.mat`.
+1. Upload a data file. Using an experiment name of "data" and a condition name of "demo" as an example (file provided with the repo), we might upload to `~/data/data_demo.mat`.
 2. Go to expt directory. From the root directory of this repo: `cd fwMatch-darpa/expt`
 3. Edit the "USER EDITABLE VARIABLES" in `run_full_temporal.py` to your values.
    `SOURCE_DIR` should refer to the root directory of where this repo is installed; typically this directory is named graph_ensemble.
    For this example, we might use the following values instead of the defaults:
    ```
-   EXPT_NAME = "test"
+   EXPT_NAME = "data"
    USER = "UNI"
    EMAIL = "UNI@columbia.edu"
    ```
 4. Run `run_full_temporal` with Python 3.5 or greater, passing the condition name to it. For our example with a condition name of 1:
    ```
-   python3 run_full_temporal.py 1
+   python3 run_full_temporal.py demo
    ```
 
 This script will conduct a grid search across the parameter ranges specified, training a CRF model on the data file for each parameter combination.
-A working directory will be created and named as `<experiment>_<condition>_loopy/` (in this case, `test_1_loopy/`), and a directory within it named `results` will contain the trained models and the best model.
+A working directory will be created and named as `<experiment>_<condition>_loopy/` (in this case, `data_demo_loopy/`), and a directory within it named `results` will contain the trained models and the best model.
 
 The best parameters will be extracted and used to produce shuffled control datasets, the number of which is controlled by the NSHUFFLE in `run_full_temporal.py`.
-Another working directory for the shuffle models will be created and named as `shuffled_<experiment>_<condition>_loopy/` (in this example, `shuffled_test_1_loopy/`).
+Another working directory for the shuffle models will be created and named as `shuffled_<experiment>_<condition>_loopy/` (in this example, `shuffled_data_demo_loopy/`).
 Again, a `results` directory inside will contain the trained models.
 
 
