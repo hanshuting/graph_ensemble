@@ -3,6 +3,6 @@ data/
 results/
 tex/
 pa/
-tmp/
 paper/
+src/figure_scripts
 .DS_Store
