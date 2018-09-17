@@ -6,9 +6,8 @@ import subprocess
 import configparser
 
 import logging
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("top." + __name__)
+logger.setLevel(logging.DEBUG)
 
 
 def loglevel_from_verbosity(verbosity):

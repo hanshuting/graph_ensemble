@@ -241,8 +241,12 @@ def main(conditions):
         raise ValueError("Multiple conditions not currently supported.")
     conditions = get_conditions_metadata(conditions)
 
-    # Create stdout log handler if module is invoked from the command line
+    # Update logging if module is invoked from the command line
     if __name__ == '__main__':
+        # Assume top log position
+        logger = logging.getLogger("top")
+        logger.setLevel(logging.DEBUG)
+        # Create stdout log handler
         verbosity = list(conditions.values())[0]['verbosity']
         logger.addHandler(crf_util.get_StreamHandler(verbosity))
         logger.debug("Logging stream handler to sys.stdout added.")
