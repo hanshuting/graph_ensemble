@@ -75,23 +75,43 @@ def get_GridsearchOptions(parser=None, fname="crf_parameters.ini"):
 def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     if parser is None:
         parser = get_raw_configparser(fname)
-    GeneralOptions = get_section_options("GeneralOptions", parser)
-    # Reread settings we expect to be non-string data types with correct getter
-    for int_option in ['time_span', 'num_shuffle', 'verbosity']:
-        GeneralOptions[int_option] = parser.getint('GeneralOptions', int_option)
-    for bool_option, option_default in [('debug_filelogging', False),
-                                        ('no_same_neuron_edges', True)]:
-        try:
-            GeneralOptions[bool_option] = parser.getboolean('GeneralOptions', bool_option)
-        except ValueError:
-            GeneralOptions[bool_option] = option_default
+    int_options = ['time_span', 'num_shuffle', 'verbosity']
+    bool_options_and_defaults = [('debug_filelogging', False),
+                                 ('no_same_neuron_edges', True)]
+    GeneralOptions = get_section_options("GeneralOptions", int_options=int_options,
+                                         bool_options_and_defaults=bool_options_and_defaults)
     return GeneralOptions
 
 
-def get_section_options(section, parser=None, fname="crf_parameters.ini"):
+def get_section_options(section, parser=None, fname="crf_parameters.ini", int_options=[],
+                        bool_options_and_defaults=[], float_options=[]):
+    """Pull settings into a dict, allowing for type specification.
+
+    Args:
+        section (str): Options file section name
+        int_options (list of str, optional): Names of settings to coerce to int.
+        bool_options_and_defaults (list of (str, bool), optional): Names of settings to coerce to
+            bool and defaults to resort to if coersion fails. Ex. [("opt1", True), ("opt2", False)]
+        float_options (list of str, optional): Names of settings to coerce to float.
+        parser (ConfigParser, optional): Pre-existing parser to use.
+        fname (str, optional): Filepath to options file to read if no parser is provided.
+
+    Returns:
+        dict: {option_name: value}
+    """
     if parser is None:
         parser = get_raw_configparser(fname)
     section_options = {name: option for name, option in parser.items(section)}
+    # Reread settings we expect to be non-string data types with specific getter
+    for int_option in int_options:
+        section_options[int_option] = parser.getint(section, int_option)
+    for float_option in float_options:
+        section_options[float_option] = parser.getfloat(section, float_option)
+    for bool_option, option_default in bool_options_and_defaults:
+        try:
+            section_options[bool_option] = parser.getboolean(section, bool_option)
+        except ValueError:
+            section_options[bool_option] = option_default
     return section_options
 
 
