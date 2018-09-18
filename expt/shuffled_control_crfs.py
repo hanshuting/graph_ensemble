@@ -28,29 +28,35 @@ def start_logfile(debug_filelogging, shuffle_experiment_dir, **_):
     logger.debug("Logging file handler to {} added.".format(log_fname))
 
 
-def get_conditions_metadata(conditions):
+def get_conditions_metadata(condition):
+    """Summary
+
+    Args:
+        condition (str): Condition name.
+
+    Returns:
+        dict: Metadata for condition.
+    """
     parameters_parser = crf_util.get_raw_configparser()
-    parameters = crf_util.get_GridsearchOptions(parser=parameters_parser)
-    parameters.update(crf_util.get_GeneralOptions(parser=parameters_parser))
-    parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
-    parameters.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
-                                                   parser=parameters_parser))
-    parameters.update(crf_util.get_section_options('YetiShuffledControlsOptions',
-                                                   parser=parameters_parser))
-    for name, cond in conditions.items():
-        cond.update(parameters)
-        experiment = "{}_{}_{}".format(cond['experiment_name'], name, MODEL_TYPE)
-        metadata = {'data_file': "{}_{}.mat".format(cond['experiment_name'], name),
-                    'experiment': experiment,
-                    'shuffle_save_name': "shuffled_{}_{}".format(cond['experiment_name'], name),
-                    'shuffle_save_dir': os.path.join(cond['data_directory'],
-                                                     "shuffled", experiment),
-                    'shuffle_experiment': "shuffled_{}".format(experiment)
-                    }
-        metadata['shuffle_experiment_dir'] = os.path.join(
-            cond['source_directory'], "expt", metadata['shuffle_experiment'])
-        conditions[name].update(metadata)
-    return conditions
+    params = {}
+    params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
+    params.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
+    params.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
+                                               parser=parameters_parser))
+    params.update(crf_util.get_section_options('YetiShuffledControlsOptions',
+                                               parser=parameters_parser))
+    experiment = "{}_{}_{}".format(params['experiment_name'], condition, MODEL_TYPE)
+    metadata = {'data_file': "{}_{}.mat".format(params['experiment_name'], condition),
+                'experiment': experiment,
+                'shuffle_save_name': "shuffled_{}_{}".format(params['experiment_name'], condition),
+                'shuffle_save_dir': os.path.join(params['data_directory'],
+                                                 "shuffled", experiment),
+                'shuffle_experiment': "shuffled_{}".format(experiment)
+                }
+    metadata['shuffle_experiment_dir'] = os.path.join(
+        params['source_directory'], "expt", metadata['shuffle_experiment'])
+    params.update(metadata)
+    return params
 
 
 def write_shuffled_data_generating_script(params):
@@ -132,80 +138,78 @@ def write_shuffling_script(params):
     logger.info("done writing {} yeti scripts\n".format(params['shuffle_experiment']))
 
 
-def setup_shuffle_model(conditions):
-    for name, params in conditions.items():
-        logger.info("Creating working directory: {}".format(params['shuffle_experiment']))
-        os.makedirs(os.path.expanduser(params['shuffle_experiment']))
-        start_logfile(**params)
+def setup_shuffle_model(params):
+    logger.info("Creating working directory: {}".format(params['shuffle_experiment']))
+    os.makedirs(os.path.expanduser(params['shuffle_experiment']))
+    start_logfile(**params)
 
-        os.makedirs(os.path.expanduser(params['shuffle_save_dir']), exist_ok=True)
+    os.makedirs(os.path.expanduser(params['shuffle_save_dir']), exist_ok=True)
 
-        write_shuffling_script(params)
+    write_shuffling_script(params)
 
-        curr_dir = os.getcwd()
-        logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(params['shuffle_experiment'])
-        logger.debug("changed into dir: {}".format(os.getcwd()))
+    curr_dir = os.getcwd()
+    logger.debug("curr_dir = {}.".format(curr_dir))
+    os.chdir(params['shuffle_experiment'])
+    logger.debug("changed into dir: {}".format(os.getcwd()))
 
-        shell_command = ".{}shuffle_start_job.sh".format(os.sep)
-        logger.debug("About to run {}".format(shell_command))
-        process_results = subprocess.run(shell_command, shell=True)
-        if process_results.returncode:
-            logger.critical("\nAre you on the yeti cluster? Job submission failed.")
-            raise RuntimeError("Received non-zero return code: {}".format(process_results))
-        logger.info("Shuffled dataset creation job submitted.")
+    shell_command = ".{}shuffle_start_job.sh".format(os.sep)
+    logger.debug("About to run {}".format(shell_command))
+    process_results = subprocess.run(shell_command, shell=True)
+    if process_results.returncode:
+        logger.critical("\nAre you on the yeti cluster? Job submission failed.")
+        raise RuntimeError("Received non-zero return code: {}".format(process_results))
+    logger.info("Shuffled dataset creation job submitted.")
 
-        os.chdir(curr_dir)
-        logger.debug("changed back to dir: {}".format(os.getcwd()))
-
-
-def create_shuffle_configs(conditions, best_params):
-    for name, params in conditions.items():
-        fname = os.path.join(params['shuffle_experiment'], "write_shuffle_configs_for_loopy.m")
-        with open(fname, 'w') as f:
-            f.write("create_shuffle_configs( ...\n")
-            f.write("    'datapath', '{}.mat', ...\n".format(
-                os.path.join(params['shuffle_save_dir'], params['shuffle_save_name'])))
-            f.write("    'experiment_name', '{}', ...\n".format(params['shuffle_experiment']))
-            f.write("    'email_for_notifications', '{}', ...\n".format(params['email']))
-            f.write("    'yeti_user', '{}', ...\n".format(params['username']))
-            f.write("    'compute_true_logZ', false, ...\n")
-            f.write("    'reweight_denominator', 'mean_degree', ...\n")
-            # f.write("    's_lambda_splits', 1, ...\n")
-            # f.write("    's_lambdas_per_split', 1, ...\n")
-            f.write("    's_lambda_min', {}, ...\n".format(best_params[name]['s_lambda']))
-            f.write("    's_lambda_max', {}, ...\n".format(best_params[name]['s_lambda']))
-            # f.write("    'density_splits', 1, ...\n")
-            # f.write("    'densities_per_split', 1, ...\n")
-            f.write("    'density_min', {}, ...\n".format(best_params[name]['density']))
-            f.write("    'density_max', {}, ...\n".format(best_params[name]['density']))
-            # f.write("    'p_lambda_splits', 1, ...\n")
-            # f.write("    'p_lambdas_per_split', 1, ...\n")
-            f.write("    'p_lambda_min', {}, ...\n".format(best_params[name]['p_lambda']))
-            f.write("    'p_lambda_max', {}, ...\n".format(best_params[name]['p_lambda']))
-            f.write("    'edges', '{}', ...\n".format(params['edges'].lower()))
-            f.write("    'no_same_neuron_edges', {}, ...\n".format(
-                str(params['no_same_neuron_edges']).lower()))
-            f.write("    'time_span', {}, ...\n".format(best_params[name]['time_span']))
-            f.write("    'num_shuffle', {});\n".format(params['num_shuffle']))
-        f.closed
-        logger.info("done writing {}".format(fname))
-
-        curr_dir = os.getcwd()
-        logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(params['shuffle_experiment'])
-        logger.debug("changed into dir: {}".format(os.getcwd()))
-        crf_util.run_matlab_command("write_shuffle_configs_for_{},".format(MODEL_TYPE),
-                                    add_path=params['source_directory'])
-
-        create_controls_yeti_config_sh(name, params)
-        create_start_jobs_sh(params['shuffle_experiment'])
-
-        os.chdir(curr_dir)
-        logger.debug("changed back to dir: {}".format(os.getcwd()))
+    os.chdir(curr_dir)
+    logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
-def create_controls_yeti_config_sh(name, params):
+def create_shuffle_configs(params, best_params):
+    fname = os.path.join(params['shuffle_experiment'], "write_shuffle_configs_for_loopy.m")
+    with open(fname, 'w') as f:
+        f.write("create_shuffle_configs( ...\n")
+        f.write("    'datapath', '{}.mat', ...\n".format(
+            os.path.join(params['shuffle_save_dir'], params['shuffle_save_name'])))
+        f.write("    'experiment_name', '{}', ...\n".format(params['shuffle_experiment']))
+        f.write("    'email_for_notifications', '{}', ...\n".format(params['email']))
+        f.write("    'yeti_user', '{}', ...\n".format(params['username']))
+        f.write("    'compute_true_logZ', false, ...\n")
+        f.write("    'reweight_denominator', 'mean_degree', ...\n")
+        # f.write("    's_lambda_splits', 1, ...\n")
+        # f.write("    's_lambdas_per_split', 1, ...\n")
+        f.write("    's_lambda_min', {}, ...\n".format(best_params['s_lambda']))
+        f.write("    's_lambda_max', {}, ...\n".format(best_params['s_lambda']))
+        # f.write("    'density_splits', 1, ...\n")
+        # f.write("    'densities_per_split', 1, ...\n")
+        f.write("    'density_min', {}, ...\n".format(best_params['density']))
+        f.write("    'density_max', {}, ...\n".format(best_params['density']))
+        # f.write("    'p_lambda_splits', 1, ...\n")
+        # f.write("    'p_lambdas_per_split', 1, ...\n")
+        f.write("    'p_lambda_min', {}, ...\n".format(best_params['p_lambda']))
+        f.write("    'p_lambda_max', {}, ...\n".format(best_params['p_lambda']))
+        f.write("    'edges', '{}', ...\n".format(params['edges'].lower()))
+        f.write("    'no_same_neuron_edges', {}, ...\n".format(
+            str(params['no_same_neuron_edges']).lower()))
+        f.write("    'time_span', {}, ...\n".format(best_params['time_span']))
+        f.write("    'num_shuffle', {});\n".format(params['num_shuffle']))
+    f.closed
+    logger.info("done writing {}".format(fname))
+
+    curr_dir = os.getcwd()
+    logger.debug("curr_dir = {}.".format(curr_dir))
+    os.chdir(params['shuffle_experiment'])
+    logger.debug("changed into dir: {}".format(os.getcwd()))
+    crf_util.run_matlab_command("write_shuffle_configs_for_{},".format(MODEL_TYPE),
+                                add_path=params['source_directory'])
+
+    create_controls_yeti_config_sh(params)
+    create_start_jobs_sh(params['shuffle_experiment'])
+
+    os.chdir(curr_dir)
+    logger.debug("changed back to dir: {}".format(os.getcwd()))
+
+
+def create_controls_yeti_config_sh(params):
     # Expect to be in the experiment folder already when writing this
     # TODO: Absolute path from source_directory
     fname = "controls_yeti_config.sh"
@@ -304,16 +308,13 @@ def exec_merge_shuffle_CRFs(shuffle_experiment, source_directory, **kwargs):
     logger.info("Shuffle models merged and saved.\n")
 
 
-def main(conditions):
+def main(condition):
     """Summary
 
     Args:
-        conditions (dict): Each key refers to a condition, and its value is a dict containing
-            condition specific filepaths.
+        condition (str): Condition name.
     """
-    if len(conditions) > 1:
-        raise ValueError("Multiple conditions not currently supported.")
-    conditions = get_conditions_metadata(conditions)
+    params = get_conditions_metadata(condition)
 
     # Update logging if module is invoked from the command line
     if __name__ == '__main__':
@@ -321,40 +322,35 @@ def main(conditions):
         logger = logging.getLogger("top")
         logger.setLevel(logging.DEBUG)
         # Create stdout log handler
-        verbosity = list(conditions.values())[0]['verbosity']
+        verbosity = params['verbosity']
         logger.addHandler(crf_util.get_StreamHandler(verbosity))
         logger.debug("Logging stream handler to sys.stdout added.")
 
     # Create bare-bones shuffle folder and create shuffled datasets
-    setup_shuffle_model(conditions)
+    setup_shuffle_model(params)
     # Get best params
-    best_params = {}
-    for name, cond in conditions.items():
-        best_params[name] = get_best_parameters(cond['experiment'])
+    best_params = get_best_parameters(params['experiment'])
     logger.info("Parameters for all conditions collected.\n")
     # create shuffle configs with best params (write and run write_configs_for_loopy.m)
-    create_shuffle_configs(conditions, best_params)
+    create_shuffle_configs(params, best_params)
     # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
-    for name, meta in conditions.items():
-        meta['to_test'] = simple_test_shuffle_datasets
-        meta['to_run'] = exec_shuffle_model
-    crf_util.wait_and_run(conditions)
+    params['to_test'] = simple_test_shuffle_datasets
+    params['to_run'] = exec_shuffle_model
+    crf_util.wait_and_run({condition: params})
     # Wait for shuffle CRFs to be done and run merge and save_shuffle
-    for meta in conditions.values():
-        meta['to_test'] = test_shuffle_CRFs
-        meta['to_run'] = exec_merge_shuffle_CRFs
-    crf_util.wait_and_run(conditions)
+    params['to_test'] = test_shuffle_CRFs
+    params['to_run'] = exec_merge_shuffle_CRFs
+    crf_util.wait_and_run({condition: params})
     # Extract ensemble neuron IDs. Write to disk?
 
 
 if __name__ == '__main__':
     start_time = time.time()
+    try:
+        condition = sys.argv[1]
+    except IndexError:
+        raise TypeError("A condition name must be passed on the command line.")
 
-    # Each condition is a dict containing condition specific filepaths
-    conditions = {name: {} for name in sys.argv[1:]}
-    if conditions:
-        main(conditions)
-    else:
-        raise TypeError("At least one condition name must be passed on the command line.")
+    main(condition)
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))

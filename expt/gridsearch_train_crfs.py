@@ -30,21 +30,27 @@ def start_logfile(debug_filelogging, expt_dir, experiment, **_):
     logger.debug("Logging file handler to {} added.".format(log_fname))
 
 
-def get_conditions_metadata(conditions):
+def get_conditions_metadata(condition):
+    """Summary
+
+    Args:
+        condition (str): Condition name.
+
+    Returns:
+        dict: Metadata for condition.
+    """
     parameters_parser = crf_util.get_raw_configparser()
-    parameters = crf_util.get_GridsearchOptions(parser=parameters_parser)
-    parameters.update(crf_util.get_GeneralOptions(parser=parameters_parser))
-    parameters.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
-    parameters.update(crf_util.get_section_options('YetiGridsearchOptions',
-                                                   parser=parameters_parser))
-    for name, cond in conditions.items():
-        cond.update(parameters)
-        metadata = {'data_file': "{}_{}.mat".format(cond['experiment_name'], name),
-                    'experiment': "{}_{}_{}".format(cond['experiment_name'], name, MODEL_TYPE),
-                    'expt_dir': os.path.join(cond['source_directory'], "expt")
-                    }
-        cond.update(metadata)
-    return conditions
+    params = crf_util.get_GridsearchOptions(parser=parameters_parser)
+    params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
+    params.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
+    params.update(crf_util.get_section_options('YetiGridsearchOptions',
+                                               parser=parameters_parser))
+    metadata = {'data_file': "{}_{}.mat".format(params['experiment_name'], condition),
+                'experiment': "{}_{}_{}".format(params['experiment_name'], condition, MODEL_TYPE),
+                'expt_dir': os.path.join(params['source_directory'], "expt")
+                }
+    params.update(metadata)
+    return params
 
 
 def create_working_dir(params):
@@ -52,7 +58,7 @@ def create_working_dir(params):
     os.makedirs(os.path.expanduser(params['experiment']))
 
 
-def create_write_configs_for_loopy_m(name, params):
+def create_write_configs_for_loopy_m(params):
     fname = os.path.join(params['experiment'], "write_configs_for_loopy.m")
     # TODO: Just call create_configs directly
     with open(fname, 'w') as f:
@@ -93,7 +99,7 @@ def create_write_configs_for_loopy_m(name, params):
     logger.info("done writing {}".format(fname))
 
 
-def create_yeti_config_sh(name, params):
+def create_yeti_config_sh(params):
     # Expect to be in the experiment folder already when writing this
     num_jobs = 1
     for param in [params['S_LAMBDAS'], params['DENSITIES'], params['P_LAMBDAS']]:
@@ -159,39 +165,38 @@ def create_start_jobs_sh(experiment):
     logger.info("Created " + os.path.join(experiment, fname) + ".")
 
 
-def setup_exec_train_model(conditions):
+def setup_exec_train_model(params):
     """Mostly follows old create_script.pl.
 
         Expect to be in expt folder at start.
 
     Args:
-        conditions (dict): Dict of condition names: params.
+        params (dict): Model parameters.
     """
-    for name, params in conditions.items():
-        create_working_dir(params)
-        start_logfile(**params)
-        create_write_configs_for_loopy_m(name, params)
+    create_working_dir(params)
+    start_logfile(**params)
+    create_write_configs_for_loopy_m(params)
 
-        # Move into experiment folder
-        curr_dir = os.getcwd()
-        logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(params['experiment'])
-        logger.debug("changed into dir: {}".format(os.getcwd()))
-        crf_util.run_matlab_command("try, write_configs_for_{}, catch, end,".format(MODEL_TYPE),
-                                    add_path=params['source_directory'])
-        logger.info("\nTraining configs generated.")
+    # Move into experiment folder
+    curr_dir = os.getcwd()
+    logger.debug("curr_dir = {}.".format(curr_dir))
+    os.chdir(params['experiment'])
+    logger.debug("changed into dir: {}".format(os.getcwd()))
+    crf_util.run_matlab_command("write_configs_for_{},".format(MODEL_TYPE),
+                                add_path=params['source_directory'])
+    logger.info("\nTraining configs generated.")
 
-        create_yeti_config_sh(name, params)
-        create_start_jobs_sh(params['experiment'])
+    create_yeti_config_sh(params)
+    create_start_jobs_sh(params['experiment'])
 
-        process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
-        if process_results.returncode:
-            logger.critical("\nAre you on the yeti cluster? Job submission failed.")
-            raise RuntimeError("Received non-zero return code: {}".format(process_results))
-        logger.info("Training job(s) submitted.")
+    process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
+    if process_results.returncode:
+        logger.critical("\nAre you on the yeti cluster? Job submission failed.")
+        raise RuntimeError("Received non-zero return code: {}".format(process_results))
+    logger.info("Training job(s) submitted.")
 
-        os.chdir(curr_dir)
-        logger.debug("changed back to dir: {}".format(os.getcwd()))
+    os.chdir(curr_dir)
+    logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
 def merge_save_train_models(experiment, source_directory, **kwargs):
@@ -230,16 +235,13 @@ def test_train_CRFs(experiment, S_LAMBDAS, DENSITIES, P_LAMBDAS, **kwargs):
     return crf_util.get_max_job_done(filebase) >= num_jobs
 
 
-def main(conditions):
+def main(condition):
     """Summary
 
     Args:
-        conditions (dict): Each key refers to a condition, and its value is a dict containing
-            condition specific filepaths.
+        condition (str): Condition name.
     """
-    if len(conditions) > 1:
-        raise ValueError("Multiple conditions not currently supported.")
-    conditions = get_conditions_metadata(conditions)
+    params = get_conditions_metadata(condition)
 
     # Update logging if module is invoked from the command line
     if __name__ == '__main__':
@@ -247,31 +249,29 @@ def main(conditions):
         logger = logging.getLogger("top")
         logger.setLevel(logging.DEBUG)
         # Create stdout log handler
-        verbosity = list(conditions.values())[0]['verbosity']
+        verbosity = params['verbosity']
         logger.addHandler(crf_util.get_StreamHandler(verbosity))
         logger.debug("Logging stream handler to sys.stdout added.")
 
-    setup_exec_train_model(conditions)
+    setup_exec_train_model(params)
     # Wait for train CRF to be done
     # Run merge and save_best
-    for cond in conditions.values():
-        cond['to_test'] = test_train_CRFs
-        cond['to_run'] = merge_save_train_models
-    crf_util.wait_and_run(conditions)
-    for cond in conditions.values():
-        best_params_path = os.path.join(cond['expt_dir'], cond['experiment'],
-                                        "results", "best_parameters.txt")
-        logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +
-                    " in the following order:\n{}\n".format(PARAMS_TO_EXTRACT))
+    params['to_test'] = test_train_CRFs
+    params['to_run'] = merge_save_train_models
+    crf_util.wait_and_run({condition: params})
+    best_params_path = os.path.join(params['expt_dir'], params['experiment'],
+                                    "results", "best_parameters.txt")
+    logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +
+                " in the following order:\n{}\n".format(PARAMS_TO_EXTRACT))
 
 
 if __name__ == '__main__':
     start_time = time.time()
+    try:
+        condition = sys.argv[1]
+    except IndexError:
+        raise TypeError("A condition name must be passed on the command line.")
 
-    conditions = {name: {} for name in sys.argv[1:]}
-    if conditions:
-        main(conditions)
-    else:
-        raise TypeError("At least one condition name must be passed on the command line.")
+    main(condition)
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))

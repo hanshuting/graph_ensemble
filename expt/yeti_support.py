@@ -19,7 +19,7 @@ def get_yeti_metadata(fname="crf_parameters.ini"):
     return parameters
 
 
-def create_yeti_config_sh(name, params):
+def create_yeti_config_sh(params):
     # Expect to be in the experiment folder already when writing this
     num_jobs = 1
     for param in [params['S_LAMBDAS'], params['DENSITIES'], params['P_LAMBDAS']]:
@@ -84,8 +84,8 @@ def create_start_jobs_sh(experiment):
     logger.info("Created " + os.path.join(experiment, fname) + ".")
 
 
-def start_gridsearch_jobs_yeti(name, params):
-    create_yeti_config_sh(name, params)
+def start_gridsearch_jobs_yeti(params):
+    create_yeti_config_sh(params)
     create_start_jobs_sh(params['experiment'])
 
     process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
