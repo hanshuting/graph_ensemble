@@ -7,5 +7,6 @@ paper/
 src/figure_scripts
 .DS_Store
 expt/*/
+expt/*.log
 shuffled/
 thirdparty/QPBO-v1.32.src/*.mexa64
