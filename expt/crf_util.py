@@ -80,6 +80,14 @@ def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
                                  ('no_same_neuron_edges', True)]
     GeneralOptions = get_section_options("GeneralOptions", int_options=int_options,
                                          bool_options_and_defaults=bool_options_and_defaults)
+    expanded_source = os.path.expanduser(GeneralOptions["source_directory"])
+    if expanded_source != GeneralOptions["source_directory"]:
+        logger.debug("Provided source_directory expanded to {}".format(expanded_source))
+        GeneralOptions["source_directory"] = expanded_source
+    expanded_data = os.path.expanduser(GeneralOptions["data_directory"])
+    if expanded_data != GeneralOptions["data_directory"]:
+        logger.debug("Provided data_directory expanded to {}".format(expanded_data))
+        GeneralOptions["data_directory"] = expanded_data
     return GeneralOptions
 
 
