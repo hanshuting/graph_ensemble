@@ -9,4 +9,5 @@ src/figure_scripts
 expt/*/
 expt/*.log
 shuffled/
-thirdparty/QPBO-v1.32.src/*.mexa64
+*.mexa64
+*.pyc
