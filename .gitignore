@@ -6,3 +6,6 @@ pa/
 paper/
 src/figure_scripts
 .DS_Store
+expt/*/
+shuffled/
+thirdparty/QPBO-v1.32.src/*.mexa64
