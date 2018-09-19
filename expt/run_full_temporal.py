@@ -58,7 +58,7 @@ if __name__ == '__main__':
     shuffled_control_crfs.setup_shuffle_model(params)
     # Wait for train CRF to be done
     # Run merge and save_best, grabbing best params
-    params['to_test'] = gridsearch_train_crfs.test_train_CRFs
+    params['to_test'] = params["test_gs_get_best_params"]
     params['to_run'] = merge_and_get_parameters
     best_params_wrapper = crf_util.wait_and_run({condition: params})
     # TODO: Unwrap

@@ -16,7 +16,16 @@ def get_yeti_metadata(fname="crf_parameters.ini"):
     parameters.update(crf_util.get_section_options('YetiGridsearchOptions',
                                                    parser=parameters_parser))
     parameters['start_jobs'] = start_gridsearch_jobs_yeti
+    parameters['test_gs_get_best_params'] = test_train_CRFs_yeti
     return parameters
+
+
+def test_train_CRFs_yeti(experiment, S_LAMBDAS, DENSITIES, P_LAMBDAS, **kwargs):
+    filebase = os.path.join(experiment, "results", "result")
+    num_jobs = 1
+    for param in [S_LAMBDAS, DENSITIES, P_LAMBDAS]:
+        num_jobs *= param['num_points'] if param['parallize'] else 1
+    return crf_util.get_max_job_done(filebase) >= num_jobs
 
 
 def create_yeti_config_sh(params):

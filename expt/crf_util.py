@@ -171,7 +171,7 @@ def wait_and_run(conditions_to_check, wait_seconds=5):
         for name in conditions_remaining:
             to_check = conditions_to_check[name]
             if to_check['to_test'](**to_check):
-                logger.debug("{}['to_test'] passed.".format(name))
+                logger.debug("{}['to_test']:{} passed.".format(name, to_check['to_test'].__name__))
                 # TODO: Parallize here so we can run but still continue to test others?
                 return_vals[name] = to_check['to_run'](**to_check)
                 logger.info("{} for {} completed.".format(to_check['to_run'].__name__, name))

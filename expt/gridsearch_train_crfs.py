@@ -5,9 +5,9 @@
 import time
 import sys
 import os
-import stat
 import subprocess
 import crf_util
+import yeti_support
 
 import logging
 logger = logging.getLogger("top." + __name__)
@@ -31,7 +31,7 @@ def start_logfile(debug_filelogging, expt_dir, experiment, **_):
 
 
 def get_conditions_metadata(condition):
-    """Summary
+    """Reads in settings.
 
     Args:
         condition (str): Condition name.
@@ -42,14 +42,19 @@ def get_conditions_metadata(condition):
     parameters_parser = crf_util.get_raw_configparser()
     params = crf_util.get_GridsearchOptions(parser=parameters_parser)
     params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
-    params.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
-    params.update(crf_util.get_section_options('YetiGridsearchOptions',
-                                               parser=parameters_parser))
     metadata = {'data_file': "{}_{}.mat".format(params['experiment_name'], condition),
                 'experiment': "{}_{}_{}".format(params['experiment_name'], condition, MODEL_TYPE),
                 'expt_dir': os.path.join(params['source_directory'], "expt")
                 }
     params.update(metadata)
+    params['start_jobs'] = start_gridsearch_jobs
+    params["test_gs_get_best_params"] = test_train_CRFs
+
+    # Update settings for cluster specified, if any
+    if params["cluster_architecture"] == "yeti":
+        logger.info("Yeti cluster architecture selected for gridsearch.")
+        params.update(yeti_support.get_yeti_metadata())
+
     return params
 
 
@@ -66,8 +71,14 @@ def create_write_configs_for_loopy_m(params):
         f.write("    'datapath', '{}{}', ...\n".format(params['data_directory'],
                                                        params['data_file']))
         f.write("    'experiment_name', '{}', ...\n".format(params['experiment']))
-        f.write("    'email_for_notifications', '{}', ...\n".format(params['email']))
-        f.write("    'yeti_user', '{}', ...\n".format(params['username']))
+        try:
+            f.write("    'email_for_notifications', '{}', ...\n".format(params['email']))
+        except KeyError:
+            logger.debug("No notifications email setting provided. Skipping.")
+        try:
+            f.write("    'yeti_user', '{}', ...\n".format(params['username']))
+        except KeyError:
+            logger.debug("No yeti username provided. Skipping.")
         f.write("    'compute_true_logZ', false, ...\n")
         f.write("    'reweight_denominator', 'mean_degree', ...\n")
         s_lambdas = params['S_LAMBDAS']
@@ -99,70 +110,22 @@ def create_write_configs_for_loopy_m(params):
     logger.info("done writing {}".format(fname))
 
 
-def create_yeti_config_sh(params):
-    # Expect to be in the experiment folder already when writing this
-    num_jobs = 1
-    for param in [params['S_LAMBDAS'], params['DENSITIES'], params['P_LAMBDAS']]:
-        num_jobs *= param['num_points'] if param['parallize'] else 1
-    fname = "yeti_config.sh"
-    with open(fname, 'w') as f:
-        f.write("#!/bin/sh\n")
-        f.write("#yeti_config.sh\n\n")
-        f.write("#Torque script to run Matlab program\n")
-
-        f.write("\n#Torque directives\n")
-        f.write("#PBS -N Gridsearch_{}\n".format(params['experiment']))
-        f.write("#PBS -W group_list={}\n".format(params['group_id']))
-        f.write("#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
-            params['yeti_grid_nodes'], params['yeti_grid_ppn'],
-            params['yeti_grid_walltime'], params['yeti_grid_mem']))
-        if params['email_notification'] == "num_jobs":
-            # Reduce email notifications for greater numbers of jobs
-            if num_jobs == 1:
-                f.write("#PBS -m abe\n")
-            elif num_jobs <= int(params['email_jobs_threshold']):
-                f.write("#PBS -m ae\n")
-            else:
-                f.write("#PBS -m af\n")
-        else:
-            # Use email_notification setting verbatim
-            f.write("#PBS -m {}\n".format(params['email_notification']))
-        f.write("#PBS -M {}\n".format(params['email']))
-        f.write("#PBS -t 1-{}\n".format(int(num_jobs)))
-
-        working_dir = os.path.join(params['expt_dir'], params['experiment'])
-        f.write("\n#set output and error directories (SSCC example here)\n")
-        f.write("#PBS -o localhost:{}/yeti_logs/\n".format(working_dir))
-        f.write("#PBS -e localhost:{}/yeti_logs/\n".format(working_dir))
-
-        f.write("\n#Command below is to execute Matlab code for Job Array (Example 4) so that " +
-                "each part writes own output\n")
-        f.write("cd {}\n".format(params['source_directory']))
-        f.write("./run.sh {0} $PBS_ARRAYID > expt/{0}/job_logs/matoutfile.$PBS_ARRAYID\n".format(
-            params['experiment']))
-        f.write("#End of script\n")
-    f.closed
-
-    # make sure file is executable:
-    os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
-    logger.info("Created " + fname + ".")
-
-
-def create_start_jobs_sh(experiment):
-    # Expect to be in the experiment folder already when writing this
-    # TODO: yeti specific
-    fname = "start_jobs.sh"
-    with open(fname, 'w') as f:
-        # Clear out any basic remainders from previous runs
-        f.write("rm -f ./results/result*.mat\n")
-        f.write("rm -f ./yeti_logs/*\n")
-        f.write("rm -f ./job_logs/*\n")
-        f.write("cd ../.. && qsub {}\n".format(os.path.join("expt", experiment, "yeti_config.sh")))
-    f.closed
-
-    # make sure file is executable
-    os.chmod(fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode)
-    logger.info("Created " + os.path.join(experiment, fname) + ".")
+def start_gridsearch_jobs(params):
+    if params["S_LAMBDAS"]["parallize"] or params["DENSITIES"]["parallize"] or params["P_LAMBDAS"]["parallize"]:
+        logger.warning("WARNING: ONLY config1.m WILL BE USED. " +
+                       "Cluster architecture {} ".format(params["cluster_architecture"]) +
+                       "has no parallel execution capability, but found parallize options set to" +
+                       " True.")
+    curr_dir = os.getcwd()
+    logger.debug("curr_dir = {}.".format(curr_dir))
+    os.chdir(params['source_directory'])
+    logger.debug("changed into dir: {}".format(os.getcwd()))
+    shell_cmd = ".{}run.sh {} 1".format(os.sep, params["experiment"])
+    logger.info("About to run: {}".format(shell_cmd))
+    process_results = subprocess.run(shell_cmd, shell=True)
+    os.chdir(curr_dir)
+    logger.debug("changed back to dir: {}".format(os.getcwd()))
+    return process_results
 
 
 def setup_exec_train_model(params):
@@ -186,10 +149,7 @@ def setup_exec_train_model(params):
                                 add_path=params['source_directory'])
     logger.info("\nTraining configs generated.")
 
-    create_yeti_config_sh(params)
-    create_start_jobs_sh(params['experiment'])
-
-    process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
+    process_results = params['start_jobs'](params)
     if process_results.returncode:
         logger.critical("\nAre you on the yeti cluster? Job submission failed.")
         raise RuntimeError("Received non-zero return code: {}".format(process_results))
@@ -227,11 +187,9 @@ def get_best_parameters(experiment, **kwargs):
     return best_params
 
 
-def test_train_CRFs(experiment, S_LAMBDAS, DENSITIES, P_LAMBDAS, **kwargs):
+def test_train_CRFs(experiment, **kwargs):
     filebase = os.path.join(experiment, "results", "result")
     num_jobs = 1
-    for param in [S_LAMBDAS, DENSITIES, P_LAMBDAS]:
-        num_jobs *= param['num_points'] if param['parallize'] else 1
     return crf_util.get_max_job_done(filebase) >= num_jobs
 
 
@@ -256,7 +214,7 @@ def main(condition):
     setup_exec_train_model(params)
     # Wait for train CRF to be done
     # Run merge and save_best
-    params['to_test'] = test_train_CRFs
+    params['to_test'] = params['test_gs_get_best_params']
     params['to_run'] = merge_save_train_models
     crf_util.wait_and_run({condition: params})
     best_params_path = os.path.join(params['expt_dir'], params['experiment'],
