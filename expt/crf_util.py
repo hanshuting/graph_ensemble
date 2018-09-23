@@ -192,7 +192,9 @@ def wait_and_run(conditions_to_check, wait_seconds=5):
         num_waits += 1
         if (num_waits % 100) == 0:
             logger.info("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
-                num_waits, conditions_to_check))
+                num_waits,
+                {name: conditions_to_check[name]['to_test'] for name in conditions_remaining})
+            )
         elif (num_waits % 20) == 0:
             logger.debug("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
                 num_waits, conditions_to_check))
