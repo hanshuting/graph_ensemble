@@ -68,7 +68,7 @@ if __name__ == '__main__':
     shuffled_control_crfs.create_shuffle_configs(params, best_params)
     # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
     params['to_test'] = shuffled_control_crfs.simple_test_shuffle_datasets
-    params['to_run'] = shuffled_control_crfs.exec_shuffle_model
+    params['to_run'] = params["train_controls"]
     crf_util.wait_and_run({condition: params})
     # Wait for shuffle CRFs to be done and run merge and save_shuffle
     params['to_test'] = shuffled_control_crfs.test_shuffle_CRFs
