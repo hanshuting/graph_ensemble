@@ -60,30 +60,6 @@ def get_conditions_metadata(condition):
     return params
 
 
-def write_shuffled_data_generating_script(params):
-    # script for generate shuffled data
-    filepath = os.path.join(params['shuffle_experiment'], "gn_shuff_data.m")
-    logger.debug("writing file: {}".format(filepath))
-    with open(filepath, 'w') as f:
-        f.write("addpath(genpath('{}'));\n".format(params['source_directory']))
-        f.write("load(['{}']);\n".format(os.path.join(params['data_directory'],
-                                                      params['data_file'])))
-        f.write("fprintf('Loaded: %s\\n', ['{}']);\n".format(
-            os.path.join(params['data_directory'], params['data_file'])))
-        f.write("if exist('stimuli', 'var') ~= 1\n")
-        f.write("    stimuli = [];\n")
-        f.write("end\n")
-        f.write("data_raw = data';\n")
-        f.write("for i = 1:{}\n".format(params['num_shuffle']))
-        f.write("\tdata = shuffle(data_raw,'exchange')';\n")
-        f.write("\tsave(['{}_' num2str(i) '.mat'],'data','stimuli');\n".format(
-            os.path.join(params['shuffle_save_dir'], params['shuffle_save_name'])))
-        f.write("end\n")
-        f.write("fprintf('done shuffling data\\n');\n")
-    f.closed
-    logger.info("done writing {}".format(filepath))
-
-
 def write_shuffling_yeti_script(params):
     # write yeti script
     filepath = os.path.join(params['shuffle_experiment'], "shuffle_yeti_config.sh")
@@ -112,7 +88,12 @@ def write_shuffling_yeti_script(params):
                 "so that each part writes own output\n")
         f.write("matlab -nodesktop -nodisplay -r \"dbclear all;" +
                 " addpath('{}');".format(os.path.join(params['shuffle_experiment_dir'])) +
-                "gn_shuff_data; exit\"\n")
+                "gn_shuff_data('{}', '{}', {});".format(
+                    os.path.join(params['data_directory'], params['data_file']),
+                    params['shuffle_save_dir'],
+                    params['num_shuffle']
+                ) +
+                " exit\"\n")
         f.write("#End of script\n")
     f.closed
     # Set executable permissions
