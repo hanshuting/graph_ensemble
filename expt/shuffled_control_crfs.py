@@ -10,6 +10,7 @@ import subprocess
 
 import crf_util
 from gridsearch_train_crfs import get_best_parameters
+import yeti_support
 
 import logging
 logger = logging.getLogger("top." + __name__)
@@ -29,7 +30,7 @@ def start_logfile(debug_filelogging, shuffle_experiment_dir, **_):
 
 
 def get_conditions_metadata(condition):
-    """Summary
+    """Reads in settings.
 
     Args:
         condition (str): Condition name.
@@ -38,13 +39,7 @@ def get_conditions_metadata(condition):
         dict: Metadata for condition.
     """
     parameters_parser = crf_util.get_raw_configparser()
-    params = {}
-    params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
-    params.update(crf_util.get_section_options('YetiOptions', parser=parameters_parser))
-    params.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
-                                               parser=parameters_parser))
-    params.update(crf_util.get_section_options('YetiShuffledControlsOptions',
-                                               parser=parameters_parser))
+    params = crf_util.get_GeneralOptions(parser=parameters_parser)
     experiment = "{}_{}_{}".format(params['experiment_name'], condition, MODEL_TYPE)
     metadata = {'data_file': "{}_{}.mat".format(params['experiment_name'], condition),
                 'experiment': experiment,
@@ -56,6 +51,12 @@ def get_conditions_metadata(condition):
     metadata['shuffle_experiment_dir'] = os.path.join(
         params['source_directory'], "expt", metadata['shuffle_experiment'])
     params.update(metadata)
+
+    # Update settings for cluster specified, if any
+    if params["cluster_architecture"] == "yeti":
+        logger.info("Yeti cluster architecture selected for shuffled controls.")
+        params.update(yeti_support.get_yeti_shuff_metadata())
+
     return params
 
 

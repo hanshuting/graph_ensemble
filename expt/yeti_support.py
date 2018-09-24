@@ -10,13 +10,23 @@ logger = logging.getLogger("top." + __name__)
 logger.setLevel(logging.DEBUG)
 
 
-def get_yeti_metadata(fname="crf_parameters.ini"):
+def get_yeti_gs_metadata(fname="crf_parameters.ini"):
     parameters_parser = crf_util.get_raw_configparser(fname=fname)
     parameters = crf_util.get_section_options('YetiOptions', parser=parameters_parser)
     parameters.update(crf_util.get_section_options('YetiGridsearchOptions',
                                                    parser=parameters_parser))
     parameters['start_jobs'] = start_gridsearch_jobs_yeti
     parameters['test_gs_get_best_params'] = test_train_CRFs_yeti
+    return parameters
+
+
+def get_yeti_shuff_metadata(fname="crf_parameters.ini"):
+    parameters_parser = crf_util.get_raw_configparser(fname=fname)
+    parameters = crf_util.get_section_options('YetiOptions', parser=parameters_parser)
+    parameters.update(crf_util.get_section_options('YetiGenerateShuffledOptions',
+                                                   parser=parameters_parser))
+    parameters.update(crf_util.get_section_options('YetiShuffledControlsOptions',
+                                                   parser=parameters_parser))
     return parameters
 
 

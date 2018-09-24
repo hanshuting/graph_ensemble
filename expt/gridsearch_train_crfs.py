@@ -53,7 +53,7 @@ def get_conditions_metadata(condition):
     # Update settings for cluster specified, if any
     if params["cluster_architecture"] == "yeti":
         logger.info("Yeti cluster architecture selected for gridsearch.")
-        params.update(yeti_support.get_yeti_metadata())
+        params.update(yeti_support.get_yeti_gs_metadata())
 
     return params
 
