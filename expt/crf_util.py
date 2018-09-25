@@ -132,10 +132,13 @@ def get_user_parameters(fname="crf_parameters.ini"):
     return parameters
 
 
-def run_command(scommand):
+def run_command(scommand, shell=False):
     logger.debug("About to run:\n{}".format(scommand))
-    sargs = shlex.split(scommand)
-    process_results = subprocess.run(sargs)
+    if shell:
+        process_results = subprocess.run(scommand, shell=True)
+    else:
+        sargs = shlex.split(scommand)
+        process_results = subprocess.run(sargs)
     if process_results.returncode:
         raise RuntimeError("Received non-zero return code: {}".format(process_results))
     return process_results

@@ -5,7 +5,6 @@
 import time
 import sys
 import os
-import subprocess
 
 import crf_util
 import gridsearch_train_crfs
@@ -133,16 +132,14 @@ def create_shuffle_configs(params, best_params):
     logger.debug("changed back to dir: {}".format(os.getcwd()))
 
 
-def exec_shuffle_model(source_directory, num_shuffle, **kwargs):
+def exec_shuffle_model(source_directory, shuffle_experiment, num_shuffle, **kwargs):
     curr_dir = os.getcwd()
     logger.debug("curr_dir = {}.".format(curr_dir))
     os.chdir(source_directory)
     logger.debug("changed into dir: {}".format(os.getcwd()))
     for cur_shuffle in range(1, num_shuffle + 1):
-        process_results = subprocess.run(".{}run.sh {}".format(os.sep, cur_shuffle), shell=True)
-        if process_results.returncode:
-            logger.critical("Training failed on shuffled control {}".format(cur_shuffle))
-            raise RuntimeError("Received non-zero return code: {}".format(process_results))
+        scommand = ".{}run.sh {} {}".format(os.sep, shuffle_experiment, cur_shuffle)
+        crf_util.run_command(scommand, shell=True)
         logger.info("Trained shuffled control model {} out of {}.".format(cur_shuffle,
                                                                           num_shuffle))
     os.chdir(curr_dir)

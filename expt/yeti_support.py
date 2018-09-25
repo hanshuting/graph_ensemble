@@ -254,4 +254,7 @@ def start_gridsearch_jobs_yeti(params):
     create_start_jobs_sh(params['experiment'])
 
     process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
-    return process_results
+    if process_results.returncode:
+        logger.critical("\nAre you on the yeti cluster? Job submission failed.")
+        raise RuntimeError("Received non-zero return code: {}".format(process_results))
+    logger.info("Training job(s) submitted.")

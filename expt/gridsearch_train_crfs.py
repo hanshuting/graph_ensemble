@@ -5,7 +5,6 @@
 import time
 import sys
 import os
-import subprocess
 import crf_util
 import yeti_support
 
@@ -121,11 +120,9 @@ def start_gridsearch_jobs(params):
     os.chdir(params['source_directory'])
     logger.debug("changed into dir: {}".format(os.getcwd()))
     shell_cmd = ".{}run.sh {} 1".format(os.sep, params["experiment"])
-    logger.info("About to run: {}".format(shell_cmd))
-    process_results = subprocess.run(shell_cmd, shell=True)
+    crf_util.run_command(shell_cmd, shell=True)
     os.chdir(curr_dir)
     logger.debug("changed back to dir: {}".format(os.getcwd()))
-    return process_results
 
 
 def setup_exec_train_model(params):
@@ -149,11 +146,8 @@ def setup_exec_train_model(params):
                                 add_path=params['source_directory'])
     logger.info("\nTraining configs generated.")
 
-    process_results = params['start_jobs'](params)
-    if process_results.returncode:
-        logger.critical("\nAre you on the yeti cluster? Job submission failed.")
-        raise RuntimeError("Received non-zero return code: {}".format(process_results))
-    logger.info("Training job(s) submitted.")
+    # start_gridsearch_jobs by default
+    params['start_jobs'](params)
 
     os.chdir(curr_dir)
     logger.debug("changed back to dir: {}".format(os.getcwd()))
