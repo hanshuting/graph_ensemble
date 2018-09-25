@@ -49,8 +49,15 @@ if __name__ == '__main__':
     except IndexError:
         raise TypeError("A condition name must be passed on the command line.")
 
-    params = gridsearch_train_crfs.get_conditions_metadata(condition)
-    params.update(shuffled_control_crfs.get_conditions_metadata(condition))
+    params = {}
+    if len(sys.argv) > 2:
+        ini_fname = sys.argv[2]
+        logger.debug("Received custom settings filename: {}".format(ini_fname))
+        params.update(gridsearch_train_crfs.get_conditions_metadata(condition, ini_fname))
+        params.update(shuffled_control_crfs.get_conditions_metadata(condition, ini_fname))
+    else:
+        params.update(gridsearch_train_crfs.get_conditions_metadata(condition))
+        params.update(shuffled_control_crfs.get_conditions_metadata(condition))
     setup_logging(**params)
 
     gridsearch_train_crfs.setup_exec_train_model(params)

@@ -56,6 +56,7 @@ def get_StreamHandler(verbosity, stream=sys.stdout):
 
 def get_raw_configparser(fname="crf_parameters.ini"):
     config = configparser.ConfigParser()
+    logger.info("Loading settings file {}.".format(fname))
     config.read(fname)
     return config
 

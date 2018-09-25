@@ -29,16 +29,17 @@ def start_logfile(debug_filelogging, expt_dir, experiment, **_):
     logger.debug("Logging file handler to {} added.".format(log_fname))
 
 
-def get_conditions_metadata(condition):
+def get_conditions_metadata(condition, ini_fname="crf_parameters.ini"):
     """Reads in settings.
 
     Args:
         condition (str): Condition name.
+        ini_fname (str, optional): Filepath of settings file to read.
 
     Returns:
         dict: Metadata for condition.
     """
-    parameters_parser = crf_util.get_raw_configparser()
+    parameters_parser = crf_util.get_raw_configparser(fname=ini_fname)
     params = crf_util.get_GridsearchOptions(parser=parameters_parser)
     params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
     metadata = {'data_file': "{}_{}.mat".format(params['experiment_name'], condition),
@@ -48,12 +49,10 @@ def get_conditions_metadata(condition):
     params.update(metadata)
     params['start_jobs'] = start_gridsearch_jobs
     params["test_gs_get_best_params"] = test_train_CRFs
-
     # Update settings for cluster specified, if any
     if params["cluster_architecture"] == "yeti":
         logger.info("Yeti cluster architecture selected for gridsearch.")
-        params.update(yeti_support.get_yeti_gs_metadata())
-
+        params.update(yeti_support.get_yeti_gs_metadata(fname=ini_fname))
     return params
 
 
@@ -187,13 +186,14 @@ def test_train_CRFs(experiment, **kwargs):
     return crf_util.get_max_job_done(filebase) >= num_jobs
 
 
-def main(condition):
+def main(condition, ini_fname="crf_parameters.ini"):
     """Summary
 
     Args:
         condition (str): Condition name.
+        ini_fname (str, optional): Filepath of settings file to read.
     """
-    params = get_conditions_metadata(condition)
+    params = get_conditions_metadata(condition, ini_fname)
 
     # Update logging if module is invoked from the command line
     if __name__ == '__main__':
@@ -224,6 +224,9 @@ if __name__ == '__main__':
     except IndexError:
         raise TypeError("A condition name must be passed on the command line.")
 
-    main(condition)
+    if len(sys.argv) > 2:
+        main(condition, sys.argv[2])
+    else:
+        main(condition)
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
