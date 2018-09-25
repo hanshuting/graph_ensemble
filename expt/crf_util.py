@@ -158,50 +158,38 @@ def run_matlab_command(scommand, add_path=''):
                        "exit\"")
 
 
-def wait_and_run(conditions_to_check, wait_seconds=5):
-    """Execute specified functions after their corresponding tests pass, pausing between tests.
+def wait_and_run(condition_to_check, wait_seconds=5):
+    """Execute specified function after their corresponding test pass, pausing between tries.
 
     Args:
-        conditions_to_check (dict of dicts): An item per waiting task and subsequent execution.
-            Expects each top-level key to have an associated dict with at least:
+        condition_to_check (dict): Contains test and execution functions, and all parameters for
+            them. Requires at least:
                 'to_test': a function that returns true when testing should conclude and execution
                     should begin.
-                'to_run': the function to run once 'to_test' returns true. Ret
-            The full dict of each top level key is passed as kwargs to its 'to_test' and 'to_run'.
+                'to_run': the function to execute once 'to_test' returns true.
+            The full dict is passed as kwargs to its 'to_test' and 'to_run'.
         wait_seconds (float, optional): Number of seconds to wait per 'to_test' iterations.
     """
-    return_vals = {}
-    conditions_remaining = {name: None for name in conditions_to_check}
-    logger.debug("Start waiting for\n{}".format(conditions_to_check))
+    logger.debug("Start waiting for: {}".format(condition_to_check["to_test"].__name__))
     num_waits = 0
-    while conditions_remaining:
-        stop_checking = []
-        for name in conditions_remaining:
-            to_check = conditions_to_check[name]
-            if to_check['to_test'](**to_check):
-                logger.debug("{}['to_test']:{} passed.".format(name, to_check['to_test'].__name__))
-                # TODO: Parallize here so we can run but still continue to test others?
-                return_vals[name] = to_check['to_run'](**to_check)
-                logger.info("{} for {} completed.".format(to_check['to_run'].__name__, name))
-                logger.debug("return_vals['{}'] = {}".format(name, return_vals[name]))
-                stop_checking.append(name)
-        for finished in stop_checking:
-            del conditions_remaining[finished]
-
+    while not condition_to_check['to_test'](**condition_to_check):
         time.sleep(wait_seconds)
         num_waits += 1
         if (num_waits % 100) == 0:
-            logger.info("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
+            logger.info("Waited {} sleep cycles so far testing {}".format(
                 num_waits,
-                {name: conditions_to_check[name]['to_test'] for name in conditions_remaining})
+                condition_to_check["to_test"].__name__)
             )
         elif (num_waits % 20) == 0:
-            logger.debug("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
-                num_waits, conditions_to_check))
-
-    logger.debug("Done waiting for {}.\n".format(conditions_to_check.keys()))
-    # TODO: Returning all values together means the last test to pass blocks returing others.
-    return return_vals
+            logger.debug("Waited {} sleep cycles so far testing:\n{}".format(
+                num_waits, condition_to_check))
+    logger.info("{}['to_test']:{} passed.".format(condition_to_check["experiment"],
+                                                  condition_to_check["to_test"].__name__))
+    logger.info("Now running {} for {}.".format(condition_to_check['to_run'].__name__,
+                                                condition_to_check["experiment"]))
+    return_val = condition_to_check['to_run'](**condition_to_check)
+    logger.debug("return_val = {}".format(return_val))
+    return return_val
 
 
 def get_max_job_done(filebase, filesuffix=".mat"):

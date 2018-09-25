@@ -216,7 +216,7 @@ def main(condition):
     # Run merge and save_best
     params['to_test'] = params['test_gs_get_best_params']
     params['to_run'] = merge_save_train_models
-    crf_util.wait_and_run({condition: params})
+    crf_util.wait_and_run(params)
     best_params_path = os.path.join(params['expt_dir'], params['experiment'],
                                     "results", "best_parameters.txt")
     logger.info("Grid search complete. Best parameters in {}".format(best_params_path) +

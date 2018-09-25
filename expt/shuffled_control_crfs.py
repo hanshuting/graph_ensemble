@@ -194,11 +194,11 @@ def main(condition):
     # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
     params['to_test'] = simple_test_shuffle_datasets
     params['to_run'] = params["train_controls"]
-    crf_util.wait_and_run({condition: params})
+    crf_util.wait_and_run(params)
     # Wait for shuffle CRFs to be done and run merge and save_shuffle
     params['to_test'] = test_shuffle_CRFs
     params['to_run'] = exec_merge_shuffle_CRFs
-    crf_util.wait_and_run({condition: params})
+    crf_util.wait_and_run(params)
     # Extract ensemble neuron IDs. Write to disk?
 
 

@@ -60,20 +60,18 @@ if __name__ == '__main__':
     # Run merge and save_best, grabbing best params
     params['to_test'] = params["test_gs_get_best_params"]
     params['to_run'] = merge_and_get_parameters
-    best_params_wrapper = crf_util.wait_and_run({condition: params})
-    # TODO: Unwrap
-    best_params = best_params_wrapper[condition]
+    best_params = crf_util.wait_and_run(params)
     logger.info("Parameters for all conditions collected.\n")
     # create shuffle configs with best params (write and run write_configs_for_loopy.m)
     shuffled_control_crfs.create_shuffle_configs(params, best_params)
     # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
     params['to_test'] = shuffled_control_crfs.simple_test_shuffle_datasets
     params['to_run'] = params["train_controls"]
-    crf_util.wait_and_run({condition: params})
+    crf_util.wait_and_run(params)
     # Wait for shuffle CRFs to be done and run merge and save_shuffle
     params['to_test'] = shuffled_control_crfs.test_shuffle_CRFs
     params['to_run'] = shuffled_control_crfs.exec_merge_shuffle_CRFs
-    crf_util.wait_and_run({condition: params})
+    crf_util.wait_and_run(params)
     # Extract ensemble neuron IDs. Write to disk?
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
