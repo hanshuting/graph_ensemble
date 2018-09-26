@@ -79,7 +79,7 @@ def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     int_options = ['time_span', 'num_shuffle', 'verbosity']
     bool_options_and_defaults = [('debug_filelogging', False),
                                  ('no_same_neuron_edges', True)]
-    GeneralOptions = get_section_options("GeneralOptions", int_options=int_options,
+    GeneralOptions = get_section_options("GeneralOptions", parser=parser, int_options=int_options,
                                          bool_options_and_defaults=bool_options_and_defaults)
     expanded_source = os.path.expanduser(GeneralOptions["source_directory"])
     if expanded_source != GeneralOptions["source_directory"]:
@@ -122,15 +122,6 @@ def get_section_options(section, parser=None, fname="crf_parameters.ini", int_op
         except ValueError:
             section_options[bool_option] = option_default
     return section_options
-
-
-def get_user_parameters(fname="crf_parameters.ini"):
-    config = get_raw_configparser(fname)
-    parameters = {name: {} for name in config.sections()}
-    for name, options in parameters.items():
-        for option in config.options(name):
-            parameters[name][option] = config.get(name, option)
-    return parameters
 
 
 def run_command(scommand, shell=False):
