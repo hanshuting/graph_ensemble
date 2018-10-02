@@ -6,9 +6,8 @@ import subprocess
 import configparser
 
 import logging
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("top." + __name__)
+logger.setLevel(logging.DEBUG)
 
 
 def loglevel_from_verbosity(verbosity):
@@ -76,23 +75,51 @@ def get_GridsearchOptions(parser=None, fname="crf_parameters.ini"):
 def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     if parser is None:
         parser = get_raw_configparser(fname)
-    GeneralOptions = get_section_options("GeneralOptions", parser)
-    # Reread settings we expect to be non-string data types with correct getter
-    for int_option in ['time_span', 'num_shuffle', 'verbosity']:
-        GeneralOptions[int_option] = parser.getint('GeneralOptions', int_option)
-    for bool_option, option_default in [('debug_filelogging', False),
-                                        ('no_same_neuron_edges', True)]:
-        try:
-            GeneralOptions[bool_option] = parser.getboolean('GeneralOptions', bool_option)
-        except ValueError:
-            GeneralOptions[bool_option] = option_default
+    int_options = ['time_span', 'num_shuffle', 'verbosity']
+    bool_options_and_defaults = [('debug_filelogging', False),
+                                 ('no_same_neuron_edges', True)]
+    GeneralOptions = get_section_options("GeneralOptions", int_options=int_options,
+                                         bool_options_and_defaults=bool_options_and_defaults)
+    expanded_source = os.path.expanduser(GeneralOptions["source_directory"])
+    if expanded_source != GeneralOptions["source_directory"]:
+        logger.debug("Provided source_directory expanded to {}".format(expanded_source))
+        GeneralOptions["source_directory"] = expanded_source
+    expanded_data = os.path.expanduser(GeneralOptions["data_directory"])
+    if expanded_data != GeneralOptions["data_directory"]:
+        logger.debug("Provided data_directory expanded to {}".format(expanded_data))
+        GeneralOptions["data_directory"] = expanded_data
     return GeneralOptions
 
 
-def get_section_options(section, parser=None, fname="crf_parameters.ini"):
+def get_section_options(section, parser=None, fname="crf_parameters.ini", int_options=[],
+                        bool_options_and_defaults=[], float_options=[]):
+    """Pull settings into a dict, allowing for type specification.
+
+    Args:
+        section (str): Options file section name
+        int_options (list of str, optional): Names of settings to coerce to int.
+        bool_options_and_defaults (list of (str, bool), optional): Names of settings to coerce to
+            bool and defaults to resort to if coersion fails. Ex. [("opt1", True), ("opt2", False)]
+        float_options (list of str, optional): Names of settings to coerce to float.
+        parser (ConfigParser, optional): Pre-existing parser to use.
+        fname (str, optional): Filepath to options file to read if no parser is provided.
+
+    Returns:
+        dict: {option_name: value}
+    """
     if parser is None:
         parser = get_raw_configparser(fname)
     section_options = {name: option for name, option in parser.items(section)}
+    # Reread settings we expect to be non-string data types with specific getter
+    for int_option in int_options:
+        section_options[int_option] = parser.getint(section, int_option)
+    for float_option in float_options:
+        section_options[float_option] = parser.getfloat(section, float_option)
+    for bool_option, option_default in bool_options_and_defaults:
+        try:
+            section_options[bool_option] = parser.getboolean(section, bool_option)
+        except ValueError:
+            section_options[bool_option] = option_default
     return section_options
 
 
@@ -105,10 +132,13 @@ def get_user_parameters(fname="crf_parameters.ini"):
     return parameters
 
 
-def run_command(scommand):
+def run_command(scommand, shell=False):
     logger.debug("About to run:\n{}".format(scommand))
-    sargs = shlex.split(scommand)
-    process_results = subprocess.run(sargs)
+    if shell:
+        process_results = subprocess.run(scommand, shell=True)
+    else:
+        sargs = shlex.split(scommand)
+        process_results = subprocess.run(sargs)
     if process_results.returncode:
         raise RuntimeError("Received non-zero return code: {}".format(process_results))
     return process_results
@@ -131,48 +161,38 @@ def run_matlab_command(scommand, add_path=''):
                        "exit\"")
 
 
-def wait_and_run(conditions_to_check, wait_seconds=5):
-    """Execute specified functions after their corresponding tests pass, pausing between tests.
+def wait_and_run(condition_to_check, wait_seconds=5):
+    """Execute specified function after their corresponding test pass, pausing between tries.
 
     Args:
-        conditions_to_check (dict of dicts): An item per waiting task and subsequent execution.
-            Expects each top-level key to have an associated dict with at least:
+        condition_to_check (dict): Contains test and execution functions, and all parameters for
+            them. Requires at least:
                 'to_test': a function that returns true when testing should conclude and execution
                     should begin.
-                'to_run': the function to run once 'to_test' returns true. Ret
-            The full dict of each top level key is passed as kwargs to its 'to_test' and 'to_run'.
+                'to_run': the function to execute once 'to_test' returns true.
+            The full dict is passed as kwargs to its 'to_test' and 'to_run'.
         wait_seconds (float, optional): Number of seconds to wait per 'to_test' iterations.
     """
-    return_vals = {}
-    conditions_remaining = {name: None for name in conditions_to_check}
-    logger.debug("Start waiting for\n{}".format(conditions_to_check))
+    logger.debug("Start waiting for: {}".format(condition_to_check["to_test"].__name__))
     num_waits = 0
-    while conditions_remaining:
-        stop_checking = []
-        for name in conditions_remaining:
-            to_check = conditions_to_check[name]
-            if to_check['to_test'](**to_check):
-                logger.debug("{}['to_test'] passed.".format(name))
-                # TODO: Parallize here so we can run but still continue to test others?
-                return_vals[name] = to_check['to_run'](**to_check)
-                logger.info("{} for {} completed.".format(to_check['to_run'].__name__, name))
-                logger.debug("return_vals['{}'] = {}".format(name, return_vals[name]))
-                stop_checking.append(name)
-        for finished in stop_checking:
-            del conditions_remaining[finished]
-
+    while not condition_to_check['to_test'](**condition_to_check):
         time.sleep(wait_seconds)
         num_waits += 1
         if (num_waits % 100) == 0:
-            logger.info("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
-                num_waits, conditions_to_check))
+            logger.info("Waited {} sleep cycles so far testing {}".format(
+                num_waits,
+                condition_to_check["to_test"].__name__)
+            )
         elif (num_waits % 20) == 0:
-            logger.debug("Waited for {} sleep cycles so far. Currently waiting for:\n{}".format(
-                num_waits, conditions_to_check))
-
-    logger.debug("Done waiting for {}.\n".format(conditions_to_check.keys()))
-    # TODO: Returning all values together means the last test to pass blocks returing others.
-    return return_vals
+            logger.debug("Waited {} sleep cycles so far testing:\n{}".format(
+                num_waits, condition_to_check))
+    logger.info("{}['to_test']:{} passed.".format(condition_to_check["experiment"],
+                                                  condition_to_check["to_test"].__name__))
+    logger.info("Now running {} for {}.".format(condition_to_check['to_run'].__name__,
+                                                condition_to_check["experiment"]))
+    return_val = condition_to_check['to_run'](**condition_to_check)
+    logger.debug("return_val = {}".format(return_val))
+    return return_val
 
 
 def get_max_job_done(filebase, filesuffix=".mat"):

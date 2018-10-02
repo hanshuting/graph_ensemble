@@ -80,9 +80,11 @@ function create_configs(varargin)
     num_shuffle = parser.Results.num_shuffle;
 
      display('CHECK INFO BELOW');
-    display(sprintf('Writing config files for yeti user %s', yeti_user));
+    if ~strcmp(yeti_user, "UNI")
+        display(sprintf('Writing config files for yeti user %s', yeti_user));
+    end
     display(sprintf('Experiment name: %s', experiment_name));
-    display(sprintf('Total jobs to be submitted: %d', num_shuffle));
+    display(sprintf('Total configs files to be created: %d', num_shuffle));
 
     % Write config files
     for config_file_count=1:num_shuffle

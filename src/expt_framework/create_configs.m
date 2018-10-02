@@ -76,9 +76,11 @@ function create_configs(varargin)
     time_span = parser.Results.time_span;
 
      display('CHECK INFO BELOW');
-    display(sprintf('Writing config files for yeti user %s', yeti_user));
+    if ~strcmp(yeti_user, "UNI")
+        display(sprintf('Writing config files for yeti user %s', yeti_user));
+    end
     display(sprintf('Experiment name: %s', experiment_name));
-    display(sprintf('Total jobs to be submitted: %d', p_lambda_splits*s_lambda_splits*density_splits));
+    display(sprintf('Total configs files to be created: %d', p_lambda_splits*s_lambda_splits*density_splits));
 
     % Write config files
     config_file_count = 0;

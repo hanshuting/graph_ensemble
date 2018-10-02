@@ -7,20 +7,12 @@ Overview
 --------
 This project applies conditional random field models in _in vivo_ two-photon calcium imaging data in mouse V1 cortex. We built CRFs on such imaging data to identify representative neuronal ensembles corresponding to specific external stimulus, and to identify core neurons that are able to perform pattern completion. This codebase is based on the [fwMatch](https://github.com/kuitang/fwmatch-public) repo from Jebara group.
 
-This code currently only support linux/macOS platforms.
+This code was tested only on linux/macOS platforms.  
+MATLAB version R2016b or later is required.  
+Python 3.5+ is required for the example workflow scripts.
 
 ## Compile dependencies
 After cloning the repo, run `make` in the base directory.
-
-## Working with Yeti (for Columbia users)
-See documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti+HPC+Cluster+User+Documentation.
-
-Ensure you are using a current version of MATLAB; version R2016b and later are known to work.
-Executing
-```
-module load matlab/2017a
-```
-will ensure the R2017a version is used until you logout.
 
 ## Data format
 Two binary spike matrices should be stored in a `.mat` file, under the variable names `data` and `stimuli`.
@@ -29,33 +21,35 @@ Two binary spike matrices should be stored in a `.mat` file, under the variable 
 Submitting a stimulus with no occurrences is not accepted, and needs to be reoved from the matrix.
 
 The `.mat` file should be named as `<experiment>_<condition>.mat`, for example, given the `m21_d2_vis` dataset, the “experiment” is `m21_d2_vis`, the condition could be something like `high_add_neuron`, therefore the `.mat` file should be named as `m21_d2_vis_high_add_neuron.mat`.
-This allows you to run multiple files that are originated from the same dataset but processed differently (high activity frame vs all frames, visual stimulations only vs all frames, no add neuron vs add neuron model, etc.) at the same time.
-In the simple example below, we'll use an experiment `test` and a condition `1`.
-
-All of the `.mat` files should be saved in the same directory, for example `~/data/<filename>` for each.
-For all runs under the same experiment name, this is required.
+This allows you to run multiple files that are originated from the same dataset but processed differently (high activity frame vs all frames, visual stimulations only vs all frames, no add neuron vs add neuron model, etc.) at the same time, and each will have their own working directory.
 
 ## Running CRF model - An example
-1. Upload a data file. Using an experiment name of "data" and a condition name of "demo" as an example (file provided with the repo), we might upload to `~/data/data_demo.mat`.
-2. Go to expt directory. From the root directory of this repo: `cd fwMatch-darpa/expt`
-3. Edit the "USER EDITABLE VARIABLES" in `run_full_temporal.py` to your values.
-   `SOURCE_DIR` should refer to the root directory of where this repo is installed; typically this directory is named graph_ensemble.
-   For this example, we might use the following values instead of the defaults:
+1. Upload a data file.
+   Using an experiment name of `experiment` and a condition name of `demo` as an example (file provided with the repo), we might upload to `~/data/experiment_demo.mat`.
+2. Go to expt directory. From the root directory of this repo: `cd expt`
+3. Edit the "GeneralOptions" in `crf_parameters.ini` to your values.
+   Ensure `experiment_name`, `data_directory`, `source_directory`, and `cluster_architecture` are correctly updated, and set `time_span` as desired.
+   The other parameter defaults are likely reasonable for initial exploratory runs.
+   For this example, we might have the following values:
    ```
-   EXPT_NAME = "data"
-   USER = "UNI"
-   EMAIL = "UNI@columbia.edu"
+   experiment_name = experiment
+   data_directory = ~/data/
+   source_directory = ~/graph_ensemble/
+   cluster_architecture = none
    ```
-4. Run `run_full_temporal` with Python 3.5 or greater, passing the condition name to it. For our example with a condition name of 1:
+
+   If running on Columbia's yeti cluster, see further instructions below.
+
+4. Run `run_full_temporal` with Python 3.5 or greater, passing the condition name to it. For our example with a condition name of demo:
    ```
    python3 run_full_temporal.py demo
    ```
 
 This script will conduct a grid search across the parameter ranges specified, training a CRF model on the data file for each parameter combination.
-A working directory will be created and named as `<experiment>_<condition>_loopy/` (in this case, `data_demo_loopy/`), and a directory within it named `results` will contain the trained models and the best model.
+A working directory will be created and named as `<experiment>_<condition>_loopy/` (in this case, `experiment_demo_loopy/`), and a directory within it named `results` will contain the trained models and the best model.
 
-The best parameters will be extracted and used to produce shuffled control datasets, the number of which is controlled by the NSHUFFLE in `run_full_temporal.py`.
-Another working directory for the shuffle models will be created and named as `shuffled_<experiment>_<condition>_loopy/` (in this example, `shuffled_data_demo_loopy/`).
+The best parameters will be extracted and used to produce shuffled control datasets, the number of which is controlled by the num_shuffle option in `crf_parameters.ini`.
+Another working directory for the shuffle models will be created and named as `shuffled_<experiment>_<condition>_loopy/` (in this example, `shuffled_experiment_demo_loopy/`).
 Again, a `results` directory inside will contain the trained models.
 
 
@@ -63,27 +57,47 @@ Again, a `results` directory inside will contain the trained models.
 With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `scripts/core/find_temporal_ens_nodes.m` to find the ensembles corresponding to each stimulus.
 We will continue our previous example:
 
-1. Start an interactive job:
-   ```
-   qsub -I -q interactive -W group_list=yetibrain -l walltime=00:30:00,mem=2000mb
-   ```
-2. Start matlab and load the models and data:
+1. Start matlab. You can do so from the terminal with the following command:
    ```
    matlab -nodesktop -nosplash -nodisplay
-   addpath(genpath(‘your/path/to/this/repo’));             % For example, '~/graph_ensemble'
-   cd fwMatch-darpa/expt/
-   best_model = load('<experiment>_<condition>_loopy/results/best_model_full.mat');
-   shuffle_model = load('shuffled_<experiment>_<condition>_loopy/results/fulldata.mat');
-   load('~/data/<experiment>_<condition>.mat');            % Loads variables `data` and `stimuli`
+   ```
+2. Load the models and data in matlab:
+   ```
+   addpath(genpath(‘~/graph_ensemble/’));
+   cd expt/
+   best_model = load('experiment_demo_loopy/results/best_model_full.mat');
+   shuffle_model = load('shuffled_experiment_demo_loopy/results/fulldata.mat');
+   load('~/data/experiment_demo.mat');            % Loads variables `data` and `stimuli`
    ```
 3. Find ensemble nodes:
    ```
    ens_nodes = find_temporal_ens_nodes(best_model, shuffle_model, data, stimuli)
    ```
    `ens_nodes` is a cell vector where each cell contains the ensemble neurons found for each stimuli.
-   Each such stimuli cell contains a further cell vector where each cell contains the ensemble neurons found for each offset frame of the `time_span` window.
+   Each such stimuli cell contains a further cell vector where each cell contains the ensemble neurons found for each offset frame of the `time_span` window, with the first corresponding to no offset.
 
-Another script, `scripts/core/find_plot_temporal_crf_core.m`, can also be used to find ensemble neurons and plot some features, including spatial arrangement if coordinates are provided.
+Another script, `scripts/core/find_plot_temporal_crf_core.m`, can also be used on a desktop system to find ensemble neurons and plot some features, including spatial arrangement if coordinates are provided.
+
+
+## Working with Yeti (for Columbia users)
+See yeti cluster documentation at https://wikis.cuit.columbia.edu/confluence/display/rcs/Yeti+HPC+Cluster+User+Documentation.
+
+Ensure you are using acceptable versions of MATLAB (at least 2016b) and Python (at least 3.5).
+We strongly recommend adding something like the following two lines to the `.bash_profile` file in your home directory:
+```
+module load matlab/2017a
+module load anaconda/4.1.1-python-3.5.2
+```
+This will ensure the correct versions are always used.
+
+There are several yeti specific settings sections in `crf_parameters.ini` to control job submission, resource requesting, and email notifications.  
+Be sure `cluster_architecture = yeti`, and `username`, `group_id`, and `email` are updated to valid values.
+The remaining defaults are likely reasonable for initial exploratory runs.
+
+Note that, in the case of using ssh to connect to the cluster, being disconnected for any reason will terminate any local jobs.
+Running one of the python workflow scripts directly from the command line as described above is an example of such a local job.
+Consider either submitting a job to the cluster to run the script, or use a terminal multiplexer like [screen](https://linuxize.com/post/how-to-use-linux-screen/) which is already installed on the yeti cluster.
+
 
 ## References
 * Carrillo-Reid, L.\*, Han, S.\*, Taralova, E., Jebara, T., Yuste, R. (2017). Identification and Targeting of Cortical Ensembles. bioRxiv. doi: https://doi.org/10.1101/226514

@@ -44,39 +44,34 @@ def merge_and_get_parameters(experiment, **kwargs):
 if __name__ == '__main__':
     start_time = time.time()
 
-    # Each condition is a dict containing condition specific filepaths
-    conditions = {name: {} for name in sys.argv[1:]}
-    if conditions:
-        if len(conditions) > 1:
-            raise ValueError("Multiple conditions not currently supported.")
-        conditions = gridsearch_train_crfs.get_conditions_metadata(conditions)
-        conditions = shuffled_control_crfs.get_conditions_metadata(conditions)
-        setup_logging(**conditions[sys.argv[1]])
+    try:
+        condition = sys.argv[1]
+    except IndexError:
+        raise TypeError("A condition name must be passed on the command line.")
 
-        gridsearch_train_crfs.setup_exec_train_model(conditions)
-        # Create bare-bones shuffle folder and create shuffled datasets
-        shuffled_control_crfs.setup_shuffle_model(conditions)
-        # Wait for train CRF to be done
-        # Run merge and save_best, grabbing best params
-        for cond in conditions.values():
-            cond['to_test'] = gridsearch_train_crfs.test_train_CRFs
-            cond['to_run'] = merge_and_get_parameters
-        best_params = crf_util.wait_and_run(conditions)
-        logger.info("Parameters for all conditions collected.\n")
-        # create shuffle configs with best params (write and run write_configs_for_loopy.m)
-        shuffled_control_crfs.create_shuffle_configs(conditions, best_params)
-        # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
-        for name, meta in conditions.items():
-            meta['to_test'] = shuffled_control_crfs.simple_test_shuffle_datasets
-            meta['to_run'] = shuffled_control_crfs.exec_shuffle_model
-        crf_util.wait_and_run(conditions)
-        # Wait for shuffle CRFs to be done and run merge and save_shuffle
-        for meta in conditions.values():
-            meta['to_test'] = shuffled_control_crfs.test_shuffle_CRFs
-            meta['to_run'] = shuffled_control_crfs.exec_merge_shuffle_CRFs
-        crf_util.wait_and_run(conditions)
-        # Extract ensemble neuron IDs. Write to disk?
-    else:
-        raise TypeError("At least one condition name must be passed on the command line.")
+    params = gridsearch_train_crfs.get_conditions_metadata(condition)
+    params.update(shuffled_control_crfs.get_conditions_metadata(condition))
+    setup_logging(**params)
+
+    gridsearch_train_crfs.setup_exec_train_model(params)
+    # Create bare-bones shuffle folder and create shuffled datasets
+    shuffled_control_crfs.setup_shuffle_model(params)
+    # Wait for train CRF to be done
+    # Run merge and save_best, grabbing best params
+    params['to_test'] = params["test_gs_get_best_params"]
+    params['to_run'] = merge_and_get_parameters
+    best_params = crf_util.wait_and_run(params)
+    logger.info("Parameters for all conditions collected.\n")
+    # create shuffle configs with best params (write and run write_configs_for_loopy.m)
+    shuffled_control_crfs.create_shuffle_configs(params, best_params)
+    # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
+    params['to_test'] = shuffled_control_crfs.simple_test_shuffle_datasets
+    params['to_run'] = params["train_controls"]
+    crf_util.wait_and_run(params)
+    # Wait for shuffle CRFs to be done and run merge and save_shuffle
+    params['to_test'] = shuffled_control_crfs.test_shuffle_CRFs
+    params['to_run'] = shuffled_control_crfs.exec_merge_shuffle_CRFs
+    crf_util.wait_and_run(params)
+    # Extract ensemble neuron IDs. Write to disk?
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
