@@ -27,16 +27,17 @@ def start_logfile(debug_filelogging, shuffle_experiment_dir, **_):
     logger.debug("Logging file handler to {} added.".format(log_fname))
 
 
-def get_conditions_metadata(condition):
+def get_conditions_metadata(condition, ini_fname="crf_parameters.ini"):
     """Reads in settings.
 
     Args:
         condition (str): Condition name.
+        ini_fname (str, optional): Filepath of settings file to read.
 
     Returns:
         dict: Metadata for condition.
     """
-    parameters_parser = crf_util.get_raw_configparser()
+    parameters_parser = crf_util.get_raw_configparser(fname=ini_fname)
     params = crf_util.get_GeneralOptions(parser=parameters_parser)
     experiment = "{}_{}_{}".format(params['experiment_name'], condition, MODEL_TYPE)
     metadata = {'data_file': "{}_{}.mat".format(params['experiment_name'], condition),
@@ -53,12 +54,10 @@ def get_conditions_metadata(condition):
     # There is no training prep by default, so we set no-op function as placeholder
     params["shuffle_training_prep"] = lambda params: None
     params["train_controls"] = exec_shuffle_model
-
     # Update settings for cluster specified, if any
     if params["cluster_architecture"] == "yeti":
         logger.info("Yeti cluster architecture selected for shuffled controls.")
-        params.update(yeti_support.get_yeti_shuff_metadata())
-
+        params.update(yeti_support.get_yeti_shuff_metadata(fname=ini_fname))
     return params
 
 
@@ -163,13 +162,14 @@ def exec_merge_shuffle_CRFs(shuffle_experiment, source_directory, **kwargs):
     logger.info("Shuffle models merged and saved.\n")
 
 
-def main(condition):
+def main(condition, ini_fname="crf_parameters.ini"):
     """Summary
 
     Args:
         condition (str): Condition name.
+        ini_fname (str, optional): Filepath of settings file to read.
     """
-    params = get_conditions_metadata(condition)
+    params = get_conditions_metadata(condition, ini_fname)
 
     # Update logging if module is invoked from the command line
     if __name__ == '__main__':
@@ -206,6 +206,9 @@ if __name__ == '__main__':
     except IndexError:
         raise TypeError("A condition name must be passed on the command line.")
 
-    main(condition)
+    if len(sys.argv) > 2:
+        main(condition, sys.argv[2])
+    else:
+        main(condition)
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
