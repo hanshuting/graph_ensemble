@@ -129,7 +129,7 @@ def write_shuffling_yeti_script(params):
         f.write("#Command below is to execute Matlab code for Job Array (Example 4) " +
                 "so that each part writes own output\n")
         f.write("matlab -nodesktop -nodisplay -r \"dbclear all;" +
-                " addpath('{}');".format(os.path.join(params['shuffle_experiment_dir'])) +
+		" addpath('{}');".format(os.path.join(params['source_directory'])) + 
                 "gn_shuff_data('{}', '{}', {});".format(
                     os.path.join(params['data_directory'], params['data_file']),
                     params['shuffle_save_dir'],
