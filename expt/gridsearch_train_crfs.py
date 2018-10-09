@@ -10,9 +10,6 @@ import yeti_support
 
 import logging
 
-logger = logging.getLogger("top." + __name__)
-logger.setLevel(logging.DEBUG)
-
 # *** start constants ***
 MODEL_TYPE = "loopy"
 
@@ -32,32 +29,64 @@ def start_logfile(debug_filelogging, expt_dir, experiment, **_):
     logger.debug("Logging file handler to {} added.".format(log_fname))
 
 
-def get_conditions_metadata(condition, ini_fname="crf_parameters.ini"):
-    """Reads in settings.
+class GridsearchTrial(object):
+    """docstring for GridsearchTrial"""
 
-    Args:
-        condition (str): Condition name.
-        ini_fname (str, optional): Filepath of settings file to read.
+    def __init__(
+        self,
+        condition_name,
+        ini_fname="crf_parameters.ini",
+        destination_path=None,
+        logger=None,
+    ):
+        # super(GridsearchTrial, self).__init__()
+        self.condition_name = condition_name
+        self.ini_fname = ini_fname
+        if logger is None:
+            logger = logging.getLogger("top." + __name__)
+            logger.setLevel(logging.DEBUG)
+        self.logger = logger
 
-    Returns:
-        dict: Metadata for condition.
-    """
-    parameters_parser = crf_util.get_raw_configparser(fname=ini_fname)
-    params = crf_util.get_GridsearchOptions(parser=parameters_parser)
-    params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
-    metadata = {
-        "data_file": "{}_{}.mat".format(params["experiment_name"], condition),
-        "experiment": "{}_{}_{}".format(params["experiment_name"], condition, MODEL_TYPE),
-        "expt_dir": os.path.join(params["source_directory"], "expt"),
-    }
-    params.update(metadata)
-    params["start_jobs"] = start_gridsearch_jobs
-    params["test_gs_get_best_params"] = test_train_CRFs
-    # Update settings for cluster specified, if any
-    if params["cluster_architecture"] == "yeti":
-        logger.info("Yeti cluster architecture selected for gridsearch.")
-        params.update(yeti_support.get_yeti_gs_metadata(fname=ini_fname))
-    return params
+        self._init_settings()
+
+    # def get_conditions_metadata(condition, ini_fname="crf_parameters.ini"):
+    def _init_settings(self):
+        """Reads in settings.
+
+        Args:
+            condition (str): Condition name.
+            ini_fname (str, optional): Filepath of settings file to read.
+
+        Returns:
+            dict: Metadata for condition.
+        """
+        parameters_parser = crf_util.get_raw_configparser(fname=self.ini_fname)
+        params = crf_util.get_GridsearchOptions(parser=parameters_parser)
+        self.S_LAMBDAS = params["S_LAMBDAS"]
+        self.DENSITIES = params["DENSITIES"]
+        self.P_LAMBDAS = params["P_LAMBDAS"]
+        params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
+        self.experiment_group = params["experiment_name"]
+        self.data_dir = params["data_directory"]
+        self.source_dir = params["source_directory"]
+        self.verbosity = params["verbosity"]
+        self.debug_filelogging = params["debug_filelogging"]
+        self.cluster_architecture = params["cluster_architecture"]
+        self.time_span = params["time_span"]
+        self.edges = params["edges"]
+        self.no_same_neuron_edges = params["no_same_neuron_edges"]
+        self.data_file = "{}_{}.mat".format(params["experiment_name"], condition)
+        self.experiment = "{}_{}_{}".format(
+            params["experiment_name"], condition, MODEL_TYPE
+        )
+        self.expt_dir = os.path.join(params["source_directory"], "expt")
+
+        self.start_jobs = start_gridsearch_jobs
+        self.test_gs_get_best_params = test_train_CRFs
+        # Update settings for cluster specified, if any
+        if self.cluster_architecture == "yeti":
+            self.logger.info("Yeti cluster architecture selected for gridsearch.")
+            yeti_support.get_yeti_gs_metadata(self, fname=self.ini_fname)
 
 
 def create_working_dir(params):

@@ -13,6 +13,9 @@ import logging
 
 logger = logging.getLogger("top")
 logger.setLevel(logging.DEBUG)
+init_log_handler = logging.StreamHandler(stream=sys.stdout)
+init_log_handler.setLevel(logging.INFO)
+logger.addHandler(init_log_handler)
 
 
 def setup_logging(verbosity, debug_filelogging, expt_dir, **_):
@@ -29,6 +32,7 @@ def setup_logging(verbosity, debug_filelogging, expt_dir, **_):
         **_: Catches and ignores any other keys in the passed dict, for convenience.
     """
     logger.addHandler(crf_util.get_StreamHandler(verbosity))
+    logger.removeHandler(init_log_handler)
     logger.debug("Logging stream handler to sys.stdout added.")
 
     # Set log file to script's filename with a .log extension, in expt folder

@@ -11,7 +11,9 @@ logger = logging.getLogger("top." + __name__)
 logger.setLevel(logging.DEBUG)
 
 
-def get_yeti_gs_metadata(fname="crf_parameters.ini"):
+def get_yeti_gs_metadata(gs_object, fname="crf_parameters.ini"):
+    # TODO: Update gs_object, don't return params
+    # TODO: Accept a parser
     parameters_parser = crf_util.get_raw_configparser(fname=fname)
     parameters = crf_util.get_section_options("YetiOptions", parser=parameters_parser)
     parameters.update(
