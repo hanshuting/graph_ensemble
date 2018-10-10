@@ -11,17 +11,24 @@ logger = logging.getLogger("top." + __name__)
 logger.setLevel(logging.DEBUG)
 
 
-def get_yeti_gs_metadata(gs_object, fname="crf_parameters.ini"):
-    # TODO: Update gs_object, don't return params
-    # TODO: Accept a parser
-    parameters_parser = crf_util.get_raw_configparser(fname=fname)
-    parameters = crf_util.get_section_options("YetiOptions", parser=parameters_parser)
+def get_yeti_gs_metadata(gs_object, parser=None, fname="crf_parameters.ini"):
+    if parser is None:
+        parser = crf_util.get_raw_configparser(fname=fname)
+    parameters = crf_util.get_section_options("YetiOptions", parser=parser)
+    gs_object.username = parameters["username"]
+    gs_object.group_id = parameters["group_id"]
+    gs_object.email = parameters["email"]
+    gs_object.email_notification = parameters["email_notification"]
+    gs_object.email_jobs_threshold = parameters["email_jobs_threshold"]
     parameters.update(
-        crf_util.get_section_options("YetiGridsearchOptions", parser=parameters_parser)
+        crf_util.get_section_options("YetiGridsearchOptions", parser=parser)
     )
-    parameters["start_jobs"] = start_gridsearch_jobs_yeti
-    parameters["test_gs_get_best_params"] = test_train_CRFs_yeti
-    return parameters
+    gs_object.yeti_nodes = parameters["yeti_grid_nodes"]
+    gs_object.yeti_ppn = parameters["yeti_grid_ppn"]
+    gs_object.yeti_walltime = parameters["yeti_grid_walltime"]
+    gs_object.yeti_mem = parameters["yeti_grid_mem"]
+    gs_object.start_jobs = start_gridsearch_jobs_yeti
+    gs_object.test_gs_get_best_params = test_train_CRFs_yeti
 
 
 def get_yeti_shuff_metadata(fname="crf_parameters.ini"):

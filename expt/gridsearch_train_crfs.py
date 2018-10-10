@@ -86,7 +86,7 @@ class GridsearchTrial(object):
         # Update settings for cluster specified, if any
         if self.cluster_architecture == "yeti":
             self.logger.info("Yeti cluster architecture selected for gridsearch.")
-            yeti_support.get_yeti_gs_metadata(self, fname=self.ini_fname)
+            yeti_support.get_yeti_gs_metadata(self, parser=parameters_parser)
 
 
 def create_working_dir(params):
