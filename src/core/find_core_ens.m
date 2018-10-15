@@ -104,55 +104,102 @@ function [core_nodes, results] = find_core_ens(best_model,shuffle_model,data,sti
     end
 
     % calculate node strength to stimulus nodes
-    ns_stim = cell(num_stim,1);
     ep_on = best_model.ep_on;
     ep_on(best_model.graph==0) = NaN;
+    ns_stim = cell(num_stim,1);
+    for ii = 1:num_stim
+        ns_stim{ii} = exp(ep_on(ens_crf{ii},num_node-num_stim+ii));
+    end
+    
+    % calculate node strength within ensembles
+    ns_ens = cell(num_stim,1);
     for ii = 1:num_stim
         ns = exp(ep_on(ens_crf{ii},ens_crf{ii}));
         ns(isnan(ns)) = 0;
-        ns_stim{ii} = sum(ns,2);
+        ns_ens{ii} = sum(ns,2);
     end
     
-    % node strength controls
+    % node strength controls with stimulus nodes, and within ensemble
     ns_stim_ctrl = cell(num_stim,1);
-    for k = 1:num_controls
-        for ii = 1:num_stim
-%             ens_ctrl = find(shuffle_model.graph{k}(num_node-num_stim+ii));
-%             ens_ctrl = setdiff(ens_ctrl,num_node-num_stim+ii);
+    ns_ens_ctrl = cell(num_stim,1);
+    for ii = 1:num_stim
+        for k = 1:num_controls
+            
             ep_on = shuffle_model.ep_on{k};
             ep_on(shuffle_model.graphs{k}==0) = NaN;
+            
+            % with stimulus node
+            ns_stim_ctrl{ii}(:,k) = exp(ep_on(ens_crf{ii},num_node-num_stim+ii));
+            
+            % within ensemble
             ns = exp(ep_on(ens_crf{ii},ens_crf{ii}));
             ns(isinf(ns)) = NaN;
             ns(isnan(ns)) = 0; % force 0 to be minimum given exp function
-            ns_stim_ctrl{ii}(:,k) = sum(ns,2);
-%             if all(isnan(ns))
-%                 ns_stim_ctrl(ii,k) = NaN;
-%             else
-%                 ns_stim_ctrl(ii,k) = sum(ns);
-%             end
+            ns_ens_ctrl{ii}(:,k) = sum(ns,2);
+            
+        end
+        
+        ns_stim_ctrl{ii}(isnan(ns_stim_ctrl{ii})) = 0;
+        ns_ens_ctrl{ii}(isnan(ns_ens_ctrl{ii})) = 0;
+        
+    end
+    
+    % find significant ensembles
+    ens_crf_sig = cell(num_stim,1);
+    ns_stim_thr = cell(num_stim,1);
+    sig_indx = cell(num_stim,1);
+    for ii = 1:num_stim
+        ns_stim_ctrl_nan = ns_stim_ctrl{ii};
+        ns_stim_ctrl_nan(ns_stim_ctrl_nan==0) = NaN;
+        ns_stim_thr{ii} = mean(ns_stim_ctrl{ii},2)+3*nanstd(ns_stim_ctrl_nan,[],2);
+        sig_indx{ii} = find(ns_stim{ii} > ns_stim_thr{ii});
+        ens_crf_sig{ii} = ens_crf{ii}(sig_indx{ii});
+    end
+    
+    % AUC controls
+    num_ctrl_subset = 10; % use a subset due to the long runtime
+    subset_ind = randperm(num_controls,num_ctrl_subset);
+    auc_ctrl = zeros(num_node,num_stim,num_ctrl_subset);
+    for k = 1:num_ctrl_subset
+        indx = subset_ind(k);
+        for ii = 1:num_node
+            
+            % calculate frame likelihood
+            LL_frame_ctrl = zeros(num_frame,2);
+            for jj = 1:num_frame
+                frame_vec = data(jj,:);
+                frame_vec(ii) = 0;
+                LL_frame_ctrl(jj,1) = compute_avg_log_likelihood(shuffle_model.node_pot{indx},...
+                    shuffle_model.edge_pot{indx},shuffle_model.logZ(indx),frame_vec);
+                frame_vec(ii) = 1;
+                LL_frame_ctrl(jj,2) = compute_avg_log_likelihood(shuffle_model.node_pot{indx},...
+                    shuffle_model.edge_pot{indx},shuffle_model.logZ(indx),frame_vec);
+            end
+            LL_on_ctrl = squeeze(LL_frame_ctrl(:,2)-LL_frame_ctrl(:,1));
+            
+            % compute AUC
+            for ss = 1:num_stim
+                [~,~,~,auc_ctrl(ii,ss,k)] = perfcurve(true_label(ss,:),LL_on_ctrl,1);
+            end
+            
         end
     end
     
-    % find ensembles
-    auc_rd = cell(num_stim,1);
-    ns_rd = cell(num_stim,1);
+    % find core ensembles
+    ns_ens_thr = cell(num_stim,1);
+    auc_thr = cell(num_stim,1);
     core_crf = cell(num_stim,1);
     for ii = 1:num_stim
-        size_ens = length(ens_crf{ii});
-        % Generate random controls for current stimulus
-        ns_rd{ii} = zeros(num_controls,1);
-        for jj = 1:num_controls
-            rd_ens = zeros(1, num_node);
-            rd_ens(randperm(length(rd_ens), size_ens)) = 1;
-            % Shouldnt this only pass the population vectors from data, i.e. omit the stim nodes?
-            sim_core = 1-pdist2(data,rd_ens,'cosine')';
-            [~,~,~,auc_rd{ii}(jj)] = perfcurve(true_label(ii, :), sim_core, 1);
-        end
-        ns_thr = nanmean(ns_stim_ctrl{ii},2)+nanstd(ns_stim_ctrl{ii},[],2);
-        core_crf{ii} = find(auc(ens_crf{ii},ii)>(mean(auc_rd{ii})+std(auc_rd{ii}))&...
-            (ns_stim{ii})>ns_thr);
-        core_crf{ii} = ens_crf{ii}(core_crf{ii});
+        ns_ens_ctrl_nan = ns_ens_ctrl{ii};
+        ns_ens_ctrl_nan(ns_ens_ctrl_nan==0) = NaN;
+        ns_ens_thr{ii} = mean(ns_ens_ctrl{ii},2)+nanstd(ns_ens_ctrl_nan,[],2);
+        ns_ens_thr{ii}(isnan(ns_ens_thr{ii})) = 0;
+        auc_thr{ii} = nanmean(squeeze(auc_ctrl(:,ii,:)),2)+nanstd(squeeze(auc_ctrl(:,ii,:)),[],2);
+%         core_crf{ii} = ens_crf{ii}((auc(ens_crf{ii},ii)>auc_thr{ii}(ens_crf{ii})) & (ns_ens{ii}>ns_ens_thr{ii}));
+        core_crf{ii} = ens_crf_sig{ii}((auc(ens_crf_sig{ii},ii)>auc_thr{ii}(ens_crf_sig{ii}))...
+            & (ns_ens{ii}(sig_indx{ii})>ns_ens_thr{ii}(sig_indx{ii})));
     end
+
 
     %% Convert nodes to neurons
     core_nodes = cell(num_stim, 1);
@@ -167,15 +214,23 @@ function [core_nodes, results] = find_core_ens(best_model,shuffle_model,data,sti
 
     %% package results
     results.auc = auc;
-    results.auc_ens = auc_rd;
+    results.auc_ctrl = auc_ctrl;
+    results.auc_thr = auc_thr;
     results.best_model = best_model;
     results.core_crf = core_crf;
     results.ens_crf = ens_crf;
+    results.ens_crf_sig = ens_crf_sig;
+    results.ns_ens = ns_ens;
+    results.ns_ens_ctrl = ns_ens_ctrl;
+    results.ns_ens_thr = ns_ens_thr;
+    results.ns_stim = ns_stim;
+    results.ns_stim_ctrl = ns_stim_ctrl;
+    results.ns_stim_thr = ns_stim_thr;
     results.data = logical(data);
-    results.epsum = epsum;
     results.LL_frame = LL_frame;
     results.LL_on = LL_on;
     results.shuffle_model = shuffle_model;
+    results.sig_indx = sig_indx;
     results.stimuli = stimuli;
     results.time_span = time_span;
 
