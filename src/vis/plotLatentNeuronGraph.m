@@ -59,18 +59,30 @@ for i = 1:num_node
     if isempty(E)
         cc = 0.7*[1 1 1];
         mk = 'o';
-    elseif any(E==num_node-num_add+1)
+    elseif i==num_node-num_add+1 % plot added nodes with square
         cc = 'r';
         mk = 's';
-    elseif any(E==num_node-num_add+2)
+    elseif i==num_node-num_add+2
         cc = 'b';
         mk = 's';
-    elseif any(E==num_node-num_add+3)
+    elseif i==num_node-num_add+3
         cc = 'm';
         mk = 's';
-    elseif any(E==num_node-num_add+4)
+    elseif i==num_node-num_add+4
         cc = 'c';
         mk = 's';
+    elseif any(E==num_node-num_add+1) % color connected nodes
+        cc = 'r';
+        mk = 'o';
+    elseif any(E==num_node-num_add+2)
+        cc = 'b';
+        mk = 'o';
+    elseif any(E==num_node-num_add+3)
+        cc = 'm';
+        mk = 'o';
+    elseif any(E==num_node-num_add+4)
+        cc = 'c';
+        mk = 'o';
     else
         cc = 0.7*[1 1 1];
         mk = 'o';
