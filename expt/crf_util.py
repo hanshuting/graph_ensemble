@@ -6,6 +6,7 @@ import subprocess
 import configparser
 
 import logging
+
 logger = logging.getLogger("top." + __name__)
 logger.setLevel(logging.DEBUG)
 
@@ -32,9 +33,11 @@ def get_FileHandler(log_fname, debug_filelogging=False, overwrite=True):
     Returns:
         logging.FileHandler: The set up handler.
     """
-    logfile_handler = logging.FileHandler(log_fname, mode='w' if overwrite else 'a')
+    logfile_handler = logging.FileHandler(log_fname, mode="w" if overwrite else "a")
     logfile_handler.setLevel(logging.DEBUG if debug_filelogging else logging.INFO)
-    logfile_format = logging.Formatter('%(asctime)s - %(levelname)s@%(name)s: %(message)s')
+    logfile_format = logging.Formatter(
+        "%(asctime)s - %(levelname)s@%(name)s: %(message)s"
+    )
     logfile_handler.setFormatter(logfile_format)
     return logfile_handler
 
@@ -64,23 +67,31 @@ def get_raw_configparser(fname="crf_parameters.ini"):
 def get_GridsearchOptions(parser=None, fname="crf_parameters.ini"):
     if parser is None:
         parser = get_raw_configparser(fname)
-    GridsearchOptions = {section: {} for section in ["S_LAMBDAS", "DENSITIES", "P_LAMBDAS"]}
+    GridsearchOptions = {
+        section: {} for section in ["S_LAMBDAS", "DENSITIES", "P_LAMBDAS"]
+    }
     for section, parameters in GridsearchOptions.items():
-        parameters['parallize'] = parser.getboolean(section, 'parallize')
-        parameters['num_points'] = parser.getint(section, 'num_points')
-        parameters['min'] = parser.getfloat(section, 'min')
-        parameters['max'] = parser.getfloat(section, 'max')
+        parameters["parallize"] = parser.getboolean(section, "parallize")
+        parameters["num_points"] = parser.getint(section, "num_points")
+        parameters["min"] = parser.getfloat(section, "min")
+        parameters["max"] = parser.getfloat(section, "max")
     return GridsearchOptions
 
 
 def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     if parser is None:
         parser = get_raw_configparser(fname)
-    int_options = ['time_span', 'num_shuffle', 'verbosity']
-    bool_options_and_defaults = [('debug_filelogging', False),
-                                 ('no_same_neuron_edges', True)]
-    GeneralOptions = get_section_options("GeneralOptions", parser=parser, int_options=int_options,
-                                         bool_options_and_defaults=bool_options_and_defaults)
+    int_options = ["time_span", "num_shuffle", "verbosity"]
+    bool_options_and_defaults = [
+        ("debug_filelogging", False),
+        ("no_same_neuron_edges", True),
+    ]
+    GeneralOptions = get_section_options(
+        "GeneralOptions",
+        parser=parser,
+        int_options=int_options,
+        bool_options_and_defaults=bool_options_and_defaults,
+    )
     expanded_source = os.path.expanduser(GeneralOptions["source_directory"])
     if expanded_source != GeneralOptions["source_directory"]:
         logger.debug("Provided source_directory expanded to {}".format(expanded_source))
@@ -92,8 +103,14 @@ def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     return GeneralOptions
 
 
-def get_section_options(section, parser=None, fname="crf_parameters.ini", int_options=[],
-                        bool_options_and_defaults=[], float_options=[]):
+def get_section_options(
+    section,
+    parser=None,
+    fname="crf_parameters.ini",
+    int_options=[],
+    bool_options_and_defaults=[],
+    float_options=[],
+):
     """Pull settings into a dict, allowing for type specification.
 
     Args:
@@ -136,7 +153,7 @@ def run_command(scommand, shell=False):
     return process_results
 
 
-def run_matlab_command(scommand, add_path=''):
+def run_matlab_command(scommand, add_path=""):
     """Summary
 
     Args:
@@ -147,10 +164,12 @@ def run_matlab_command(scommand, add_path=''):
     Returns:
         TYPE: Description
     """
-    return run_command("matlab -nodesktop -nodisplay -nosplash -r \"" +
-                       ("addpath(genpath('{}')); ".format(add_path) if add_path else '') +
-                       scommand +
-                       "exit\"")
+    return run_command(
+        'matlab -nodesktop -nodisplay -nosplash -r "'
+        + ("addpath(genpath('{}')); ".format(add_path) if add_path else "")
+        + scommand
+        + 'exit"'
+    )
 
 
 def wait_and_run(condition_to_check, wait_seconds=5):
@@ -167,22 +186,32 @@ def wait_and_run(condition_to_check, wait_seconds=5):
     """
     logger.debug("Start waiting for: {}".format(condition_to_check["to_test"].__name__))
     num_waits = 0
-    while not condition_to_check['to_test'](**condition_to_check):
+    while not condition_to_check["to_test"](**condition_to_check):
         time.sleep(wait_seconds)
         num_waits += 1
         if (num_waits % 100) == 0:
-            logger.info("Waited {} sleep cycles so far testing {}".format(
-                num_waits,
-                condition_to_check["to_test"].__name__)
+            logger.info(
+                "Waited {} sleep cycles so far testing {}".format(
+                    num_waits, condition_to_check["to_test"].__name__
+                )
             )
         elif (num_waits % 20) == 0:
-            logger.debug("Waited {} sleep cycles so far testing:\n{}".format(
-                num_waits, condition_to_check))
-    logger.info("{}['to_test']:{} passed.".format(condition_to_check["experiment"],
-                                                  condition_to_check["to_test"].__name__))
-    logger.info("Now running {} for {}.".format(condition_to_check['to_run'].__name__,
-                                                condition_to_check["experiment"]))
-    return_val = condition_to_check['to_run'](**condition_to_check)
+            logger.debug(
+                "Waited {} sleep cycles so far testing:\n{}".format(
+                    num_waits, condition_to_check
+                )
+            )
+    logger.info(
+        "{}['to_test']:{} passed.".format(
+            condition_to_check["experiment"], condition_to_check["to_test"].__name__
+        )
+    )
+    logger.info(
+        "Now running {} for {}.".format(
+            condition_to_check["to_run"].__name__, condition_to_check["experiment"]
+        )
+    )
+    return_val = condition_to_check["to_run"](**condition_to_check)
     logger.debug("return_val = {}".format(return_val))
     return return_val
 
