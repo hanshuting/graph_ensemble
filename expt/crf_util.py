@@ -142,7 +142,7 @@ def get_section_options(
 
 
 def run_command(scommand, shell=False):
-    logger.debug("About to run:\n{}".format(scommand))
+    logger.debug("About to run command:\n{}".format(scommand))
     if shell:
         process_results = subprocess.run(scommand, shell=True)
     else:
@@ -172,46 +172,39 @@ def run_matlab_command(scommand, add_path=""):
     )
 
 
-def wait_and_run(condition_to_check, wait_seconds=5):
-    """Execute specified function after their corresponding test pass, pausing between tries.
+def wait_and_run(to_test, to_run, wait_seconds=5):
+    """Execute specified function after the corresponding test passes, pausing between tries.
 
     Args:
-        condition_to_check (dict): Contains test and execution functions, and all parameters for
-            them. Requires at least:
-                'to_test': a function that returns true when testing should conclude and execution
-                    should begin.
-                'to_run': the function to execute once 'to_test' returns true.
-            The full dict is passed as kwargs to its 'to_test' and 'to_run'.
+        to_test (() -> bool)): Parameter-less function that returns a bool value indicating
+            when to execute to_run.
+        to_run (() -> any)): Parameter-less function to run once to_test passes. Return value
+            is passed as is.
         wait_seconds (float, optional): Number of seconds to wait per 'to_test' iterations.
+
+    Returns:
+        any: Return value from to_run.
     """
-    logger.debug("Start waiting for: {}".format(condition_to_check["to_test"].__name__))
+    logger.debug("Start waiting for: {}".format(to_test.__name__))
     num_waits = 0
-    while not condition_to_check["to_test"](**condition_to_check):
+    while not to_test():
         time.sleep(wait_seconds)
         num_waits += 1
         if (num_waits % 100) == 0:
             logger.info(
                 "Waited {} sleep cycles so far testing {}".format(
-                    num_waits, condition_to_check["to_test"].__name__
+                    num_waits, to_test.__name__
                 )
             )
         elif (num_waits % 20) == 0:
             logger.debug(
-                "Waited {} sleep cycles so far testing:\n{}".format(
-                    num_waits, condition_to_check
+                "Waited {} sleep cycles so far testing {}".format(
+                    num_waits, to_test.__name__
                 )
             )
-    logger.info(
-        "{}['to_test']:{} passed.".format(
-            condition_to_check["experiment"], condition_to_check["to_test"].__name__
-        )
-    )
-    logger.info(
-        "Now running {} for {}.".format(
-            condition_to_check["to_run"].__name__, condition_to_check["experiment"]
-        )
-    )
-    return_val = condition_to_check["to_run"](**condition_to_check)
+    logger.info("to_test:{} passed.".format(to_test.__name__))
+    logger.info("Now running {}.".format(to_run.__name__))
+    return_val = to_run()
     logger.debug("return_val = {}".format(return_val))
     return return_val
 
