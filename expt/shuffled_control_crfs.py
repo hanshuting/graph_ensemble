@@ -12,82 +12,97 @@ import yeti_support
 
 import logging
 
-logger = logging.getLogger("top." + __name__)
-logger.setLevel(logging.DEBUG)
 
-# *** start constants ***
-MODEL_TYPE = "loopy"
-# *** end constants ***
+class ShuffledControlsTrial(object):
+    """docstring for ShuffledControlsTrial
 
-
-def start_logfile(debug_filelogging, shuffle_experiment_dir, **_):
-    log_fname = os.path.join(
-        os.path.expanduser(shuffle_experiment_dir), "shuffled_control_crfs.log"
-    )
-    logfile_handler = crf_util.get_FileHandler(
-        log_fname, debug_filelogging=debug_filelogging
-    )
-    logger.addHandler(logfile_handler)
-    logger.debug("Logging file handler to {} added.".format(log_fname))
-
-
-def get_conditions_metadata(condition, ini_fname="crf_parameters.ini"):
-    """Reads in settings.
-
-    Args:
-        condition (str): Condition name.
-        ini_fname (str, optional): Filepath of settings file to read.
-
-    Returns:
-        dict: Metadata for condition.
+    Attributes:
+        condition_name (TYPE): Description
+        ini_fname (TYPE): Description
+        logger (TYPE): Description
+        MODEL_TYPE (str): Description
     """
-    parameters_parser = crf_util.get_raw_configparser(fname=ini_fname)
-    params = crf_util.get_GeneralOptions(parser=parameters_parser)
-    experiment = "{}_{}_{}".format(params["experiment_name"], condition, MODEL_TYPE)
-    metadata = {
-        "data_file": "{}_{}.mat".format(params["experiment_name"], condition),
-        "experiment": experiment,
-        "shuffle_save_name": "shuffled_{}_{}".format(
+
+    MODEL_TYPE = "loopy"
+
+    def __init__(
+        self,
+        condition_name,
+        ini_fname="crf_parameters.ini",
+        destination_path=None,
+        logger=None,
+    ):
+        super().__init__(condition_name, ini_fname, destination_path, logger)
+        # self.condition_name = condition_name
+        # self.ini_fname = ini_fname
+        # if logger is None:
+        #     logger = logging.getLogger("top." + __name__)
+        #     logger.setLevel(logging.DEBUG)
+        # self.logger = logger
+
+        parameters_parser = crf_util.get_raw_configparser(fname=self.ini_fname)
+        params = crf_util.get_GeneralOptions(parser=parameters_parser)
+        self.experiment_group = params["experiment_name"]
+        self.data_dir = params["data_directory"]
+        self.source_dir = params["source_directory"]
+        self.verbosity = params["verbosity"]
+        self.debug_filelogging = params["debug_filelogging"]
+        self.cluster_architecture = params["cluster_architecture"]
+        self.time_span = params["time_span"]
+        self.edges = params["edges"]
+        self.no_same_neuron_edges = params["no_same_neuron_edges"]
+        self.data_file = "{}_{}.mat".format(self.experiment_group, self.condition_name)
+
+    def _init_settings(self):
+        """Override of Workflow
+        """
+        super()._init_settings()
+        self.shuffle_save_name = "shuffled_{}_{}".format(
             params["experiment_name"], condition
-        ),
-        "shuffle_save_dir": os.path.join(
-            params["data_directory"], "shuffled", experiment
-        ),
-        "shuffle_experiment": "shuffled_{}".format(experiment),
-    }
-    metadata["shuffle_experiment_dir"] = os.path.join(
-        params["source_directory"], "expt", metadata["shuffle_experiment"]
-    )
-    params.update(metadata)
-    params["create_shuffles"] = create_shuffles
-    # There is no training prep by default, so we set no-op function as placeholder
-    params["shuffle_training_prep"] = lambda params: None
-    params["train_controls"] = exec_shuffle_model
-    # Update settings for cluster specified, if any
-    if params["cluster_architecture"] == "yeti":
-        logger.info("Yeti cluster architecture selected for shuffled controls.")
-        params.update(yeti_support.get_yeti_shuff_metadata(fname=ini_fname))
-    return params
+        )
+        self.shuffle_save_dir = os.path.join(
+            params["data_directory"], "shuffled", self.experiment
+        )
+        self.shuffle_experiment = "shuffled_{}".format(self.experiment)
 
+        self.shuffle_experiment_dir = os.path.join(
+            params["source_directory"], "expt", self.shuffle_experiment
+        )
+        # Update settings for cluster specified, if any
+        if self.cluster_architecture == "yeti":
+            self._logger.info("Yeti cluster architecture selected for shuffled controls.")
+            yeti_support.get_yeti_shuff_metadata(self, parser=self._parser)
 
-def create_shuffles(params):
-    matlab_cmd = "gn_shuff_data('{}', '{}', {});".format(
-        os.path.join(params["data_directory"], params["data_file"]),
-        params["shuffle_save_dir"],
-        params["num_shuffle"],
-    )
-    crf_util.run_matlab_command(matlab_cmd, add_path=params["source_directory"])
+    def _start_logfile(self):
+        # TODO: Update to working_dir
+        log_fname = os.path.join(
+            os.path.expanduser(self.shuffle_experiment_dir), "shuffled_control_crfs.log"
+        )
+        logfile_handler = crf_util.get_FileHandler(
+            log_fname, debug_filelogging=self.debug_filelogging
+        )
+        self._logger.addHandler(logfile_handler)
+        self._logger.debug("Logging file handler to {} added.".format(log_fname))
 
+    def create_shuffles(self):
+        matlab_cmd = "gn_shuff_data('{}', '{}', {});".format(
+            os.path.join(self.data_dir, self.data_file),
+            self.shuffle_save_dir,
+            self.num_shuffle,
+        )
+        crf_util.run_matlab_command(matlab_cmd, add_path=self.source_dir)
 
-def setup_shuffle_model(params):
-    logger.info("Creating working directory: {}".format(params["shuffle_experiment"]))
-    os.makedirs(os.path.expanduser(params["shuffle_experiment"]))
-    start_logfile(**params)
+    def setup_shuffle_model(self):
+        self._logger.info(
+            "Creating working directory: {}".format(self.shuffle_experiment)
+        )
+        os.makedirs(os.path.expanduser(self.shuffle_experiment))
+        self._start_logfile()
 
-    os.makedirs(os.path.expanduser(params["shuffle_save_dir"]), exist_ok=True)
-    # TODO: Either clear pre-existing shuffled datasets, or skip regenerating any already there
+        os.makedirs(os.path.expanduser(self.shuffle_save_dir), exist_ok=True)
+        # TODO: Either clear pre-existing shuffled datasets, or skip regenerating any already there
 
-    params["create_shuffles"](params)
+        self.create_shuffles()
 
 
 def create_shuffle_configs(params, best_params):
@@ -178,14 +193,13 @@ def test_shuffle_CRFs(shuffle_experiment, num_shuffle, **kwargs):
     filebase = os.path.join(shuffle_experiment, "results", "result")
     return crf_util.get_max_job_done(filebase) >= num_shuffle
 
-
-def exec_merge_shuffle_CRFs(shuffle_experiment, source_directory, **kwargs):
-    results_path = os.path.join(shuffle_experiment, "results")
-    crf_util.run_matlab_command(
-        "save_and_merge_shuffled_models('{}'); ".format(results_path),
-        add_path=source_directory,
-    )
-    logger.info("Shuffle models merged and saved.\n")
+    def exec_merge_shuffle_CRFs(self):
+        results_path = os.path.join(self.shuffle_experiment, "results")
+        crf_util.run_matlab_command(
+            "save_and_merge_shuffled_models('{}'); ".format(results_path),
+            add_path=self.source_dir,
+        )
+        self._logger.info("Shuffle models merged and saved.\n")
 
 
 def main(condition, ini_fname="crf_parameters.ini"):
@@ -195,20 +209,21 @@ def main(condition, ini_fname="crf_parameters.ini"):
         condition (str): Condition name.
         ini_fname (str, optional): Filepath of settings file to read.
     """
-    params = get_conditions_metadata(condition, ini_fname)
+    shuffledcontrols = ShuffledControlsTrial(condition, ini_fname=ini_fname)
 
     # Update logging if module is invoked from the command line
     if __name__ == "__main__":
         # Assume top log position
-        logger = logging.getLogger("top")
-        logger.setLevel(logging.DEBUG)
+        shuffledcontrols.logger = logging.getLogger("top")
+        shuffledcontrols.logger.setLevel(logging.DEBUG)
         # Create stdout log handler
-        verbosity = params["verbosity"]
-        logger.addHandler(crf_util.get_StreamHandler(verbosity))
-        logger.debug("Logging stream handler to sys.stdout added.")
+        shuffledcontrols.logger.addHandler(
+            crf_util.get_StreamHandler(shuffledcontrols.verbosity)
+        )
+        shuffledcontrols.logger.debug("Logging stream handler to sys.stdout added.")
 
     # Create bare-bones shuffle folder and create shuffled datasets
-    setup_shuffle_model(params)
+    shuffledcontrols.setup_shuffle_model()
     # Get best params
     best_params = gridsearch_train_crfs.get_best_parameters(params["experiment"])
     logger.info("Parameters for {} collected.\n".format(condition))

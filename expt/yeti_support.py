@@ -31,23 +31,32 @@ def get_yeti_gs_metadata(gs_object, parser=None, fname="crf_parameters.ini"):
     gs_object.test_gs_get_best_params = test_train_CRFs_yeti
 
 
-def get_yeti_shuff_metadata(fname="crf_parameters.ini"):
-    parameters_parser = crf_util.get_raw_configparser(fname=fname)
-    parameters = crf_util.get_section_options("YetiOptions", parser=parameters_parser)
+def get_yeti_shuff_metadata(sc_object, parser=None, fname="crf_parameters.ini"):
+    if parser is None:
+        parser = crf_util.get_raw_configparser(fname=fname)
+    parameters = crf_util.get_section_options("YetiOptions", parser=parser)
+    sc_object.username = parameters["username"]
+    sc_object.group_id = parameters["group_id"]
+    sc_object.email = parameters["email"]
+    sc_object.email_notification = parameters["email_notification"]
+    sc_object.email_jobs_threshold = parameters["email_jobs_threshold"]
     parameters.update(
-        crf_util.get_section_options(
-            "YetiGenerateShuffledOptions", parser=parameters_parser
-        )
+        crf_util.get_section_options("YetiGenerateShuffledOptions", parser=parser)
     )
+    sc_object.yeti_gen_sh_nodes = parameters["yeti_gen_sh_nodes"]
+    sc_object.yeti_gen_sh_ppn = parameters["yeti_gen_sh_ppn"]
+    sc_object.yeti_gen_sh_walltime = parameters["yeti_gen_sh_walltime"]
+    sc_object.yeti_gen_sh_mem = parameters["yeti_gen_sh_mem"]
     parameters.update(
-        crf_util.get_section_options(
-            "YetiShuffledControlsOptions", parser=parameters_parser
-        )
+        crf_util.get_section_options("YetiShuffledControlsOptions", parser=parser)
     )
-    parameters["create_shuffles"] = create_shuffles_yeti
-    parameters["shuffle_training_prep"] = shuff_controls_train_prep_yeti
-    parameters["train_controls"] = exec_shuffle_model_yeti
-    return parameters
+    sc_object.yeti_sh_ctrl_nodes = parameters["yeti_sh_ctrl_nodes"]
+    sc_object.yeti_sh_ctrl_ppn = parameters["yeti_sh_ctrl_ppn"]
+    sc_object.yeti_sh_ctrl_walltime = parameters["yeti_sh_ctrl_walltime"]
+    sc_object.yeti_sh_ctrl_mem = parameters["yeti_sh_ctrl_mem"]
+    sc_object.create_shuffles = create_shuffles_yeti
+    sc_object.shuffle_training_prep = shuff_controls_train_prep_yeti
+    sc_object.train_controls = exec_shuffle_model_yeti
 
 
 def exec_shuffle_model_yeti(shuffle_experiment, **kwargs):
