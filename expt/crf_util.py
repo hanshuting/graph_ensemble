@@ -81,7 +81,7 @@ def get_GridsearchOptions(parser=None, fname="crf_parameters.ini"):
 def get_GeneralOptions(parser=None, fname="crf_parameters.ini"):
     if parser is None:
         parser = get_raw_configparser(fname)
-    int_options = ["time_span", "num_shuffle", "verbosity"]
+    int_options = ["time_span", "verbosity"]
     bool_options_and_defaults = [
         ("debug_filelogging", False),
         ("no_same_neuron_edges", True),
