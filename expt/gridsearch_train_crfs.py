@@ -10,9 +10,10 @@ import logging
 
 import crf_util
 import yeti_support
+from workflow import Workflow
 
 
-class GridsearchTrial(object):
+class GridsearchTrial(Workflow):
     """docstring for GridsearchTrial"""
 
     MODEL_TYPE = "loopy"
@@ -27,54 +28,33 @@ class GridsearchTrial(object):
         destination_path=None,
         logger=None,
     ):
-        # super(GridsearchTrial, self).__init__()
-        self.condition_name = condition_name
-        self.ini_fname = ini_fname
         if logger is None:
             logger = logging.getLogger("top." + __name__)
             logger.setLevel(logging.DEBUG)
-        self.logger = logger
+        super().__init__(condition_name, ini_fname, destination_path, logger)
 
-        self._init_settings()
-
-    # def get_conditions_metadata(condition, ini_fname="crf_parameters.ini"):
-    def _init_settings(self):
-        """Reads in settings.
-
-        Args:
-            condition (str): Condition name.
-            ini_fname (str, optional): Filepath of settings file to read.
-
-        Returns:
-            dict: Metadata for condition.
+    def _parse_settings(self):
+        """Override of Workflow
         """
-        parameters_parser = crf_util.get_raw_configparser(fname=self.ini_fname)
-        params = crf_util.get_GridsearchOptions(parser=parameters_parser)
+        super()._parse_settings()
+        params = crf_util.get_GridsearchOptions(parser=self._parser)
         self.S_LAMBDAS = params["S_LAMBDAS"]
         self.DENSITIES = params["DENSITIES"]
         self.P_LAMBDAS = params["P_LAMBDAS"]
-        params.update(crf_util.get_GeneralOptions(parser=parameters_parser))
-        self.experiment_group = params["experiment_name"]
-        self.data_dir = params["data_directory"]
-        self.source_dir = params["source_directory"]
-        self.verbosity = params["verbosity"]
-        self.debug_filelogging = params["debug_filelogging"]
+        # TODO: Kick yeti stuff to subclass
+        params = crf_util.get_GeneralOptions(parser=self._parser)
         self.cluster_architecture = params["cluster_architecture"]
-        self.time_span = params["time_span"]
-        self.edges = params["edges"]
-        self.no_same_neuron_edges = params["no_same_neuron_edges"]
-        self.data_file = "{}_{}.mat".format(self.experiment_group, self.condition_name)
-        self.experiment = "{}_{}_{}".format(
-            self.experiment_group, self.condition_name, self.MODEL_TYPE
-        )
-        self.expt_dir = os.path.join(self.source_dir, "expt")
 
+    def _init_settings(self):
+        """Override of Workflow
+        """
+        super()._init_settings()
         self.start_jobs = self.start_gridsearch_jobs
         self.test_gs_get_best_params = self.test_train_CRFs
         # Update settings for cluster specified, if any
         if self.cluster_architecture == "yeti":
-            self.logger.info("Yeti cluster architecture selected for gridsearch.")
-            yeti_support.get_yeti_gs_metadata(self, parser=parameters_parser)
+            self._logger.info("Yeti cluster architecture selected for gridsearch.")
+            yeti_support.get_yeti_gs_metadata(self, parser=self._parser)
 
     def _start_logfile(self):
         # TODO: Update to working_dir
@@ -83,13 +63,13 @@ class GridsearchTrial(object):
         logfile_handler = crf_util.get_FileHandler(
             log_fname, debug_filelogging=self.debug_filelogging
         )
-        self.logger.addHandler(logfile_handler)
-        self.logger.debug("Logging file handler to {} added.".format(log_fname))
+        self._logger.addHandler(logfile_handler)
+        self._logger.debug("Logging file handler to {} added.".format(log_fname))
 
     def _create_working_dir(self):
         # TODO: Use .destination_path
         self.working_dir = self.experiment
-        self.logger.info("Creating working directory: {}".format(self.working_dir))
+        self._logger.info("Creating working directory: {}".format(self.working_dir))
         os.makedirs(os.path.expanduser(self.working_dir))
 
     def _create_write_configs_for_loopy_m(self):
@@ -103,11 +83,11 @@ class GridsearchTrial(object):
             try:
                 f.write("    'email_for_notifications', '{}', ...\n".format(self.email))
             except AttributeError:
-                self.logger.debug("No notifications email setting provided. Skipping.")
+                self._logger.debug("No notifications email setting provided. Skipping.")
             try:
                 f.write("    'yeti_user', '{}', ...\n".format(self.username))
             except AttributeError:
-                self.logger.debug("No yeti username provided. Skipping.")
+                self._logger.debug("No yeti username provided. Skipping.")
             f.write("    'compute_true_logZ', false, ...\n")
             f.write("    'reweight_denominator', 'mean_degree', ...\n")
             s_lambdas = self.S_LAMBDAS
@@ -157,7 +137,7 @@ class GridsearchTrial(object):
             )
             f.write("    'time_span', {});\n".format(self.time_span))
         f.closed
-        self.logger.info("done writing {}".format(fname))
+        self._logger.info("done writing {}".format(fname))
 
     def start_gridsearch_jobs(self):
         if (
@@ -165,20 +145,20 @@ class GridsearchTrial(object):
             or self.DENSITIES["parallize"]
             or self.P_LAMBDAS["parallize"]
         ):
-            self.logger.warning(
+            self._logger.warning(
                 "WARNING: ONLY config1.m WILL BE USED. "
                 + "Cluster architecture {} ".format(self.cluster_architecture)
                 + "has no parallel execution capability, "
                 + "but found parallize options set to True."
             )
         curr_dir = os.getcwd()
-        self.logger.debug("curr_dir = {}.".format(curr_dir))
+        self._logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(self.source_dir)
-        self.logger.debug("changed into dir: {}".format(os.getcwd()))
+        self._logger.debug("changed into dir: {}".format(os.getcwd()))
         shell_cmd = ".{}run.sh {} 1".format(os.sep, self.experiment)
         crf_util.run_command(shell_cmd, shell=True)
         os.chdir(curr_dir)
-        self.logger.debug("changed back to dir: {}".format(os.getcwd()))
+        self._logger.debug("changed back to dir: {}".format(os.getcwd()))
 
     def setup_exec_train_model(self):
         """Mostly follows old create_script.pl.
@@ -194,18 +174,18 @@ class GridsearchTrial(object):
 
         # Move into experiment folder
         curr_dir = os.getcwd()
-        self.logger.debug("curr_dir = {}.".format(curr_dir))
+        self._logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(self.experiment)
-        self.logger.debug("changed into dir: {}".format(os.getcwd()))
+        self._logger.debug("changed into dir: {}".format(os.getcwd()))
         crf_util.run_matlab_command(
             "write_configs_for_{},".format(self.MODEL_TYPE), add_path=self.source_dir
         )
-        self.logger.info("\nTraining configs generated.")
+        self._logger.info("\nTraining configs generated.")
         # start_gridsearch_jobs by default
         self.start_jobs()
 
         os.chdir(curr_dir)
-        self.logger.debug("changed back to dir: {}".format(os.getcwd()))
+        self._logger.debug("changed back to dir: {}".format(os.getcwd()))
 
     def merge_save_train_models(self):
         results_path = os.path.join(self.experiment, "results")

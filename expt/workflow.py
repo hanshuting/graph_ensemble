@@ -55,4 +55,4 @@ class Workflow(object):
         """
         self.data_file = "{}_{}.mat".format(self.experiment_group, self.condition_name)
         self.experiment = "{}_{}".format(self.experiment_group, self.condition_name)
-        self.working_dir = os.path.join(self.destination_path, self.experiment)
+        self.expt_dir = os.path.join(self.source_dir, "expt")
