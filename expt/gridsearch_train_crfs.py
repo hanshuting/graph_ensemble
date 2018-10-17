@@ -9,7 +9,6 @@ import os
 import logging
 
 import crf_util
-import yeti_support
 from workflow import Workflow
 
 
@@ -41,20 +40,6 @@ class GridsearchTrial(Workflow):
         self.S_LAMBDAS = params["S_LAMBDAS"]
         self.DENSITIES = params["DENSITIES"]
         self.P_LAMBDAS = params["P_LAMBDAS"]
-        # TODO: Kick yeti stuff to subclass
-        params = crf_util.get_GeneralOptions(parser=self._parser)
-        self.cluster_architecture = params["cluster_architecture"]
-
-    def _init_settings(self):
-        """Override of Workflow
-        """
-        super()._init_settings()
-        self.start_jobs = self.start_gridsearch_jobs
-        self.test_gs_get_best_params = self.test_train_CRFs
-        # Update settings for cluster specified, if any
-        if self.cluster_architecture == "yeti":
-            self._logger.info("Yeti cluster architecture selected for gridsearch.")
-            yeti_support.get_yeti_gs_metadata(self, parser=self._parser)
 
     def _start_logfile(self):
         # TODO: Update to working_dir
@@ -147,8 +132,7 @@ class GridsearchTrial(Workflow):
         ):
             self._logger.warning(
                 "WARNING: ONLY config1.m WILL BE USED. "
-                + "Cluster architecture {} ".format(self.cluster_architecture)
-                + "has no parallel execution capability, "
+                + "GridsearchTrial has no parallel execution capability, "
                 + "but found parallize options set to True."
             )
         curr_dir = os.getcwd()
@@ -181,8 +165,7 @@ class GridsearchTrial(Workflow):
             "write_configs_for_{},".format(self.MODEL_TYPE), add_path=self.source_dir
         )
         self._logger.info("\nTraining configs generated.")
-        # start_gridsearch_jobs by default
-        self.start_jobs()
+        self.start_gridsearch_jobs()
 
         os.chdir(curr_dir)
         self._logger.debug("changed back to dir: {}".format(os.getcwd()))
@@ -215,38 +198,24 @@ class GridsearchTrial(Workflow):
         num_jobs = 1
         return crf_util.get_max_job_done(filebase) >= num_jobs
 
+    def run(self):
+        """Run a gridsearch trial.
+        """
+        if __name__ == "__main__":
+            # Create stdout log handler if module is invoked from the command line
+            self._logger.addHandler(crf_util.get_StreamHandler(self.verbosity))
+            self._logger.debug("Logging stream handler to sys.stdout added.")
 
-def main(condition, ini_fname="crf_parameters.ini"):
-    """Summary
-
-    Args:
-        condition (str): Condition name.
-        ini_fname (str, optional): Filepath of settings file to read.
-    """
-    gridsearch = GridsearchTrial(condition, ini_fname=ini_fname)
-
-    # Update logging if module is invoked from the command line
-    if __name__ == "__main__":
-        # Assume top log position
-        gridsearch.logger = logging.getLogger("top")
-        gridsearch.logger.setLevel(logging.DEBUG)
-        # Create stdout log handler
-        gridsearch.logger.addHandler(crf_util.get_StreamHandler(gridsearch.verbosity))
-        gridsearch.logger.debug("Logging stream handler to sys.stdout added.")
-
-    gridsearch.setup_exec_train_model()
-    # Wait for train CRF to be done
-    # Run merge and save_best
-    crf_util.wait_and_run(
-        gridsearch.test_gs_get_best_params, gridsearch.merge_save_train_models
-    )
-    best_params_path = os.path.join(
-        gridsearch.expt_dir, gridsearch.experiment, "results", "best_parameters.txt"
-    )
-    gridsearch.logger.info(
-        "Grid search complete. Best parameters in {}".format(best_params_path)
-        + " in the following order:\n{}\n".format(gridsearch.PARAMS_TO_EXTRACT)
-    )
+        self.setup_exec_train_model()
+        # Wait for train CRF to be done and run merge and save_best
+        crf_util.wait_and_run(self.test_train_CRFs, self.merge_save_train_models)
+        best_params_path = os.path.join(
+            self.expt_dir, self.experiment, "results", "best_parameters.txt"
+        )
+        self._logger.info(
+            "Grid search complete. Best parameters in {}".format(best_params_path)
+            + " in the following order:\n{}\n".format(self.PARAMS_TO_EXTRACT)
+        )
 
 
 if __name__ == "__main__":
@@ -256,9 +225,13 @@ if __name__ == "__main__":
     except IndexError:
         raise TypeError("A condition name must be passed on the command line.")
 
+    logger = logging.getLogger("top")
+    logger.setLevel(logging.DEBUG)
+
     if len(sys.argv) > 2:
-        main(condition, sys.argv[2])
+        gridsearch = GridsearchTrial(condition, ini_fname=sys.argv[2], logger=logger)
     else:
-        main(condition)
+        gridsearch = GridsearchTrial(condition, logger=logger)
+    gridsearch.run()
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
