@@ -9,7 +9,6 @@ import logging
 
 import crf_util
 from gridsearch_train_crfs import GridsearchTrial
-import yeti_support
 from workflow import Workflow
 
 
@@ -42,7 +41,6 @@ class ShuffledControlsTrial(Workflow):
         """
         super()._parse_settings()
         params = crf_util.get_GeneralOptions(parser=self._parser)
-        self.cluster_architecture = params["cluster_architecture"]
         params = crf_util.get_section_options(
             "ShuffledControlsOptions", parser=self._parser, int_options=["num_shuffle"]
         )
@@ -62,10 +60,6 @@ class ShuffledControlsTrial(Workflow):
         self.shuffle_experiment_dir = os.path.join(
             self.source_dir, "expt", self.shuffle_experiment
         )
-        # Update settings for cluster specified, if any
-        if self.cluster_architecture == "yeti":
-            self._logger.info("Yeti cluster architecture selected for shuffled controls.")
-            yeti_support.get_yeti_shuff_metadata(self, parser=self._parser)
 
     def _start_logfile(self):
         # TODO: Update to working_dir

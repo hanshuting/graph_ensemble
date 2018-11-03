@@ -7,7 +7,6 @@ import crf_util
 
 
 class Workflow(object):
-
     """Abstract superclass for all workflows.
 
     Attributes:
