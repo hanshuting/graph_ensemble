@@ -176,21 +176,22 @@ class GridsearchTrial(Workflow):
             "save_best_params('{}'); ".format(results_path), add_path=self.source_dir
         )
 
-    def get_best_parameters(self):
+    @classmethod
+    def get_best_parameters(cls, results_path):
         """Get the best parameters from gridsearch results.
+
+        Args:
+            results_path (str): Path to gridsearch results folder.
 
         Returns:
             dict: Best parameters from the gridsearch. Parameters stored as a dict with
                 PARAMS_TO_EXTRACT as the keys.
         """
         best_params = {}
-        # grab and return best params
-        results_path = os.path.join(self.experiment, "results")
         with open(os.path.join(results_path, "best_parameters.txt"), "r") as f:
-            for param in self.PARAMS_TO_EXTRACT:
+            for param in cls.PARAMS_TO_EXTRACT:
                 best_params[param] = float(f.readline())
         f.closed
-
         return best_params
 
     def test_train_CRFs(self):
