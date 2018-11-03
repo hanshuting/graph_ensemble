@@ -192,43 +192,28 @@ class ShuffledControlsTrial(Workflow):
         )
         self._logger.info("Shuffle models merged and saved.\n")
 
+    def run(self):
+        """Run a shuffled controls trial.
+        """
+        if __name__ == "__main__":
+            # Create stdout log handler if module is invoked from the command line
+            self._logger.addHandler(crf_util.get_StreamHandler(self.verbosity))
+            self._logger.debug("Logging stream handler to sys.stdout added.")
 
-def main(condition, ini_fname="crf_parameters.ini"):
-    """Summary
-
-    Args:
-        condition (str): Condition name.
-        ini_fname (str, optional): Filepath of settings file to read.
-    """
-    shuffledcontrols = ShuffledControlsTrial(condition, ini_fname=ini_fname)
-
-    # Update logging if module is invoked from the command line
-    if __name__ == "__main__":
-        # Assume top log position
-        shuffledcontrols.logger = logging.getLogger("top")
-        shuffledcontrols.logger.setLevel(logging.DEBUG)
-        # Create stdout log handler
-        shuffledcontrols.logger.addHandler(
-            crf_util.get_StreamHandler(shuffledcontrols.verbosity)
+        # Create bare-bones shuffle folder and create shuffled datasets
+        self.setup_shuffle_model()
+        # Get best params
+        best_params = GridsearchTrial.get_best_parameters(
+            os.path.join(self.expt_dir, self.experiment, "results")
         )
-        shuffledcontrols.logger.debug("Logging stream handler to sys.stdout added.")
-
-    # Create bare-bones shuffle folder and create shuffled datasets
-    shuffledcontrols.setup_shuffle_model()
-    # Get best params
-    best_params = gridsearch_train_crfs.get_best_parameters(params["experiment"])
-    logger.info("Parameters for {} collected.\n".format(condition))
-    # create shuffle configs with best params (write and run write_configs_for_loopy.m)
-    create_shuffle_configs(params, best_params)
-    # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
-    params["to_test"] = simple_test_shuffle_datasets
-    params["to_run"] = params["train_controls"]
-    crf_util.wait_and_run(params)
-    # Wait for shuffle CRFs to be done and run merge and save_shuffle
-    params["to_test"] = test_shuffle_CRFs
-    params["to_run"] = exec_merge_shuffle_CRFs
-    crf_util.wait_and_run(params)
-    # Extract ensemble neuron IDs. Write to disk?
+        self._logger.info("Parameters for {} collected.\n".format(self.condition_name))
+        # create shuffle configs with best params (write and run write_configs_for_loopy.m)
+        self.create_shuffle_configs(best_params)
+        # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
+        crf_util.wait_and_run(self.simple_test_shuffle_datasets, self.train_controls)
+        # Wait for shuffle CRFs to be done and run merge and save_shuffle
+        crf_util.wait_and_run(self.test_shuffle_CRFs, self.exec_merge_shuffle_CRFs)
+        # TODO: Extract ensemble neuron IDs and write to disk?
 
 
 if __name__ == "__main__":
@@ -238,9 +223,15 @@ if __name__ == "__main__":
     except IndexError:
         raise TypeError("A condition name must be passed on the command line.")
 
+    logger = logging.getLogger("top")
+    logger.setLevel(logging.DEBUG)
+
     if len(sys.argv) > 2:
-        main(condition, sys.argv[2])
+        shuffled_trial = ShuffledControlsTrial(
+            condition, ini_fname=sys.argv[2], logger=logger
+        )
     else:
-        main(condition)
+        shuffled_trial = ShuffledControlsTrial(condition, logger=logger)
+    shuffled_trial.run()
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))
