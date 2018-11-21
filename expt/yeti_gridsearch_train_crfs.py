@@ -45,7 +45,7 @@ class GridsearchTrialYeti(GridsearchTrial):
         self.yeti_mem = parameters["yeti_grid_mem"]
 
     def test_train_CRFs(self):
-        filebase = os.path.join(self.experiment, "results", "result")
+        filebase = os.path.join(self._experiment, "results", "result")
         num_jobs = 1
         for param in [self.S_LAMBDAS, self.DENSITIES, self.P_LAMBDAS]:
             num_jobs *= param["num_points"] if param["parallize"] else 1
@@ -63,7 +63,7 @@ class GridsearchTrialYeti(GridsearchTrial):
             f.write("#yeti_config.sh\n\n")
             f.write("#Torque script to run Matlab program\n")
             f.write("\n#Torque directives\n")
-            f.write("#PBS -N Gridsearch_{}\n".format(self.experiment))
+            f.write("#PBS -N Gridsearch_{}\n".format(self._experiment))
             f.write("#PBS -W group_list={}\n".format(self.group_id))
             f.write(
                 "#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
@@ -84,7 +84,7 @@ class GridsearchTrialYeti(GridsearchTrial):
             f.write("#PBS -M {}\n".format(self.email))
             f.write("#PBS -t 1-{}\n".format(int(num_jobs)))
             # TODO: Use actual self.working_dir
-            working_dir = os.path.join(self.expt_dir, self.experiment)
+            working_dir = os.path.join(self._expt_dir, self._experiment)
             f.write("\n#set output and error directories (SSCC example here)\n")
             f.write("#PBS -o localhost:{}/yeti_logs/\n".format(working_dir))
             f.write("#PBS -e localhost:{}/yeti_logs/\n".format(working_dir))
@@ -95,7 +95,7 @@ class GridsearchTrialYeti(GridsearchTrial):
             f.write("cd {}\n".format(self.source_dir))
             f.write(
                 "./run.sh {0} $PBS_ARRAYID > expt/{0}/job_logs/matoutfile.$PBS_ARRAYID\n".format(
-                    self.experiment
+                    self._experiment
                 )
             )
             f.write("#End of script\n")
@@ -117,7 +117,7 @@ class GridsearchTrialYeti(GridsearchTrial):
             f.write("rm -f ./job_logs/*\n")
             f.write(
                 "cd ../.. && qsub {}\n".format(
-                    os.path.join("expt", self.experiment, target)
+                    os.path.join("expt", self._experiment, target)
                 )
             )
         f.closed
@@ -125,7 +125,7 @@ class GridsearchTrialYeti(GridsearchTrial):
         os.chmod(
             fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode
         )
-        self._logger.info("Created " + os.path.join(self.experiment, fname) + ".")
+        self._logger.info("Created " + os.path.join(self._experiment, fname) + ".")
 
     def start_gridsearch_jobs(self):
         """Override of GridsearchTrial

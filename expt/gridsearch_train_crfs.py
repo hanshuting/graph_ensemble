@@ -43,8 +43,8 @@ class GridsearchTrial(Workflow):
 
     def _start_logfile(self):
         # TODO: Update to working_dir
-        expt_dir = os.path.expanduser(self.expt_dir)
-        log_fname = os.path.join(expt_dir, self.experiment, "gridsearch_train_crfs.log")
+        expt_dir = os.path.expanduser(self._expt_dir)
+        log_fname = os.path.join(expt_dir, self._experiment, "gridsearch_train_crfs.log")
         logfile_handler = crf_util.get_FileHandler(
             log_fname, debug_filelogging=self.debug_filelogging
         )
@@ -53,18 +53,20 @@ class GridsearchTrial(Workflow):
 
     def _create_working_dir(self):
         # TODO: Use .destination_path
-        self.working_dir = self.experiment
+        self.working_dir = self._experiment
         self._logger.info("Creating working directory: {}".format(self.working_dir))
         os.makedirs(os.path.expanduser(self.working_dir))
 
     def _create_write_configs_for_loopy_m(self):
         # TODO: Fix fname path
-        fname = os.path.join(self.experiment, "write_configs_for_loopy.m")
+        fname = os.path.join(self._experiment, "write_configs_for_loopy.m")
         # TODO: Just call create_configs directly
         with open(fname, "w") as f:
             f.write("create_configs( ...\n")
-            f.write("    'datapath', '{}{}', ...\n".format(self.data_dir, self.data_file))
-            f.write("    'experiment_name', '{}', ...\n".format(self.experiment))
+            f.write(
+                "    'datapath', '{}{}', ...\n".format(self.data_dir, self._data_file)
+            )
+            f.write("    'experiment_name', '{}', ...\n".format(self._experiment))
             try:
                 f.write("    'email_for_notifications', '{}', ...\n".format(self.email))
             except AttributeError:
@@ -139,7 +141,7 @@ class GridsearchTrial(Workflow):
         self._logger.debug("curr_dir = {}.".format(curr_dir))
         os.chdir(self.source_dir)
         self._logger.debug("changed into dir: {}".format(os.getcwd()))
-        shell_cmd = ".{}run.sh {} 1".format(os.sep, self.experiment)
+        shell_cmd = ".{}run.sh {} 1".format(os.sep, self._experiment)
         crf_util.run_command(shell_cmd, shell=True)
         os.chdir(curr_dir)
         self._logger.debug("changed back to dir: {}".format(os.getcwd()))
@@ -159,7 +161,7 @@ class GridsearchTrial(Workflow):
         # Move into experiment folder
         curr_dir = os.getcwd()
         self._logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(self.experiment)
+        os.chdir(self._experiment)
         self._logger.debug("changed into dir: {}".format(os.getcwd()))
         crf_util.run_matlab_command(
             "write_configs_for_{},".format(self.MODEL_TYPE), add_path=self.source_dir
@@ -171,7 +173,7 @@ class GridsearchTrial(Workflow):
         self._logger.debug("changed back to dir: {}".format(os.getcwd()))
 
     def merge_save_train_models(self):
-        results_path = os.path.join(self.experiment, "results")
+        results_path = os.path.join(self._experiment, "results")
         return crf_util.run_matlab_command(
             "save_best_params('{}'); ".format(results_path), add_path=self.source_dir
         )
@@ -195,7 +197,7 @@ class GridsearchTrial(Workflow):
         return best_params
 
     def test_train_CRFs(self):
-        filebase = os.path.join(self.experiment, "results", "result")
+        filebase = os.path.join(self._experiment, "results", "result")
         num_jobs = 1
         return crf_util.get_max_job_done(filebase) >= num_jobs
 
@@ -211,7 +213,7 @@ class GridsearchTrial(Workflow):
         # Wait for train CRF to be done and run merge and save_best
         crf_util.wait_and_run(self.test_train_CRFs, self.merge_save_train_models)
         best_params_path = os.path.join(
-            self.expt_dir, self.experiment, "results", "best_parameters.txt"
+            self._expt_dir, self._experiment, "results", "best_parameters.txt"
         )
         self._logger.info(
             "Grid search complete. Best parameters in {}".format(best_params_path)

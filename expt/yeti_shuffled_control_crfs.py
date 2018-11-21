@@ -59,12 +59,12 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
         self._write_shuffling_yeti_script()
         self._write_shuffling_submit_script()
         self._logger.info(
-            "done writing {} yeti scripts\n".format(self.shuffle_experiment)
+            "done writing {} yeti scripts\n".format(self._shuffle_experiment)
         )
 
         curr_dir = os.getcwd()
         self._logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(self.shuffle_experiment)
+        os.chdir(self._shuffle_experiment)
         self._logger.debug("changed into dir: {}".format(os.getcwd()))
 
         shell_command = ".{}shuffle_start_job.sh".format(os.sep)
@@ -82,13 +82,13 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
 
     def _write_shuffling_yeti_script(self):
         # write yeti script
-        filepath = os.path.join(self.shuffle_experiment, "shuffle_yeti_config.sh")
+        filepath = os.path.join(self._shuffle_experiment, "shuffle_yeti_config.sh")
         self._logger.debug("writing file: {}".format(filepath))
         with open(filepath, "w") as f:
             f.write("#!/bin/sh\n")
             f.write("#shuffle_yeti_config.sh\n")
             f.write(
-                "#PBS -N Create_shuffled_dataset_{}\n".format(self.shuffle_experiment)
+                "#PBS -N Create_shuffled_dataset_{}\n".format(self._shuffle_experiment)
             )
             f.write("#PBS -W group_list={}\n".format(self.group_id))
             f.write(
@@ -108,7 +108,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
             f.write("#PBS -M {}\n".format(self.email))
             f.write("#set output and error directories (SSCC example here)\n")
             log_folder = "{}/".format(
-                os.path.join(self.shuffle_experiment_dir, "yeti_logs")
+                os.path.join(self._shuffle_experiment_dir, "yeti_logs")
             )
             os.makedirs(os.path.expanduser(log_folder), exist_ok=True)
             f.write("#PBS -o localhost:{}\n".format(log_folder))
@@ -121,7 +121,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
                 'matlab -nodesktop -nodisplay -r "dbclear all;'
                 + " addpath(genpath('{}'));".format(os.path.join(self.source_dir))
                 + "gn_shuff_data('{}', '{}', {});".format(
-                    os.path.join(self.data_dir, self.data_file),
+                    os.path.join(self.data_dir, self._data_file),
                     self.shuffle_save_dir,
                     self.num_shuffle,
                 )
@@ -138,7 +138,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
 
     def _write_shuffling_submit_script(self):
         # write submit script
-        filepath = os.path.join(self.shuffle_experiment, "shuffle_start_job.sh")
+        filepath = os.path.join(self._shuffle_experiment, "shuffle_start_job.sh")
         self._logger.debug("writing file: {}".format(filepath))
         with open(filepath, "w") as f:
             f.write("qsub shuffle_yeti_config.sh\n")
@@ -163,7 +163,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
             f.write("#{}\n\n".format(fname))
             f.write("#Torque script to run Matlab program\n")
             f.write("\n#Torque directives\n")
-            f.write("#PBS -N Shuffled_CRFs_{}\n".format(self.shuffle_experiment))
+            f.write("#PBS -N Shuffled_CRFs_{}\n".format(self._shuffle_experiment))
             f.write("#PBS -W group_list={}\n".format(self.group_id))
             f.write(
                 "#PBS -l nodes={}:ppn={},walltime={},mem={}mb\n".format(
@@ -187,7 +187,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
                 f.write("#PBS -m {}\n".format(self.email_notification))
             f.write("#PBS -M {}\n".format(self.email))
             f.write("#PBS -t 1-{}\n".format(int(num_jobs)))
-            working_dir = os.path.expanduser(self.shuffle_experiment_dir)
+            working_dir = os.path.expanduser(self._shuffle_experiment_dir)
             f.write("\n#set output and error directories (SSCC example here)\n")
             f.write("#PBS -o localhost:{}/yeti_logs/\n".format(working_dir))
             f.write("#PBS -e localhost:{}/yeti_logs/\n".format(working_dir))
@@ -198,7 +198,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
             f.write("cd {}\n".format(self.source_dir))
             f.write(
                 "./run.sh {0} $PBS_ARRAYID > expt/{0}/job_logs/matoutfile.$PBS_ARRAYID\n".format(
-                    self.shuffle_experiment
+                    self._shuffle_experiment
                 )
             )
             f.write("#End of script\n")
@@ -219,7 +219,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
             f.write("rm -f ./job_logs/*\n")
             f.write(
                 "cd ../.. && qsub {}\n".format(
-                    os.path.join("expt", self.shuffle_experiment, target)
+                    os.path.join("expt", self._shuffle_experiment, target)
                 )
             )
         f.closed
@@ -227,12 +227,14 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
         os.chmod(
             fname, stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | os.stat(fname).st_mode
         )
-        self._logger.info("Created " + os.path.join(self.shuffle_experiment, fname) + ".")
+        self._logger.info(
+            "Created " + os.path.join(self._shuffle_experiment, fname) + "."
+        )
 
     def train_controls(self):
         curr_dir = os.getcwd()
         self._logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(self.shuffle_experiment_dir)
+        os.chdir(self._shuffle_experiment_dir)
         self._logger.debug("changed into dir: {}".format(os.getcwd()))
         process_results = subprocess.run(".{}start_jobs.sh".format(os.sep), shell=True)
         if process_results.returncode:

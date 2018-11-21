@@ -50,8 +50,9 @@ class Workflow(object):
         self.no_same_neuron_edges = params["no_same_neuron_edges"]
 
     def _init_settings(self):
-        """Reads in settings.
+        """Constructs internal handles.
         """
-        self.data_file = "{}_{}.mat".format(self.experiment_group, self.condition_name)
-        self.experiment = "{}_{}".format(self.experiment_group, self.condition_name)
-        self.expt_dir = os.path.join(self.source_dir, "expt")
+        # File name of dataset
+        self._data_file = "{}_{}.mat".format(self.experiment_group, self.condition_name)
+        self._experiment = "{}_{}".format(self.experiment_group, self.condition_name)
+        self._expt_dir = os.path.join(self.source_dir, "expt")

@@ -19,7 +19,7 @@ def main(gridsearch, shuffles, logger):
     # Run merge and save_best, grabbing best params
     crf_util.wait_and_run(gridsearch.test_train_CRFs, gridsearch.merge_save_train_models)
     best_params = GridsearchTrial.get_best_parameters(
-        os.path.join(shuffles.expt_dir, shuffles.experiment, "results")
+        os.path.join(shuffles._expt_dir, shuffles._experiment, "results")
     )
     logger.info("Parameters for all conditions collected.\n")
     # create shuffle configs with best params (write and run write_configs_for_loopy.m)

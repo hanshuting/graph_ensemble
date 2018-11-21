@@ -47,24 +47,26 @@ class ShuffledControlsTrial(Workflow):
         self.num_shuffle = params["num_shuffle"]
 
     def _init_settings(self):
-        """Override of Workflow
+        """Constructs internal handles. Override of Workflow.
         """
         super()._init_settings()
-        self.shuffle_save_name = "shuffled_{}_{}".format(
+        # Base filename for the shuffled datasets
+        self._shuffle_save_name = "shuffled_{}_{}".format(
             self.experiment_group, self.condition_name
         )
+        # Directory where the shuffled datasets are saved
         self.shuffle_save_dir = os.path.join(
-            os.path.expanduser(self.data_dir), "shuffled", self.experiment
+            os.path.expanduser(self.data_dir), "shuffled", self._experiment
         )
-        self.shuffle_experiment = "shuffled_{}".format(self.experiment)
-        self.shuffle_experiment_dir = os.path.join(
-            self.source_dir, "expt", self.shuffle_experiment
+        self._shuffle_experiment = "shuffled_{}".format(self._experiment)
+        self._shuffle_experiment_dir = os.path.join(
+            self.source_dir, "expt", self._shuffle_experiment
         )
 
     def _start_logfile(self):
         # TODO: Update to working_dir
         log_fname = os.path.join(
-            os.path.expanduser(self.shuffle_experiment_dir), "shuffled_control_crfs.log"
+            os.path.expanduser(self._shuffle_experiment_dir), "shuffled_control_crfs.log"
         )
         logfile_handler = crf_util.get_FileHandler(
             log_fname, debug_filelogging=self.debug_filelogging
@@ -74,7 +76,7 @@ class ShuffledControlsTrial(Workflow):
 
     def create_shuffles(self):
         matlab_cmd = "gn_shuff_data('{}', '{}', {});".format(
-            os.path.join(self.data_dir, self.data_file),
+            os.path.join(self.data_dir, self._data_file),
             self.shuffle_save_dir,
             self.num_shuffle,
         )
@@ -82,9 +84,9 @@ class ShuffledControlsTrial(Workflow):
 
     def setup_shuffle_model(self):
         self._logger.info(
-            "Creating working directory: {}".format(self.shuffle_experiment)
+            "Creating working directory: {}".format(self._shuffle_experiment)
         )
-        os.makedirs(os.path.expanduser(self.shuffle_experiment))
+        os.makedirs(os.path.expanduser(self._shuffle_experiment))
         self._start_logfile()
         os.makedirs(os.path.expanduser(self.shuffle_save_dir), exist_ok=True)
         # TODO: Either clear pre-existing shuffled datasets, or skip regenerating any already there
@@ -95,16 +97,16 @@ class ShuffledControlsTrial(Workflow):
 
     def create_shuffle_configs(self, best_params):
         fname = os.path.join(
-            self.shuffle_experiment_dir, "write_shuffle_configs_for_loopy.m"
+            self._shuffle_experiment_dir, "write_shuffle_configs_for_loopy.m"
         )
         with open(fname, "w") as f:
             f.write("create_shuffle_configs( ...\n")
             f.write(
                 "    'datapath', '{}.mat', ...\n".format(
-                    os.path.join(self.shuffle_save_dir, self.shuffle_save_name)
+                    os.path.join(self.shuffle_save_dir, self._shuffle_save_name)
                 )
             )
-            f.write("    'experiment_name', '{}', ...\n".format(self.shuffle_experiment))
+            f.write("    'experiment_name', '{}', ...\n".format(self._shuffle_experiment))
             try:
                 f.write("    'email_for_notifications', '{}', ...\n".format(self.email))
             except AttributeError:
@@ -140,7 +142,7 @@ class ShuffledControlsTrial(Workflow):
 
         curr_dir = os.getcwd()
         self._logger.debug("curr_dir = {}.".format(curr_dir))
-        os.chdir(self.shuffle_experiment)
+        os.chdir(self._shuffle_experiment)
         self._logger.debug("changed into dir: {}".format(os.getcwd()))
         crf_util.run_matlab_command(
             "write_shuffle_configs_for_{},".format(self.MODEL_TYPE),
@@ -157,7 +159,7 @@ class ShuffledControlsTrial(Workflow):
         self._logger.debug("changed into dir: {}".format(os.getcwd()))
         for cur_shuffle in range(1, self.num_shuffle + 1):
             scommand = ".{}run.sh {} {}".format(
-                os.sep, self.shuffle_experiment, cur_shuffle
+                os.sep, self._shuffle_experiment, cur_shuffle
             )
             crf_util.run_command(scommand, shell=True)
             self._logger.info(
@@ -170,16 +172,16 @@ class ShuffledControlsTrial(Workflow):
 
     def simple_test_shuffle_datasets(self):
         filebase = os.path.join(
-            os.path.expanduser(self.shuffle_save_dir), self.shuffle_save_name + "_"
+            os.path.expanduser(self.shuffle_save_dir), self._shuffle_save_name + "_"
         )
         return crf_util.get_max_job_done(filebase) >= self.num_shuffle
 
     def test_shuffle_CRFs(self):
-        filebase = os.path.join(self.shuffle_experiment, "results", "result")
+        filebase = os.path.join(self._shuffle_experiment, "results", "result")
         return crf_util.get_max_job_done(filebase) >= self.num_shuffle
 
     def exec_merge_shuffle_CRFs(self):
-        results_path = os.path.join(self.shuffle_experiment, "results")
+        results_path = os.path.join(self._shuffle_experiment, "results")
         crf_util.run_matlab_command(
             "save_and_merge_shuffled_models('{}'); ".format(results_path),
             add_path=self.source_dir,
@@ -198,7 +200,7 @@ class ShuffledControlsTrial(Workflow):
         self.setup_shuffle_model()
         # Get best params
         best_params = GridsearchTrial.get_best_parameters(
-            os.path.join(self.expt_dir, self.experiment, "results")
+            os.path.join(self._expt_dir, self._experiment, "results")
         )
         self._logger.info("Parameters for {} collected.\n".format(self.condition_name))
         # create shuffle configs with best params (write and run write_configs_for_loopy.m)
