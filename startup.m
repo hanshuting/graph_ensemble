@@ -54,7 +54,9 @@ addpath src/paramter_estimation/;
 % addpath src/FinMatlabFunctions;
 
 % ensemble tools
+addpath src/core
 addpath src/util
 addpath src/graphs
+addpath src/vis
 
 display(sprintf('PATH is now set!'));
