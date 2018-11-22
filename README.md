@@ -42,7 +42,7 @@ This allows you to run multiple files that are originated from the same dataset 
 
 4. Run `run_full_temporal` with Python 3.5 or greater, passing the condition name to it. For our example with a condition name of demo:
    ```
-   python3 run_full_temporal.py demo
+   python3 run_full_temporal.py demo crf_parameters.ini
    ```
 
 This script will conduct a grid search across the parameter ranges specified, training a CRF model on the data file for each parameter combination.
