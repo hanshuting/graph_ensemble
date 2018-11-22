@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Expected to be run from the expt folder.
+"""Unified gridsearch and shuffled controls.
+
+    Run from the command line with a condition name argument. Optionally, pass the name of
+        the settings file to use as a second argument.
 """
 import time
 import sys
@@ -12,6 +15,16 @@ from shuffled_control_crfs import ShuffledControlsTrial
 
 
 def main(gridsearch, shuffles, logger):
+    """Run a gridsearch trial followed by producing shuffled controls.
+
+    Provides a unified method to gridsearch a dataset and immediately produce shuffled
+    controls based on the results of the gridsearch.
+
+    Args:
+        gridsearch (GridsearchTrial): Gridsearch object to run.
+        shuffles (ShuffledControlsTrial): Shuffled controls object to run.
+        logger (logging object): Logger to handle output.
+    """
     gridsearch.setup_exec_train_model()
     # Create bare-bones shuffle folder and create shuffled datasets
     shuffles.setup_shuffle_model()

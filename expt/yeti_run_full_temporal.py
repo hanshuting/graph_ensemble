@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Expected to be run from the expt folder.
+"""Unified gridsearch and shuffled controls. Leverages asynchronous scheduling of Columbia
+    Yeti cluster to optimally interleave subtasks of each trial type.
+
+    Run from the command line with a condition name argument. Optionally, pass the name of
+        the settings file to use as a second argument.
 """
 import time
 import sys

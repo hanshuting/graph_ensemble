@@ -14,7 +14,27 @@ from gridsearch_train_crfs import GridsearchTrial
 
 
 class GridsearchTrialYeti(GridsearchTrial):
-    """docstring for GridsearchTrialYeti"""
+    """Adaptation of GridsearchTrial to take advantage of Columbia's Yeti cluster.
+
+        Create an object and call .run() for basic usage.
+
+    Attributes:
+        email (str): Email for yeti job submission. Set by settings file.
+        email_jobs_threshold (int): Do not send email notifications for batch jobs larger
+            than this, when email_notification is set to "num_jobs". Set by settings file.
+        email_notification (str): Email notification parameter for yeti scheduler. Set by
+            settings file.
+        group_id (str): Group ID for yeti job submission. Set by settings file.
+        username (str): Username for yeti job submission. Set by settings file.
+        yeti_mem (str): Memory to request in MB. Set by YetiGridsearchOptions section of
+            settings file. Passed verbatim to yeti scheduler.
+        yeti_nodes (str): Passed verbatim to yeti scheduler. Set by YetiGridsearchOptions
+            section of settings file.
+        yeti_ppn (str): Passed verbatim to yeti scheduler. Set by YetiGridsearchOptions
+            section of settings file.
+        yeti_walltime (str): Walltime duration passed verbatim to yeti scheduler. Set by
+            YetiGridsearchOptions section of settings file.
+    """
 
     def __init__(
         self,
@@ -23,14 +43,27 @@ class GridsearchTrialYeti(GridsearchTrial):
         destination_path=None,
         logger=None,
     ):
+        """
+        Args:
+            condition_name (str): String label for current trial.
+            ini_fname (str, optional): Filepath to settings file. Defaults to
+                "crf_parameters.ini" in current directory.
+            destination_path (str, optional): Planned feature. No current use.
+            logger (logging object, optional): Logger to use. Will produce its own by
+                default.
+        """
         if logger is None:
             logger = logging.getLogger("top." + __name__)
             logger.setLevel(logging.DEBUG)
         super().__init__(condition_name, ini_fname, destination_path, logger)
 
     def _parse_settings(self):
+        """Override of Workflow. Calls super and collects any specificly required settings.
+        """
         super()._parse_settings()
-        parameters = crf_util.get_section_options("YetiOptions", parser=self._parser)
+        parameters = crf_util.get_section_options(
+            "YetiOptions", parser=self._parser, int_options=["email_jobs_threshold"]
+        )
         self.username = parameters["username"]
         self.group_id = parameters["group_id"]
         self.email = parameters["email"]
@@ -74,7 +107,7 @@ class GridsearchTrialYeti(GridsearchTrial):
                 # Reduce email notifications for greater numbers of jobs
                 if num_jobs == 1:
                     f.write("#PBS -m abe\n")
-                elif num_jobs <= int(self.email_jobs_threshold):
+                elif num_jobs <= self.email_jobs_threshold:
                     f.write("#PBS -m ae\n")
                 else:
                     f.write("#PBS -m af\n")

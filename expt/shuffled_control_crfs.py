@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Expected to be run from the expt folder.
+"""Workflow for creating shuffled versions of a neuronal spiketrain dataset and
+    training a graphical model on each.
 """
 import time
 import sys
@@ -13,13 +14,17 @@ from workflow import Workflow
 
 
 class ShuffledControlsTrial(Workflow):
-    """docstring for ShuffledControlsTrial
+    """Class to train control models on shuffled versions of the dataset.
+
+        Expects best parameters from a GridsearchTrial previously run with the
+        same experiment group and condition name to be available.
+
+        Create an object and call .run() for basic usage.
 
     Attributes:
-        condition_name (TYPE): Description
-        ini_fname (TYPE): Description
-        logger (TYPE): Description
-        MODEL_TYPE (str): Description
+        num_shuffle (int): Number of shuffled control datasets to create and model. Set by
+            settings file.
+        shuffle_save_dir (str): Directory where the shuffled datasets are saved.
     """
 
     MODEL_TYPE = "loopy"
@@ -31,6 +36,15 @@ class ShuffledControlsTrial(Workflow):
         destination_path=None,
         logger=None,
     ):
+        """
+        Args:
+            condition_name (str): String label for current trial.
+            ini_fname (str, optional): Filepath to settings file. Defaults to
+                "crf_parameters.ini" in current directory.
+            destination_path (str, optional): Planned feature. No current use.
+            logger (logging object, optional): Logger to use. Will produce its own by
+                default.
+        """
         if logger is None:
             logger = logging.getLogger("top." + __name__)
             logger.setLevel(logging.DEBUG)

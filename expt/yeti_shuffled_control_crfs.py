@@ -14,7 +14,38 @@ from shuffled_control_crfs import ShuffledControlsTrial
 
 
 class ShuffledControlsTrialYeti(ShuffledControlsTrial):
-    """docstring for ShuffledControlsTrialYeti"""
+    """Adaptation of ShuffledControlsTrial to take advantage of Columbia's Yeti cluster.
+
+        Create an object and call .run() for basic usage.
+
+    Attributes:
+        email (str): Email for yeti job submission. Set by settings file.
+        email_jobs_threshold (int): Do not send email notifications for batch jobs larger
+            than this, when email_notification is set to "num_jobs". Set by settings file.
+        email_notification (str): Email notification parameter for yeti scheduler. Set by
+            settings file.
+        group_id (str): Group ID for yeti job submission. Set by settings file.
+        username (str): Username for yeti job submission. Set by settings file.
+        yeti_gen_sh_mem (str): Memory to request in MB for creating shuffled datasets. Set
+            by YetiGridsearchOptions section of settings file. Passed verbatim to yeti
+            scheduler.
+        yeti_gen_sh_nodes (str): For creating shuffled datasets. Passed verbatim to yeti
+            scheduler. Set by YetiGridsearchOptions section of settings file.
+        yeti_gen_sh_ppn (str): For creating shuffled datasets. Passed verbatim to yeti
+            scheduler. Set by YetiGridsearchOptions section of settings file.
+        yeti_gen_sh_walltime (str): Walltime duration for creating shuffled datasets
+            passed verbatim to yeti scheduler. Set by YetiGridsearchOptions section of
+            settings file.
+        yeti_sh_ctrl_mem (str): Memory to request in MB for training models. Set by
+            YetiGridsearchOptions section of settings file. Passed verbatim to yeti
+            scheduler.
+        yeti_sh_ctrl_nodes (str): For training models. Passed verbatim to yeti scheduler.
+            Set by YetiGridsearchOptions section of settings file.
+        yeti_sh_ctrl_ppn (str): For training models. Passed verbatim to yeti scheduler.
+            Set by YetiGridsearchOptions section of settings file.
+        yeti_sh_ctrl_walltime (str): Walltime duration for training models passed verbatim
+            to yeti scheduler. Set by YetiGridsearchOptions section of settings file.
+    """
 
     def __init__(
         self,
@@ -23,12 +54,24 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
         destination_path=None,
         logger=None,
     ):
+        """Summary
+
+        Args:
+            condition_name (str): String label for current trial.
+            ini_fname (str, optional): Filepath to settings file. Defaults to
+                "crf_parameters.ini" in current directory.
+            destination_path (str, optional): Planned feature. No current use.
+            logger (logging object, optional): Logger to use. Will produce its own by
+                default.
+        """
         if logger is None:
             logger = logging.getLogger("top." + __name__)
             logger.setLevel(logging.DEBUG)
         super().__init__(condition_name, ini_fname, destination_path, logger)
 
     def _parse_settings(self):
+        """Override of Workflow. Calls super and collects any specificly required settings.
+        """
         super()._parse_settings()
         parameters = crf_util.get_section_options("YetiOptions", parser=self._parser)
         self.username = parameters["username"]
@@ -247,7 +290,7 @@ class ShuffledControlsTrialYeti(ShuffledControlsTrial):
         self._logger.debug("changed back to dir: {}".format(os.getcwd()))
 
     def run(self):
-        """Run a gridsearch trial.
+        """Run this shuffled control trial.
         """
         # Update logging if module is invoked from the command line
         if __name__ == "__main__":

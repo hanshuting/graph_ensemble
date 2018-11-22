@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Class to gridsearch parameters for training a graphical model on neuronal
+"""Workflow for gridsearching parameters for training a graphical model on neuronal
     spiketrain data.
 """
 import time
@@ -13,12 +13,22 @@ from workflow import Workflow
 
 
 class GridsearchTrial(Workflow):
-    """docstring for GridsearchTrial"""
+    """Class to gridsearch parameters for training a graphical model on neuronal
+        spiketrain data.
+
+        Create an object and call .run() for basic usage.
+
+    Attributes:
+        DENSITIES (dict): Parameters for the maximum density of edges in model. Set by
+            settings file.
+        P_LAMBDAS (dict): Parameters for learning model parameters. Set by settings file.
+        S_LAMBDAS (dict): Parameters for learning model structure. Set by settings file.
+    """
 
     MODEL_TYPE = "loopy"
     # These parameters and their order must match best_parameters.txt.
     # See save_best_parameters.m for best_parameters.txt creation.
-    PARAMS_TO_EXTRACT = ["s_lambda", "density", "p_lambda", "time_span"]
+    _PARAMS_TO_EXTRACT = ["s_lambda", "density", "p_lambda", "time_span"]
 
     def __init__(
         self,
@@ -27,13 +37,22 @@ class GridsearchTrial(Workflow):
         destination_path=None,
         logger=None,
     ):
+        """
+        Args:
+            condition_name (str): String label for current trial.
+            ini_fname (str, optional): Filepath to settings file. Defaults to
+                "crf_parameters.ini" in current directory.
+            destination_path (str, optional): Planned feature. No current use.
+            logger (logging object, optional): Logger to use. Will produce its own by
+                default.
+        """
         if logger is None:
             logger = logging.getLogger("top." + __name__)
             logger.setLevel(logging.DEBUG)
         super().__init__(condition_name, ini_fname, destination_path, logger)
 
     def _parse_settings(self):
-        """Override of Workflow
+        """Override of Workflow. Calls super and collects any specificly required settings.
         """
         super()._parse_settings()
         params = crf_util.get_GridsearchOptions(parser=self._parser)
@@ -157,7 +176,6 @@ class GridsearchTrial(Workflow):
         self._create_working_dir()
         self._start_logfile()
         self._create_write_configs_for_loopy_m()
-
         # Move into experiment folder
         curr_dir = os.getcwd()
         self._logger.debug("curr_dir = {}.".format(curr_dir))
@@ -168,7 +186,6 @@ class GridsearchTrial(Workflow):
         )
         self._logger.info("\nTraining configs generated.")
         self.start_gridsearch_jobs()
-
         os.chdir(curr_dir)
         self._logger.debug("changed back to dir: {}".format(os.getcwd()))
 
@@ -187,11 +204,11 @@ class GridsearchTrial(Workflow):
 
         Returns:
             dict: Best parameters from the gridsearch. Parameters stored as a dict with
-                PARAMS_TO_EXTRACT as the keys.
+                _PARAMS_TO_EXTRACT as the keys.
         """
         best_params = {}
         with open(os.path.join(results_path, "best_parameters.txt"), "r") as f:
-            for param in cls.PARAMS_TO_EXTRACT:
+            for param in cls._PARAMS_TO_EXTRACT:
                 best_params[param] = float(f.readline())
         f.closed
         return best_params
@@ -208,7 +225,6 @@ class GridsearchTrial(Workflow):
             # Create stdout log handler if module is invoked from the command line
             self._logger.addHandler(crf_util.get_StreamHandler(self.verbosity))
             self._logger.debug("Logging stream handler to sys.stdout added.")
-
         self.setup_exec_train_model()
         # Wait for train CRF to be done and run merge and save_best
         crf_util.wait_and_run(self.test_train_CRFs, self.merge_save_train_models)
@@ -217,7 +233,7 @@ class GridsearchTrial(Workflow):
         )
         self._logger.info(
             "Grid search complete. Best parameters in {}".format(best_params_path)
-            + " in the following order:\n{}\n".format(self.PARAMS_TO_EXTRACT)
+            + " in the following order:\n{}\n".format(self.__class__._PARAMS_TO_EXTRACT)
         )
 
 
