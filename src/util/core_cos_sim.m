@@ -1,4 +1,4 @@
-function [pred,sim_core,sim_thresh,sim_avg,acc,prc,rec] = core_cos_sim(core,data,true_label)
+function [pred,sim_core,sim_thresh,sim_avg,acc,prc,rec,auc] = core_cos_sim(core,data,true_label,thr)
 % calculate cosine similarity using ensembles
 % data is num_frame-by-num_neuron
 
@@ -23,7 +23,13 @@ sim_avg = [mean(sim_core(true_label==0)),mean(sim_core(true_label==1))];
 th = quantile(sim_core(:),qnoise);
 sim_core_th = sim_core;
 sim_core_th(sim_core>=th) = NaN;
-sim_thresh = c*nanstd(sim_core_th(:))+nanmean(sim_core_th(:));
+% allow user to define threshold
+if nargin>3
+    sim_thresh = thr;
+else
+    sim_thresh = c*nanstd(sim_core_th(:))+nanmean(sim_core_th(:));
+end
+
 if isnan(sim_thresh)
     sim_thresh = 0;
 end
@@ -41,5 +47,6 @@ FN = sum(pred==0&true_label==1);
 acc = (TP+TN)/(TP+TN+FN+FP);
 prc = TP/(TP+FP);
 rec = TP/(TP+FN);
+[~,~,~,auc] = perfcurve(true_label,sim_core,1);
 
 end
