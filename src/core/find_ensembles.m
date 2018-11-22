@@ -201,13 +201,10 @@ function [results] = find_ensembles(best_model,shuffle_model,data,stimuli, num_c
     % calculate node strength within ensembles
     ns_ens = cell(num_stim,1);
     for ii = 1:num_stim
-        % add up all edge potential effect for coactivity level
          ns_k = nansum(best_model.ep_on(ens_crf{ii},ens_crf{ii}),2);
          ns_k(ns_k==0) = NaN;
          ns_k = exp(ns_k); ns_k(isnan(ns_k)) = 0;
-         % add node potential effect to reflect spontaneous activity level
-         np = best_model.node_pot(ens_crf{ii}); np(np==0) = NaN; np = exp(np); np(isnan(np)) = 0;
-         ns_ens{ii} = ns_k.*np;
+         ns_ens{ii} = ns_k;
 %         ns_k = exp(best_model.ep_on(ens_crf{ii},ens_crf{ii}));
 %         ns_ens{ii}(isinf(ns_ens{ii})) = NaN;
 %         ns_ens{ii}(isnan(ns_ens{ii})) = 0;
@@ -221,8 +218,7 @@ function [results] = find_ensembles(best_model,shuffle_model,data,stimuli, num_c
              ns_k = nansum(shuffle_model.ep_on{k}(ens_crf{ii},ens_crf{ii}),2);
              ns_k(ns_k==0) = NaN;
              ns_k = exp(ns_k); ns_k(isnan(ns_k)) = 0;
-             np = shuffle_model.node_pot{k}(ens_crf{ii}); np(np==0) = NaN; np = exp(np); np(isnan(np)) = 0;
-             ns_ctrl{ii}(:,k) = ns_k.*np;
+             ns_ctrl{ii}(:,k) = ns_k;
 %             ns_k = exp(shuffle_model.ep_on{k}(ens_crf{ii},ens_crf{ii}));
 %             ns_k(isinf(ns_k)) = NaN;
 %             ns_k(isnan(ns_k)) = 0;
@@ -233,12 +229,10 @@ function [results] = find_ensembles(best_model,shuffle_model,data,stimuli, num_c
     % find core
     core_crf = cell(num_stim,1);
     for ii = 1:num_stim
-        idx = (ns_ens{ii}>mean(ns_ens{ii})) & ...
-            (auc(ens_crf{ii},ii)> mean(auc(ens_crf{ii},ii)));
 %         idx = (ns_ens{ii}>(mean(ns_ctrl{ii},2)+std(ns_ctrl{ii},[],2))) & ...
 %             (auc(ens_crf{ii},ii)>quantile(squeeze(auc_ctrl(ens_crf{ii},ii,:)),0.9,2));
-%         idx = (ns_ens{ii}>(mean(ns_ctrl{ii},2))) & ...
-%             (auc(ens_crf{ii},ii)>quantile(squeeze(auc_ctrl(ens_crf{ii},ii,:)),0.9,2));
+        idx = (ns_ens{ii}>(mean(ns_ctrl{ii},2))) & ...
+            (auc(ens_crf{ii},ii)>quantile(squeeze(auc_ctrl(ens_crf{ii},ii,:)),0.9,2));
 %         idx = (ns_ens{ii}>(mean(ns_ctrl{ii},2))+std(ns_ctrl{ii},[],2)) & ...
 %             (auc(ens_crf{ii},ii)>(mean(squeeze(auc_ctrl(ens_crf{ii},ii,:)),2)+...
 %             std(squeeze(auc_ctrl(ens_crf{ii},ii,:)),[],2)));
