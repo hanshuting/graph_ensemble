@@ -30,6 +30,5 @@ addpath(fullfile(basepath,'src','paramter_estimation'))
 addpath(fullfile(basepath,'src','util'))
 addpath(fullfile(basepath,'src','graphs'))
 addpath(fullfile(basepath,'src','core'))
-addpath(fullfile(basepath,'src','vis'))
 
 display(sprintf('PATH is now set!'));
