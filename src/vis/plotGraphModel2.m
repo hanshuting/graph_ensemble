@@ -28,6 +28,13 @@ nodesz_vec = node_deg/length(node_deg)*(nodesz_max-nodesz_min)+nodesz_min;
 
 N = size(adjmat,1);
 
+% extend coordinates
+coords(end+1,:) = [0 max(coords(:,2))];
+coords(end+1,:) = [0 0];
+coords(end+1,:) = [max(coords(:,1)) 0];
+coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
+coords = coords(1:N,:);
+
 % flip coordinates
 coords = [coords(:,1),-coords(:,2)];
 
@@ -64,5 +71,6 @@ end
 
 axis off equal tight
 hold off
+set(gcf,'color','w')
 
 end

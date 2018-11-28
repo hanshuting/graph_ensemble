@@ -7,6 +7,13 @@ ccRange = max(abs(weightmat(:)))*1.01;
 cmap = jet(100);
 N = size(adjmat,1);
 
+% extend coordinates
+coords(end+1,:) = [0 max(coords(:,2))];
+coords(end+1,:) = [0 0];
+coords(end+1,:) = [max(coords(:,1)) 0];
+coords(end+1,:) = [max(coords(:,1)) max(coords(:,2))];
+coords = coords(1:N,:);
+
 % flip coordinates
 coords = [coords(:,1),-coords(:,2)];
 
