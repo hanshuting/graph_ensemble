@@ -12,7 +12,10 @@ MATLAB version R2016b or later is required.
 Python 3.5+ is required for the example workflow scripts.
 
 ## Compile dependencies
-After cloning the repo, run `make` in the base directory.
+After cloning the repo, run `make` in the base directory. 
+
+Note: Please change the MEX path in `thirdparty/QPBO-v1.32.src/Makefile` (line 19) to the Matlab path in your system.
+On MacOS, XCode is required for compilation.
 
 ## Data format
 Two binary spike matrices should be stored in a `.mat` file, under the variable names `data` and `stimuli`.
