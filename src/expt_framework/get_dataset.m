@@ -12,7 +12,7 @@ end
 if exist('stimuli', 'var') == 1
     %stimuli is time_frames by number_of_stimuli
     stimuli = full(stimuli);
-    assert(all(max(stimuli)), "Every submitted stimuli must occur at least once.\n")
+    assert(all(max(stimuli)), 'Every submitted stimuli must occur at least once.\n')
     if any(max(stimuli) == 0)
         raise
     end
