@@ -7,6 +7,8 @@
 %diaryFile = [name ' ' datestr(now()) '.diary']
 %diary(diaryFile);
 
+basepath = pwd;
+
 addpath(fullfile(basepath,'src'))
 addpath(fullfile(basepath,'thirdparty'))
 addpath(fullfile(basepath,'thirdparty','QPBO-v1.32.src'))
