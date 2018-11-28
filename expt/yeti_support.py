@@ -159,7 +159,7 @@ def write_shuffling_yeti_script(params):
         )
         f.write(
             'matlab -nodesktop -nodisplay -r "dbclear all;'
-            + " addpath('{}');".format(os.path.join(params["source_directory"]))
+            + " addpath('{}');".format(os.path.join(params["source_directory"],"src","graphs"))
             + "gn_shuff_data('{}', '{}', {});".format(
                 os.path.join(params["data_directory"], params["data_file"]),
                 params["shuffle_save_dir"],
