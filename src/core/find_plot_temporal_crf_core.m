@@ -29,6 +29,7 @@ function [results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,s
     end
 
     [~, results] = find_temporal_ens_nodes(best_model, shuffle_model, data, stimuli, num_controls);
+%     [~, results] = find_core_ens(best_model, shuffle_model, data, stimuli, num_controls);
     core_crf = results.core_crf;
     epsum = results.epsum;
     auc = results.auc;
