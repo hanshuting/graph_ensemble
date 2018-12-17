@@ -52,8 +52,13 @@ function [core_nodes, results] = find_core_ens(best_model,shuffle_model,data,sti
     best_model.ep_on(best_model.graph==0) = NaN;
     
     % Sum potential for ALL edges each node is party to
-    epsum = nansum(best_model.ep_on,2);
-    epsum(sum(best_model.graph,2)==0) = NaN;
+%     epsum = nansum(best_model.ep_on,2);
+%     epsum(sum(best_model.graph,2)==0) = NaN;
+%     best_model.ep_on(best_model.graph==0) = NaN;
+    epsum = exp(nansum(best_model.ep_on,2));
+%     epsum(isinf(epsum)) = NaN;
+%     epsum(isnan(epsum)) = 0; % force 0 to be minimum given exp function
+%     epsum = sum(epsum,2);
 
     % shuffled models
     for ii = 1:length(shuffle_model.graphs)
@@ -65,8 +70,13 @@ function [core_nodes, results] = find_core_ens(best_model,shuffle_model,data,sti
             shuffle_model.G{ii});
         % getOnEdgePot returns just upper triangle - copy to lower triangle to make symmetric
         shuffle_model.ep_on{ii} = shuffle_model.ep_on{ii} + shuffle_model.ep_on{ii}';
-        shuffle_model.epsum{ii} = nansum(shuffle_model.ep_on{ii},2);
-        shuffle_model.epsum{ii}(sum(shuffle_model.graphs{ii},2)==0) = NaN;
+%         shuffle_model.epsum{ii} = nansum(shuffle_model.ep_on{ii},2);
+%         shuffle_model.epsum{ii}(sum(shuffle_model.graphs{ii},2)==0) = NaN;
+%         shuffle_model.ep_on{ii}(shuffle_model.graphs{ii}==0) = NaN;
+        shuffle_model.epsum{ii} = exp(nansum(shuffle_model.ep_on{ii},2));
+%         shuffle_model.epsum{ii}(isinf(shuffle_model.epsum{ii})) = NaN;
+%         shuffle_model.epsum{ii}(isnan(shuffle_model.epsum{ii})) = 0; % force 0 to be minimum given exp function
+%         shuffle_model.epsum{ii} = sum(shuffle_model.epsum{ii},2);
     end
     shuffle_model.mepsum = nanmean(cellfun(@(x) nanmean(x),shuffle_model.epsum));
     shuffle_model.sdepsum = nanstd(cellfun(@(x) nanmean(x),shuffle_model.epsum));
