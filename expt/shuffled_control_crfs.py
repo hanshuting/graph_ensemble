@@ -1,228 +1,229 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Expected to be run from the expt folder.
+"""Workflow for creating shuffled versions of a neuronal spiketrain dataset and
+    training a graphical model on each.
 """
 import time
 import sys
 import os
-
-import crf_util
-import gridsearch_train_crfs
-import yeti_support
-
 import logging
 
-logger = logging.getLogger("top." + __name__)
-logger.setLevel(logging.DEBUG)
-
-# *** start constants ***
-MODEL_TYPE = "loopy"
-# *** end constants ***
+import crf_util
+from gridsearch_train_crfs import GridsearchTrial
+from workflow import Workflow
 
 
-def start_logfile(debug_filelogging, shuffle_experiment_dir, **_):
-    log_fname = os.path.join(
-        os.path.expanduser(shuffle_experiment_dir), "shuffled_control_crfs.log"
-    )
-    logfile_handler = crf_util.get_FileHandler(
-        log_fname, debug_filelogging=debug_filelogging
-    )
-    logger.addHandler(logfile_handler)
-    logger.debug("Logging file handler to {} added.".format(log_fname))
+class ShuffledControlsTrial(Workflow):
+    """Class to train control models on shuffled versions of the dataset.
 
+        Expects best parameters from a GridsearchTrial previously run with the
+        same experiment group and condition name to be available.
 
-def get_conditions_metadata(condition, ini_fname="crf_parameters.ini"):
-    """Reads in settings.
+        Create an object and call .run() for basic usage.
 
-    Args:
-        condition (str): Condition name.
-        ini_fname (str, optional): Filepath of settings file to read.
-
-    Returns:
-        dict: Metadata for condition.
+    Attributes:
+        num_shuffle (int): Number of shuffled control datasets to create and model. Set by
+            settings file.
+        shuffle_save_dir (str): Directory where the shuffled datasets are saved.
     """
-    parameters_parser = crf_util.get_raw_configparser(fname=ini_fname)
-    params = crf_util.get_GeneralOptions(parser=parameters_parser)
-    experiment = "{}_{}_{}".format(params["experiment_name"], condition, MODEL_TYPE)
-    metadata = {
-        "data_file": "{}_{}.mat".format(params["experiment_name"], condition),
-        "experiment": experiment,
-        "shuffle_save_name": "shuffled_{}_{}".format(
-            params["experiment_name"], condition
-        ),
-        "shuffle_save_dir": os.path.join(
-            params["data_directory"], "shuffled", experiment
-        ),
-        "shuffle_experiment": "shuffled_{}".format(experiment),
-    }
-    metadata["shuffle_experiment_dir"] = os.path.join(
-        params["source_directory"], "expt", metadata["shuffle_experiment"]
-    )
-    params.update(metadata)
-    params["create_shuffles"] = create_shuffles
-    # There is no training prep by default, so we set no-op function as placeholder
-    params["shuffle_training_prep"] = lambda params: None
-    params["train_controls"] = exec_shuffle_model
-    # Update settings for cluster specified, if any
-    if params["cluster_architecture"] == "yeti":
-        logger.info("Yeti cluster architecture selected for shuffled controls.")
-        params.update(yeti_support.get_yeti_shuff_metadata(fname=ini_fname))
-    return params
 
+    MODEL_TYPE = "loopy"
 
-def create_shuffles(params):
-    matlab_cmd = "gn_shuff_data('{}', '{}', {});".format(
-        os.path.join(params["data_directory"], params["data_file"]),
-        params["shuffle_save_dir"],
-        params["num_shuffle"],
-    )
-    crf_util.run_matlab_command(matlab_cmd, add_path=params["source_directory"])
+    def __init__(
+        self,
+        condition_name,
+        ini_fname="crf_parameters.ini",
+        destination_path=None,
+        logger=None,
+    ):
+        """
+        Args:
+            condition_name (str): String label for current trial.
+            ini_fname (str, optional): Filepath to settings file. Defaults to
+                "crf_parameters.ini" in current directory.
+            destination_path (str, optional): Planned feature. No current use.
+            logger (logging object, optional): Logger to use. Will produce its own by
+                default.
+        """
+        if logger is None:
+            logger = logging.getLogger("top." + __name__)
+            logger.setLevel(logging.DEBUG)
+        super().__init__(condition_name, ini_fname, destination_path, logger)
 
-
-def setup_shuffle_model(params):
-    logger.info("Creating working directory: {}".format(params["shuffle_experiment"]))
-    os.makedirs(os.path.expanduser(params["shuffle_experiment"]))
-    start_logfile(**params)
-
-    os.makedirs(os.path.expanduser(params["shuffle_save_dir"]), exist_ok=True)
-    # TODO: Either clear pre-existing shuffled datasets, or skip regenerating any already there
-
-    params["create_shuffles"](params)
-
-
-def create_shuffle_configs(params, best_params):
-    fname = os.path.join(
-        params["shuffle_experiment"], "write_shuffle_configs_for_loopy.m"
-    )
-    with open(fname, "w") as f:
-        f.write("create_shuffle_configs( ...\n")
-        f.write(
-            "    'datapath', '{}.mat', ...\n".format(
-                os.path.join(params["shuffle_save_dir"], params["shuffle_save_name"])
-            )
+    def _parse_settings(self):
+        """Override of Workflow. Calls super and collects any specificly required settings.
+        """
+        super()._parse_settings()
+        params = crf_util.get_GeneralOptions(parser=self._parser)
+        params = crf_util.get_section_options(
+            "ShuffledControlsOptions", parser=self._parser, int_options=["num_shuffle"]
         )
-        f.write("    'experiment_name', '{}', ...\n".format(params["shuffle_experiment"]))
-        try:
-            f.write("    'email_for_notifications', '{}', ...\n".format(params["email"]))
-        except KeyError:
-            logger.debug("No notifications email setting provided. Skipping.")
-        try:
-            f.write("    'yeti_user', '{}', ...\n".format(params["username"]))
-        except KeyError:
-            logger.debug("No yeti username provided. Skipping.")
-        f.write("    'compute_true_logZ', false, ...\n")
-        f.write("    'reweight_denominator', 'mean_degree', ...\n")
-        # f.write("    's_lambda_splits', 1, ...\n")
-        # f.write("    's_lambdas_per_split', 1, ...\n")
-        f.write("    's_lambda_min', {}, ...\n".format(best_params["s_lambda"]))
-        f.write("    's_lambda_max', {}, ...\n".format(best_params["s_lambda"]))
-        # f.write("    'density_splits', 1, ...\n")
-        # f.write("    'densities_per_split', 1, ...\n")
-        f.write("    'density_min', {}, ...\n".format(best_params["density"]))
-        f.write("    'density_max', {}, ...\n".format(best_params["density"]))
-        # f.write("    'p_lambda_splits', 1, ...\n")
-        # f.write("    'p_lambdas_per_split', 1, ...\n")
-        f.write("    'p_lambda_min', {}, ...\n".format(best_params["p_lambda"]))
-        f.write("    'p_lambda_max', {}, ...\n".format(best_params["p_lambda"]))
-        f.write("    'edges', '{}', ...\n".format(params["edges"].lower()))
-        f.write(
-            "    'no_same_neuron_edges', {}, ...\n".format(
-                str(params["no_same_neuron_edges"]).lower()
-            )
+        self.num_shuffle = params["num_shuffle"]
+
+    def _init_settings(self):
+        """Constructs internal handles. Override of Workflow.
+        """
+        super()._init_settings()
+        # Base filename for the shuffled datasets
+        self._shuffle_save_name = "shuffled_{}_{}".format(
+            self.experiment_group, self.condition_name
         )
-        f.write("    'time_span', {}, ...\n".format(best_params["time_span"]))
-        f.write("    'num_shuffle', {});\n".format(params["num_shuffle"]))
-    f.closed
-    logger.info("done writing {}".format(fname))
-
-    curr_dir = os.getcwd()
-    logger.debug("curr_dir = {}.".format(curr_dir))
-    os.chdir(params["shuffle_experiment"])
-    logger.debug("changed into dir: {}".format(os.getcwd()))
-    crf_util.run_matlab_command(
-        "write_shuffle_configs_for_{},".format(MODEL_TYPE),
-        add_path=params["source_directory"],
-    )
-
-    params["shuffle_training_prep"](params)
-
-    os.chdir(curr_dir)
-    logger.debug("changed back to dir: {}".format(os.getcwd()))
-
-
-def exec_shuffle_model(source_directory, shuffle_experiment, num_shuffle, **kwargs):
-    curr_dir = os.getcwd()
-    logger.debug("curr_dir = {}.".format(curr_dir))
-    os.chdir(source_directory)
-    logger.debug("changed into dir: {}".format(os.getcwd()))
-    for cur_shuffle in range(1, num_shuffle + 1):
-        scommand = ".{}run.sh {} {}".format(os.sep, shuffle_experiment, cur_shuffle)
-        crf_util.run_command(scommand, shell=True)
-        logger.info(
-            "Trained shuffled control model {} out of {}.".format(
-                cur_shuffle, num_shuffle
-            )
+        # Directory where the shuffled datasets are saved
+        self.shuffle_save_dir = os.path.join(
+            os.path.expanduser(self.data_dir), "shuffled", self._experiment
         )
-    os.chdir(curr_dir)
-    logger.debug("changed back to dir: {}".format(os.getcwd()))
+        self._shuffle_experiment = "shuffled_{}".format(self._experiment)
+        self._shuffle_experiment_dir = os.path.join(
+            self.source_dir, "expt", self._shuffle_experiment
+        )
 
+    def _start_logfile(self):
+        # TODO: Update to working_dir
+        log_fname = os.path.join(
+            os.path.expanduser(self._shuffle_experiment_dir), "shuffled_control_crfs.log"
+        )
+        logfile_handler = crf_util.get_FileHandler(
+            log_fname, debug_filelogging=self.debug_filelogging
+        )
+        self._logger.addHandler(logfile_handler)
+        self._logger.debug("Logging file handler to {} added.".format(log_fname))
 
-def simple_test_shuffle_datasets(
-    shuffle_save_dir, shuffle_save_name, num_shuffle, **kwargs
-):
-    filebase = os.path.join(os.path.expanduser(shuffle_save_dir), shuffle_save_name + "_")
-    return crf_util.get_max_job_done(filebase) >= num_shuffle
+    def create_shuffles(self):
+        matlab_cmd = "gn_shuff_data('{}', '{}', {});".format(
+            os.path.join(self.data_dir, self._data_file),
+            self.shuffle_save_dir,
+            self.num_shuffle,
+        )
+        crf_util.run_matlab_command(matlab_cmd, add_path=self.source_dir)
 
+    def setup_shuffle_model(self):
+        self._logger.info(
+            "Creating working directory: {}".format(self._shuffle_experiment)
+        )
+        os.makedirs(os.path.expanduser(self._shuffle_experiment))
+        self._start_logfile()
+        os.makedirs(os.path.expanduser(self.shuffle_save_dir), exist_ok=True)
+        # TODO: Either clear pre-existing shuffled datasets, or skip regenerating any already there
+        self.create_shuffles()
 
-def test_shuffle_CRFs(shuffle_experiment, num_shuffle, **kwargs):
-    filebase = os.path.join(shuffle_experiment, "results", "result")
-    return crf_util.get_max_job_done(filebase) >= num_shuffle
+    def shuffle_training_prep(self):
+        pass
 
+    def create_shuffle_configs(self, best_params):
+        fname = os.path.join(
+            self._shuffle_experiment_dir, "write_shuffle_configs_for_loopy.m"
+        )
+        with open(fname, "w") as f:
+            f.write("create_shuffle_configs( ...\n")
+            f.write(
+                "    'datapath', '{}.mat', ...\n".format(
+                    os.path.join(self.shuffle_save_dir, self._shuffle_save_name)
+                )
+            )
+            f.write("    'experiment_name', '{}', ...\n".format(self._shuffle_experiment))
+            try:
+                f.write("    'email_for_notifications', '{}', ...\n".format(self.email))
+            except AttributeError:
+                self._logger.debug("No notifications email setting provided. Skipping.")
+            try:
+                f.write("    'yeti_user', '{}', ...\n".format(self.username))
+            except AttributeError:
+                self._logger.debug("No yeti username provided. Skipping.")
+            f.write("    'compute_true_logZ', false, ...\n")
+            f.write("    'reweight_denominator', 'mean_degree', ...\n")
+            # f.write("    's_lambda_splits', 1, ...\n")
+            # f.write("    's_lambdas_per_split', 1, ...\n")
+            f.write("    's_lambda_min', {}, ...\n".format(best_params["s_lambda"]))
+            f.write("    's_lambda_max', {}, ...\n".format(best_params["s_lambda"]))
+            # f.write("    'density_splits', 1, ...\n")
+            # f.write("    'densities_per_split', 1, ...\n")
+            f.write("    'density_min', {}, ...\n".format(best_params["density"]))
+            f.write("    'density_max', {}, ...\n".format(best_params["density"]))
+            # f.write("    'p_lambda_splits', 1, ...\n")
+            # f.write("    'p_lambdas_per_split', 1, ...\n")
+            f.write("    'p_lambda_min', {}, ...\n".format(best_params["p_lambda"]))
+            f.write("    'p_lambda_max', {}, ...\n".format(best_params["p_lambda"]))
+            f.write("    'edges', '{}', ...\n".format(self.edges.lower()))
+            f.write(
+                "    'no_same_neuron_edges', {}, ...\n".format(
+                    str(self.no_same_neuron_edges).lower()
+                )
+            )
+            f.write("    'time_span', {}, ...\n".format(best_params["time_span"]))
+            f.write("    'num_shuffle', {});\n".format(self.num_shuffle))
+        f.closed
+        self._logger.info("done writing {}".format(fname))
 
-def exec_merge_shuffle_CRFs(shuffle_experiment, source_directory, **kwargs):
-    results_path = os.path.join(shuffle_experiment, "results")
-    crf_util.run_matlab_command(
-        "save_and_merge_shuffled_models('{}'); ".format(results_path),
-        add_path=source_directory,
-    )
-    logger.info("Shuffle models merged and saved.\n")
+        curr_dir = os.getcwd()
+        self._logger.debug("curr_dir = {}.".format(curr_dir))
+        os.chdir(self._shuffle_experiment)
+        self._logger.debug("changed into dir: {}".format(os.getcwd()))
+        crf_util.run_matlab_command(
+            "write_shuffle_configs_for_{},".format(self.MODEL_TYPE),
+            add_path=self.source_dir,
+        )
+        self.shuffle_training_prep()
+        os.chdir(curr_dir)
+        self._logger.debug("changed back to dir: {}".format(os.getcwd()))
 
+    def train_controls(self):
+        curr_dir = os.getcwd()
+        self._logger.debug("curr_dir = {}.".format(curr_dir))
+        os.chdir(self.source_dir)
+        self._logger.debug("changed into dir: {}".format(os.getcwd()))
+        for cur_shuffle in range(1, self.num_shuffle + 1):
+            scommand = ".{}run.sh {} {}".format(
+                os.sep, self._shuffle_experiment, cur_shuffle
+            )
+            crf_util.run_command(scommand, shell=True)
+            self._logger.info(
+                "Trained shuffled control model {} out of {}.".format(
+                    cur_shuffle, self.num_shuffle
+                )
+            )
+        os.chdir(curr_dir)
+        self._logger.debug("changed back to dir: {}".format(os.getcwd()))
 
-def main(condition, ini_fname="crf_parameters.ini"):
-    """Summary
+    def simple_test_shuffle_datasets(self):
+        filebase = os.path.join(
+            os.path.expanduser(self.shuffle_save_dir), self._shuffle_save_name + "_"
+        )
+        return crf_util.get_max_job_done(filebase) >= self.num_shuffle
 
-    Args:
-        condition (str): Condition name.
-        ini_fname (str, optional): Filepath of settings file to read.
-    """
-    params = get_conditions_metadata(condition, ini_fname)
+    def test_shuffle_CRFs(self):
+        filebase = os.path.join(self._shuffle_experiment, "results", "result")
+        return crf_util.get_max_job_done(filebase) >= self.num_shuffle
 
-    # Update logging if module is invoked from the command line
-    if __name__ == "__main__":
-        # Assume top log position
-        logger = logging.getLogger("top")
-        logger.setLevel(logging.DEBUG)
-        # Create stdout log handler
-        verbosity = params["verbosity"]
-        logger.addHandler(crf_util.get_StreamHandler(verbosity))
-        logger.debug("Logging stream handler to sys.stdout added.")
+    def exec_merge_shuffle_CRFs(self):
+        results_path = os.path.join(self._shuffle_experiment, "results")
+        crf_util.run_matlab_command(
+            "save_and_merge_shuffled_models('{}'); ".format(results_path),
+            add_path=self.source_dir,
+        )
+        self._logger.info("Shuffle models merged and saved.\n")
 
-    # Create bare-bones shuffle folder and create shuffled datasets
-    setup_shuffle_model(params)
-    # Get best params
-    best_params = gridsearch_train_crfs.get_best_parameters(params["experiment"])
-    logger.info("Parameters for {} collected.\n".format(condition))
-    # create shuffle configs with best params (write and run write_configs_for_loopy.m)
-    create_shuffle_configs(params, best_params)
-    # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
-    params["to_test"] = simple_test_shuffle_datasets
-    params["to_run"] = params["train_controls"]
-    crf_util.wait_and_run(params)
-    # Wait for shuffle CRFs to be done and run merge and save_shuffle
-    params["to_test"] = test_shuffle_CRFs
-    params["to_run"] = exec_merge_shuffle_CRFs
-    crf_util.wait_and_run(params)
-    # Extract ensemble neuron IDs. Write to disk?
+    def run(self):
+        """Run a shuffled controls trial.
+        """
+        if __name__ == "__main__":
+            # Create stdout log handler if module is invoked from the command line
+            self._logger.addHandler(crf_util.get_StreamHandler(self.verbosity))
+            self._logger.debug("Logging stream handler to sys.stdout added.")
+
+        # Create bare-bones shuffle folder and create shuffled datasets
+        self.setup_shuffle_model()
+        # Get best params
+        best_params = GridsearchTrial.get_best_parameters(
+            os.path.join(self._expt_dir, self._experiment, "results")
+        )
+        self._logger.info("Parameters for {} collected.\n".format(self.condition_name))
+        # create shuffle configs with best params (write and run write_configs_for_loopy.m)
+        self.create_shuffle_configs(best_params)
+        # Wait for all shuffled datasets to be created and run shuffle/start_jobs.sh
+        crf_util.wait_and_run(self.simple_test_shuffle_datasets, self.train_controls)
+        # Wait for shuffle CRFs to be done and run merge and save_shuffle
+        crf_util.wait_and_run(self.test_shuffle_CRFs, self.exec_merge_shuffle_CRFs)
+        # TODO: Extract ensemble neuron IDs and write to disk?
 
 
 if __name__ == "__main__":
@@ -232,9 +233,15 @@ if __name__ == "__main__":
     except IndexError:
         raise TypeError("A condition name must be passed on the command line.")
 
+    logger = logging.getLogger("top")
+    logger.setLevel(logging.DEBUG)
+
     if len(sys.argv) > 2:
-        main(condition, sys.argv[2])
+        shuffled_trial = ShuffledControlsTrial(
+            condition, ini_fname=sys.argv[2], logger=logger
+        )
     else:
-        main(condition)
+        shuffled_trial = ShuffledControlsTrial(condition, logger=logger)
+    shuffled_trial.run()
 
     print("Total run time: {0:.2f} seconds".format(time.time() - start_time))

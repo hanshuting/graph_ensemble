@@ -31,17 +31,18 @@ This allows you to run multiple files that are originated from the same dataset 
    Using an experiment name of `experiment` and a condition name of `demo` as an example (file provided with the repo), we might upload to `~/data/experiment_demo.mat`.
 2. Go to expt directory. From the root directory of this repo: `cd expt`
 3. Edit the "GeneralOptions" in `crf_parameters.ini` to your values.
-   Ensure `experiment_name`, `data_directory`, `source_directory`, and `cluster_architecture` are correctly updated, and set `time_span` as desired.
+   Ensure `experiment_name`, `data_directory`, and `source_directory` are correctly updated, and set `time_span` as desired.
    The other parameter defaults are likely reasonable for initial exploratory runs.
    For this example, we might have the following values:
    ```
    experiment_name = experiment
    data_directory = ~/data/
    source_directory = ~/graph_ensemble/
-   cluster_architecture = none
    ```
+   Note that `crf_parameters.ini` is the default settings filename, but the included workflow scripts accept custom specified files.
+   When using from the command line, as explained in these examples, simply pass the settings filename as the second argument after the condition name.
 
-   If running on Columbia's yeti cluster, see further instructions below.
+   **If running on Columbia's yeti cluster, see further instructions in dedicated section below.**
 
 4. Run `run_full_temporal` with Python 3.5 or greater, passing the condition name to it. For our example with a condition name of demo:
    ```
@@ -49,15 +50,15 @@ This allows you to run multiple files that are originated from the same dataset 
    ```
 
 This script will conduct a grid search across the parameter ranges specified, training a CRF model on the data file for each parameter combination.
-A working directory will be created and named as `<experiment>_<condition>_loopy/` (in this case, `experiment_demo_loopy/`), and a directory within it named `results` will contain the trained models and the best model.
+A working directory will be created and named as `<experiment>_<condition>/` (in this case, `experiment_demo/`), and a directory within it named `results` will contain the trained models and the best model.
 
 The best parameters will be extracted and used to produce shuffled control datasets, the number of which is controlled by the num_shuffle option in `crf_parameters.ini`.
-Another working directory for the shuffle models will be created and named as `shuffled_<experiment>_<condition>_loopy/` (in this example, `shuffled_experiment_demo_loopy/`).
+Another working directory for the shuffle models will be created and named as `shuffled_<experiment>_<condition>/` (in this example, `shuffled_experiment_demo/`).
 Again, a `results` directory inside will contain the trained models.
 
 
 ## Finding core ensembles in the model
-With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `scripts/core/find_temporal_ens_nodes.m` to find the ensembles corresponding to each stimulus.
+With a trained CRF model on the dataset of interest, and a collection of models trained on shuffled versions of the dataset, use `src/core/find_temporal_ens_nodes.m` to find the ensembles corresponding to each stimulus.
 We will continue our previous example:
 
 1. Start matlab. You can do so from the terminal with the following command:
@@ -66,10 +67,10 @@ We will continue our previous example:
    ```
 2. Load the models and data in matlab:
    ```
-   addpath(genpath(‘~/graph_ensemble/’));
+   addpath(genpath(‘~/graph_ensemble/’));       % This should be your source_directory
    cd expt/
-   best_model = load('experiment_demo_loopy/results/best_model_full.mat');
-   shuffle_model = load('shuffled_experiment_demo_loopy/results/fulldata.mat');
+   best_model = load('experiment_demo/results/best_model_full.mat');
+   shuffle_model = load('shuffled_experiment_demo/results/fulldata.mat');
    load('~/data/experiment_demo.mat');            % Loads variables `data` and `stimuli`
    ```
 3. Find ensemble nodes:
@@ -93,9 +94,13 @@ module load anaconda/4.1.1-python-3.5.2
 ```
 This will ensure the correct versions are always used.
 
-There are several yeti specific settings sections in `crf_parameters.ini` to control job submission, resource requesting, and email notifications.  
-Be sure `cluster_architecture = yeti`, and `username`, `group_id`, and `email` are updated to valid values.
+There are several yeti specific settings sections in `crf_parameters.ini`, each named with a "Yeti" prefix, to control job submission, resource requesting, and email notifications.  
+Be sure `username`, `group_id`, and `email` are updated to valid values.
 The remaining defaults are likely reasonable for initial exploratory runs.
+
+Additionally, there are yeti versions of all executable workflow scripts in the expt folder, identifiable by a `yeti_` prefix.
+For example, `run_full_temporal.py` is updated to take advantage of the yeti cluster's features in `yeti_run_full_temporal.py`.
+Beyond attending to the yeti settings in the settings file, execution is identical.
 
 Note that, in the case of using ssh to connect to the cluster, being disconnected for any reason will terminate any local jobs.
 Running one of the python workflow scripts directly from the command line as described above is an example of such a local job.
