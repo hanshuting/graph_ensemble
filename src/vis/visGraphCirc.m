@@ -23,7 +23,7 @@ ip.StructExpand = true;
 ip.KeepUnmatched = true;
 ip.addParameter('ifvisualize',true,@islogical);
 ip.addParameter('nodeColors',repmat([1 1 0.6],size(adjmat,1),1));
-ip.addParameter('edgeColors',[num2cell(edge_list),mat2cell(repmat([0 0 0],...
+ip.addParameter('edgeColors',[num2cell(edge_list),mat2cell(repmat([0.7 0.7 0.7],...
     sum(adjmat(:))/2,1),ones(size(edge_list,1),1),3)]);
 ip.parse(varargin{:});
 
