@@ -8,6 +8,7 @@ function [] = plotGraphModel(adjmat,coords,weightmat,cc_range,cmap)
 %     weightmat: N-by-N matrix with edge weights
 %     cc_range: color range, pass empty matrix [] if want to use default
 %     values
+%     cmap: 64x3 matrix of color map
 % 
 % Shuting Han, 2016
 
@@ -58,7 +59,7 @@ caxis([-cc_range cc_range]);
 % plot node
 for i = 1:N
     scatter(coords(i,1),coords(i,2),nodesz_vec(i),'markeredgecolor','k',...
-        'markerfacecolor',[0.7 0.7 0.7],'linewidth',1.5);
+        'markerfacecolor',[0.7 0.7 0.7],'linewidth',0.5);
 end
 
 axis off equal tight
