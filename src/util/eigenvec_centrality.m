@@ -3,6 +3,11 @@ function [node_cent] = eigenvec_centrality(graph)
 num_node = size(graph,1);
 node_cent = ones(num_node,1);
 
+if num_node==0
+    node_cent = NaN;
+    return;
+end
+
 tol = 1e-3;
 count = 0;
 while true
