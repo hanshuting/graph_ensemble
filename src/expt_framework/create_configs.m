@@ -2,19 +2,19 @@ function create_configs(varargin)
 % Expects to be run in the working directory
     % Remove old config files
     system('rm -f config*.m');
-    system('rm -f yeti_config.sh');
+    system('rm -f haba_config.sh');
 
     % guarantees folders exist
     system('mkdir -p job_logs');
     system('mkdir -p results');
-    system('mkdir -p yeti_logs');
+    system('mkdir -p haba_logs');
 
     parser = inputParser;
 
     parser.addParameter('datapath', [], @ischar);
     parser.addParameter('experiment_name', 'experiment', @ischar);
     parser.addParameter('email_for_notifications', 'UNI@columbia.edu', @ischar);
-    parser.addParameter('yeti_user', 'UNI', @ischar);
+    parser.addParameter('haba_user', 'UNI', @ischar);
 
     parser.addParameter('training_test_split', .8, @isscalar);
     parser.addParameter('BCFW_max_iterations', 75000, @isscalar);
@@ -46,7 +46,7 @@ function create_configs(varargin)
     datapath = parser.Results.datapath;
     experiment_name = parser.Results.experiment_name;
     email_for_notifications = parser.Results.email_for_notifications;
-    yeti_user = parser.Results.yeti_user;
+    haba_user = parser.Results.haba_user;
 
     training_test_split = parser.Results.training_test_split;
     BCFW_max_iterations = parser.Results.BCFW_max_iterations;
@@ -76,8 +76,8 @@ function create_configs(varargin)
     time_span = parser.Results.time_span;
 
      display('CHECK INFO BELOW');
-    if ~strcmp(yeti_user, "UNI")
-        display(sprintf('Writing config files for yeti user %s', yeti_user));
+    if ~strcmp(haba_user, "UNI")
+        display(sprintf('Writing config files for habanero user %s', haba_user));
     end
     display(sprintf('Experiment name: %s', experiment_name));
     display(sprintf('Total configs files to be created: %d', p_lambda_splits*s_lambda_splits*density_splits));

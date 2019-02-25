@@ -91,9 +91,9 @@ class GridsearchTrial(Workflow):
             except AttributeError:
                 self._logger.debug("No notifications email setting provided. Skipping.")
             try:
-                f.write("    'yeti_user', '{}', ...\n".format(self.username))
+                f.write("    'haba_user', '{}', ...\n".format(self.username))
             except AttributeError:
-                self._logger.debug("No yeti username provided. Skipping.")
+                self._logger.debug("No habanero username provided. Skipping.")
             f.write("    'compute_true_logZ', false, ...\n")
             f.write("    'reweight_denominator', 'mean_degree', ...\n")
             s_lambdas = self.S_LAMBDAS
