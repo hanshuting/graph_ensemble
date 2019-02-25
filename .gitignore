@@ -6,7 +6,6 @@ pa/
 paper/
 src/figure_scripts
 .DS_Store
-expt/*/
 expt/*.log
 shuffled/
 *.mexa64
