@@ -4,6 +4,7 @@ results/
 tex/
 pa/
 paper/
+fig/
 src/figure_scripts
 .DS_Store
 expt/*.log
