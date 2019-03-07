@@ -1,4 +1,4 @@
-function [core_crf,auc,LL_on] = find_crf_core(best_model,shuffle_model,data,vis_stim)
+function [ens_crf,results] = find_crf_core(best_model,shuffle_model,data,vis_stim)
 % Find CRF core neurons
 
 %% parameters
@@ -10,8 +10,8 @@ num_frame = length(vis_stim);
 % real model
 best_model.ep_on = getOnEdgePot(best_model.graph,best_model.G);
 best_model.ep_on = best_model.ep_on + best_model.ep_on';
-epsum = sum(best_model.ep_on,2)/2;
-epsum(sum(best_model.graph,2)==0) = NaN;
+ns = sum(best_model.ep_on,2)/2;
+ns(sum(best_model.graph,2)==0) = NaN;
 
 % shuffled models
 for ii = 1:length(shuffle_model.graphs)
@@ -21,8 +21,8 @@ for ii = 1:length(shuffle_model.graphs)
     shuffle_model.epsum{ii} = sum(shuffle_model.ep_on{ii},2)/2;
     shuffle_model.epsum{ii}(sum(shuffle_model.graphs{ii},2)==0) = NaN;
 end
-shuffle_model.mepsum = nanmean(cellfun(@(x) nanmean(x),shuffle_model.epsum));
-shuffle_model.sdepsum = nanstd(cellfun(@(x) nanmean(x),shuffle_model.epsum));
+ns_shuff = nanmean(cellfun(@(x) nanmean(x),shuffle_model.epsum));
+ns_shuff_sd = nanstd(cellfun(@(x) nanmean(x),shuffle_model.epsum));
 
 %% find ensemble with CRF
 % predict each neuron in turn
@@ -50,46 +50,60 @@ for ii = 1:num_stim
 end
 
 % find core by AUC and node strength
-auc_ens = cell(num_stim,1);
-core_crf = cell(num_stim,1);
+auc_ctrl = cell(num_stim,1);
+ens_crf = cell(num_stim,1);
 for ii = 1:num_stim
     num_ens = sum(best_model.graph(num_node-num_stim+ii,:));
     for jj = 1:100
         rd_ens = randperm(num_node,num_ens);
         [~,sim_core] = core_cos_sim(rd_ens,data',...
             true_label);
-        [~,~,~,auc_ens{ii}(jj)] = perfcurve(true_label,sim_core,1);
+        [~,~,~,auc_ctrl{ii}(jj)] = perfcurve(true_label,sim_core,1);
     end
-    core_crf{ii} = find(auc(:,ii)>(mean(auc_ens{ii})+std(auc_ens{ii}))&...
-        (epsum>(shuffle_model.mepsum+shuffle_model.sdepsum)));
-    core_crf{ii} = setdiff(core_crf{ii},num_node-num_stim+ii);
+    ens_crf{ii} = find(auc(:,ii)>(mean(auc_ctrl{ii})+std(auc_ctrl{ii}))&...
+        (ns>(ns_shuff+ns_shuff_sd)));
+    ens_crf{ii} = setdiff(ens_crf{ii},num_node-num_stim+ii);
 end
   
 %% plot AUC and node strength
 nodesz = 30;
-nsmi = min(epsum);
-nsma = max(epsum);
+nsmi = min(ns);
+nsma = max(ns);
 aucmi = 0;
 aucma = 1;
 figure; set(gcf,'color','w','position',[1967 615 555 253])
 for ii = 1:num_stim
     subplot(1,num_stim,ii); hold on
-    scatter(epsum,auc(:,ii),nodesz,0.5*[1 1 1],'filled')
-    scatter(epsum(core_crf{ii}),auc(core_crf{ii},ii),nodesz,[1 0.4 0.4],'filled')
+    scatter(ns,auc(:,ii),nodesz,0.5*[1 1 1],'filled')
+    scatter(ns(ens_crf{ii}),auc(ens_crf{ii},ii),nodesz,[1 0.4 0.4],'filled')
 %         plot([nsmi nsma],th(ii)*[1 1],'k--');
-    plot([nsmi nsma],mean(auc_ens{ii})*[1 1],'k--');
-    plot([nsmi nsma],(mean(auc_ens{ii})+std(auc_ens{ii}))*[1 1],'--',...
+    plot([nsmi nsma],mean(auc_ctrl{ii})*[1 1],'k--');
+    plot([nsmi nsma],(mean(auc_ctrl{ii})+std(auc_ctrl{ii}))*[1 1],'--',...
         'color',0.7*[1 1 1]);
-    plot([nsmi nsma],(mean(auc_ens{ii})-std(auc_ens{ii}))*[1 1],'--',...
+    plot([nsmi nsma],(mean(auc_ctrl{ii})-std(auc_ctrl{ii}))*[1 1],'--',...
         'color',0.7*[1 1 1]);
-    plot(shuffle_model.mepsum*[1 1],[aucmi aucma],'k--');
-    plot((shuffle_model.mepsum+shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+    plot(ns_shuff*[1 1],[aucmi aucma],'k--');
+    plot((ns_shuff+ns_shuff_sd)*[1 1],[aucmi aucma],'--',...
         'color',0.7*[1 1 1]);
-    plot((shuffle_model.mepsum-shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+    plot((ns_shuff-ns_shuff_sd)*[1 1],[aucmi aucma],'--',...
         'color',0.7*[1 1 1]);
     xlim([nsmi nsma]); ylim([aucmi aucma])
     xlabel('node strength'); ylabel(['AUC' num2str(ii)]);
 end
     
-    
+%% package results
+results.auc = auc;
+results.auc_ctrl = auc_ctrl;
+results.best_model = best_model;
+results.ens_crf = ens_crf;
+results.ns = ns;
+results.ns_shuff = ns_shuff;
+results.ns_shuff_sd = ns_shuff_sd;
+results.data = logical(data);
+results.LL_frame = LL_frame;
+results.LL_on = LL_on;
+results.shuffle_model = shuffle_model;
+results.vis_stim = vis_stim;
+
+
 end
