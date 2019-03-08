@@ -6,6 +6,7 @@ pa/
 paper/
 fig/
 src/figure_scripts
+src/unused
 .DS_Store
 expt/*.log
 shuffled/
