@@ -1,5 +1,15 @@
 function [ens_crf,results] = find_crf_core(best_model,shuffle_model,data,vis_stim)
 % Find CRF core neurons
+% NOTE: non-temporal version
+% Input
+%   best_model: Trained CRF model to analyze.
+%   shuffle_model: Shuffled dataset CRFs.
+%   data: Expected to be a timeframes by neurons binary matrix.
+%   vis_stim: Expected to be a vector with stimulus identity
+% Output
+%   ens_crf: Cell vector containing the ensemble nodes found for each stimuli.
+%       Each cell is a cell vector containing the detected ensembles
+%   results: Details used to identify the ensembles.
 
 %% parameters
 num_stim = length(unique(setdiff(vis_stim,0)));
