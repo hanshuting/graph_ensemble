@@ -51,23 +51,6 @@ function [results] = find_ensembles(best_model,shuffle_model,data,stimuli, num_c
     
     % assign NaN to edges that don't exist
     best_model.ep_on(best_model.graph==0) = NaN;
-    
-%     % Sum potential for ALL edges each node is party to - sum and exp
-%     ns = exp(nansum(best_model.ep_on,2));
-%     
-%     % shuffled models
-%     for ii = 1:length(shuffle_model.graphs)
-%         if nnz(shuffle_model.graphs{ii} - logical(shuffle_model.edge_pot{ii})) ~= 0
-%             fprintf('Forcing graph equal to logical(edge_pot) for shuffle_model %d.\n', ii);
-%             shuffle_model.graphs{ii} = logical(shuffle_model.edge_pot{ii});
-%         end
-%         shuffle_model.ep_on{ii} = getOnEdgePot(shuffle_model.graphs{ii},...
-%             shuffle_model.G{ii});
-%         shuffle_model.ep_on{ii} = shuffle_model.ep_on{ii} + shuffle_model.ep_on{ii}';
-%         shuffle_model.ns{ii} = exp(nansum(shuffle_model.ep_on{ii},2));
-%     end
-%     shuffle_model.mns = nanmean(cellfun(@(x) nanmean(x),shuffle_model.ns));
-%     shuffle_model.sdns = nanstd(cellfun(@(x) nanmean(x),shuffle_model.ns));
 
     % Sum potential for ALL edges each node is party to - exp and sum
     best_model.ep_on(best_model.graph==0) = NaN;
